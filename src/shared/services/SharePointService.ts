@@ -1,0 +1,131 @@
+import { PnPSetup } from "./PnPSetup";
+import { SharePointPerson } from "../types/SharePointPerson";
+import { Document } from "../types/Document";
+import { Department } from "../types/Department";
+import { IChangeRequest } from "../types/ChangeRequest";
+import "@pnp/sp/attachments";
+import "@pnp/sp/webs";
+import "@pnp/sp/site-users/web";
+
+const getDepartments = async (): Promise<Department[]> => {
+  try {
+    const sp = PnPSetup.getSP();
+    const departments = await sp.web.lists
+      .getByTitle("Departments Configuration")
+      .items.select(
+        "Id",
+        "Title",
+        "ChangeAuthority/Id", // ← Select person fields
+        "ChangeAuthority/Title",
+        "ChangeAuthority/EMail",
+      )
+      .expand("ChangeAuthority") // ← CRITICAL: Must expand!
+      .orderBy("Title", true)();
+
+    return departments as Department[];
+  } catch (error) {
+    console.error("Error fetching departments:", error);
+    throw error;
+  }
+};
+
+const getChangeRequests = async (): Promise<IChangeRequest[]> => {
+  try {
+    const sp = PnPSetup.getSP();
+    const changeRequests = await sp.web.lists
+      .getByTitle("Change Requests")
+      .items();
+    return changeRequests;
+  } catch (error) {
+    console.error("Error fetching change requests:", error);
+    throw error;
+  }
+};
+
+const createChangeRequest = async (
+  data: Record<string, unknown>,
+): Promise<Record<string, unknown>> => {
+  try {
+    const sp = PnPSetup.getSP();
+
+    const result = await sp.web.lists
+      .getByTitle("Change Requests")
+      .items.add(data);
+
+    return result.data as Record<string, unknown>;
+  } catch (error) {
+    console.error("Error creating Change Request:", error);
+    throw error;
+  }
+};
+
+const getDocuments = async (): Promise<Document[]> => {
+  try {
+    const sp = PnPSetup.getSP();
+    const documents = await sp.web.lists
+      .getByTitle("Published Documents") // ← Change to your documents list name
+      .items.select("Id", "DocumentTitle")(); // ← Use FileLeafRef, not Title
+
+    console.log(documents);
+    return documents as Document[];
+  } catch (error) {
+    console.error("Error fetching documents:", error);
+    throw error;
+  }
+};
+
+const uploadAttachments = async (
+  itemId: number,
+  files: File[],
+  onProgress?: (current: number, total: number, fileName: string) => void,
+): Promise<void> => {
+  const sp = PnPSetup.getSP();
+  if (!itemId || itemId <= 0) {
+    throw new Error("Invalid list item id for attachment upload.");
+  }
+
+  if (!files || files.length === 0) {
+    return;
+  }
+
+  const list = sp.web.lists.getByTitle("Change Requests");
+  const listInfo = await list.select("EnableAttachments")();
+  if (!listInfo.EnableAttachments) {
+    await list.update({ EnableAttachments: true });
+  }
+
+  const item = list.items.getById(itemId);
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+
+    if (onProgress) {
+      onProgress(i + 1, files.length, file.name);
+    }
+
+    const fileBuffer = await file.arrayBuffer();
+    await item.attachmentFiles.add(file.name, fileBuffer);
+  }
+};
+
+const getCurrentUser = async (): Promise<SharePointPerson> => {
+  try {
+    const sp = PnPSetup.getSP();
+    const user = await sp.web.currentUser();
+    console.log("Current user info:", user);
+    return user;
+  } catch (error) {
+    console.error("Error fetching current user:", error);
+    throw error;
+  }
+};
+
+
+
+export default {
+  getDepartments,
+  createChangeRequest,
+  getDocuments,
+  uploadAttachments,
+  getChangeRequests,
+  getCurrentUser
+};

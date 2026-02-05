@@ -1,0 +1,19 @@
+{
+  "@microsoft/generator-sharepoint": {
+    "useGulp": false,
+    "plusBeta": false,
+    "isCreatingSolution": true,
+    "nodeVersion": "22.16.0",
+    "sdksVersions": {},
+    "version": "1.22.1",
+    "libraryName": "dcr-solution",
+    "libraryId": "3387e393-4057-4d26-8d92-0d766e928ec5",
+    "environment": "spo",
+    "packageManager": "npm",
+    "solutionName": "dcr-solution",
+    "solutionShortDescription": "dcr-solution description",
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "componentType": "webpart"
+  }
+}

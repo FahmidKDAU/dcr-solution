@@ -1,0 +1,40 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "dcr-solution-client-side-solution",
+    "id": "3387e393-4057-4d26-8d92-0d766e928ec5",
+    "version": "1.0.0.0",
+    "includeClientSideAssets": true,
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "developer": {
+      "name": "",
+      "websiteUrl": "",
+      "privacyUrl": "",
+      "termsOfUseUrl": "",
+      "mpnId": "Undefined-1.22.1"
+    },
+    "metadata": {
+      "shortDescription": {
+        "default": "dcr-solution description"
+      },
+      "longDescription": {
+        "default": "dcr-solution description"
+      },
+      "screenshotPaths": [],
+      "videoUrl": "",
+      "categories": []
+    },
+    "features": [
+      {
+        "title": "dcr-solution Feature",
+        "description": "The feature that activates elements of the dcr-solution solution.",
+        "id": "76fbbf6e-56cc-4feb-a6d2-8e76ce9570b4",
+        "version": "1.0.0.0"
+      }
+    ]
+  },
+  "paths": {
+    "zippedPackage": "solution/dcr-solution.sppkg"
+  }
+}
