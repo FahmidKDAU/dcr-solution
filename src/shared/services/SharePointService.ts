@@ -118,8 +118,23 @@ const getCurrentUser = async (): Promise<SharePointPerson> => {
     throw error;
   }
 };
+// Option 2: Search by Title OR Email
+const searchUsers = async (searchText: string): Promise<SharePointPerson[]> => { 
+  try {
+    const sp = PnPSetup.getSP(); 
 
-
+    const users = await sp.web.siteUsers
+      .filter(`(startswith(Title,'${searchText}')) or (startswith(EMail,'${searchText}'))`)
+      .select("Id", "Title", "EMail")
+      .top(10)();
+    
+    console.log("Search results:", users);
+    return users as SharePointPerson[];
+  } catch (error) {
+    console.error("Error searching users:", error);
+    throw error;
+  }
+};
 
 export default {
   getDepartments,
@@ -127,5 +142,6 @@ export default {
   getDocuments,
   uploadAttachments,
   getChangeRequests,
-  getCurrentUser
+  getCurrentUser,
+  searchUsers,
 };

@@ -1,21 +1,20 @@
-import * as React from 'react';
-import * as ReactDom from 'react-dom';
-import { Version } from '@microsoft/sp-core-library';
-import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
+import * as React from "react";
+import * as ReactDom from "react-dom";
+import { Version } from "@microsoft/sp-core-library";
+import { BaseClientSideWebPart } from "@microsoft/sp-webpart-base";
 import {
   IPropertyPaneConfiguration,
-  PropertyPaneTextField
-} from '@microsoft/sp-property-pane';
+  PropertyPaneTextField,
+} from "@microsoft/sp-property-pane";
 
-import { PnPSetup } from '../../shared/services/PnPSetup';
-import DcrForm from './components/DcrForm';
+import { PnPSetup } from "../../shared/services/PnPSetup";
+import ChangeRequestForm from "./components/ChangeRequestForm";
 
 export interface IDcrFormWebPartProps {
   description: string;
 }
 
 export default class DcrFormWebPart extends BaseClientSideWebPart<IDcrFormWebPartProps> {
-
   protected async onInit(): Promise<void> {
     await super.onInit();
     PnPSetup.initialize(this.context);
@@ -23,12 +22,9 @@ export default class DcrFormWebPart extends BaseClientSideWebPart<IDcrFormWebPar
   }
 
   public render(): void {
-    const element: React.ReactElement = React.createElement(
-      DcrForm,
-      {
-        context: this.context
-      }
-    );
+    const element: React.ReactElement = React.createElement(ChangeRequestForm, {
+      context: this.context,
+    });
 
     ReactDom.render(element, this.domElement);
   }
@@ -38,7 +34,7 @@ export default class DcrFormWebPart extends BaseClientSideWebPart<IDcrFormWebPar
   }
 
   protected get dataVersion(): Version {
-    return Version.parse('1.0');
+    return Version.parse("1.0");
   }
 
   protected getPropertyPaneConfiguration(): IPropertyPaneConfiguration {
@@ -46,20 +42,20 @@ export default class DcrFormWebPart extends BaseClientSideWebPart<IDcrFormWebPar
       pages: [
         {
           header: {
-            description: 'Settings'
+            description: "Settings",
           },
           groups: [
             {
-              groupName: 'Settings',
+              groupName: "Settings",
               groupFields: [
-                PropertyPaneTextField('description', {
-                  label: 'Description'
-                })
-              ]
-            }
-          ]
-        }
-      ]
+                PropertyPaneTextField("description", {
+                  label: "Description",
+                }),
+              ],
+            },
+          ],
+        },
+      ],
     };
   }
 }
