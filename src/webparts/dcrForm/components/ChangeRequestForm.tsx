@@ -149,7 +149,7 @@ const ChangeRequestForm = (props: DcrFormProps) => {
         ChangeAuthorityId: formData.changeAuthority?.Id,
         Status: "Awaiting CA Review",
         ReleaseAuthorityId: formData.releaseAuthority?.Id,
-        AuthorId: formData.author?.Id,
+        Author0Id: formData.author?.Id,
       };
 
       console.log("Submitting payload:", payload);

@@ -27,7 +27,7 @@ export const InitialForm = ({
   departments,
 }: InitialFormProps) => {
   return (
-    <Box display="flex" flexDirection="column" gap={2}>
+    <Box display="flex" flexDirection="column">
       {/* Title Field */}
       <TextField
         label="Title"
@@ -91,7 +91,7 @@ export const InitialForm = ({
           onChange={(e) => {
             const deptId = Number(e.target.value);
             const selectedDept = departments.find((d) => d.Id === deptId);
-            
+
             // Update both department and change authority
             onChange("departmentId", deptId);
             onChange("changeAuthority", selectedDept?.ChangeAuthority);
