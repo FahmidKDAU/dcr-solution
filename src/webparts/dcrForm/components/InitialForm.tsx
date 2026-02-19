@@ -15,9 +15,13 @@ import FileUpload from "../../components/FileUpload";
 
 interface InitialFormProps {
   data: ChangeRequestFormData;
-  onChange: (field: keyof ChangeRequestFormData, value: any) => void;
+  onChange: (
+    field: keyof ChangeRequestFormData,
+    value: ChangeRequestFormData[keyof ChangeRequestFormData],
+  ) => void;
   documents: Document[];
   departments: Department[];
+  isExistingDocumentSelected?: boolean;
 }
 
 export const InitialForm = ({
@@ -25,7 +29,10 @@ export const InitialForm = ({
   onChange,
   documents,
   departments,
-}: InitialFormProps) => {
+  isExistingDocumentSelected = false,
+}: InitialFormProps): React.ReactElement => {
+  const isDocumentLocked = !!isExistingDocumentSelected;
+
   return (
     <Box display="flex" flexDirection="column">
       {/* Title Field */}
@@ -68,7 +75,7 @@ export const InitialForm = ({
           <FormLabel>Select Existing Document *</FormLabel>
           <Select
             label="Select Existing Document"
-            value={data.documentId || ""}
+            value={data.documentId ?? ""}
             onChange={(e) => onChange("documentId", Number(e.target.value))}
             required={!data.newDocument}
           >
@@ -86,8 +93,9 @@ export const InitialForm = ({
         <FormLabel>Core Functionality *</FormLabel>
         <Select
           label="Core Functionality"
-          value={data.departmentId || ""}
+          value={data.departmentId ?? ""}
           required
+          disabled={isDocumentLocked}
           onChange={(e) => {
             const deptId = Number(e.target.value);
             const selectedDept = departments.find((d) => d.Id === deptId);

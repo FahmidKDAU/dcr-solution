@@ -9,10 +9,19 @@
           "manifest": "./src/webparts/dcrForm/DcrFormWebPart.manifest.json"
         }
       ]
+    },
+    "task-hub-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/taskHub/TaskHubWebPart.js",
+          "manifest": "./src/webparts/taskHub/TaskHubWebPart.manifest.json"
+        }
+      ]
     }
   },
   "externals": {},
   "localizedResources": {
-    "DcrFormWebPartStrings": "lib/webparts/dcrForm/loc/{locale}.js"
+    "DcrFormWebPartStrings": "lib/webparts/dcrForm/loc/{locale}.js",
+    "TaskHubWebPartStrings": "lib/webparts/taskHub/loc/{locale}.js"
   }
 }

@@ -12,6 +12,8 @@
     "eject-webpack": "heft eject-webpack"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@fluentui/react": "^8.106.4",
     "@microsoft/sp-component-base": "1.22.1",
     "@microsoft/sp-core-library": "1.22.1",
@@ -19,6 +21,7 @@
     "@microsoft/sp-office-ui-fabric-core": "1.22.1",
     "@microsoft/sp-property-pane": "1.22.1",
     "@microsoft/sp-webpart-base": "1.22.1",
+    "@mui/icons-material": "^7.3.7",
     "@mui/material": "^7.3.7",
     "@pnp/common": "^2.15.0",
     "@pnp/logging": "^4.17.0",

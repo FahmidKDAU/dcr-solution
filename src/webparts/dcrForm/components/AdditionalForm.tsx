@@ -13,15 +13,22 @@ import { PeoplePicker } from "./PeoplePicker";
 
 interface AdditionalFormProps {
   data: ChangeRequestFormData;
-  onChange: (field: keyof ChangeRequestFormData, value: any) => void;
+  onChange: (
+    field: keyof ChangeRequestFormData,
+    value: ChangeRequestFormData[keyof ChangeRequestFormData],
+  ) => void;
   documents: Document[];
+  isExistingDocumentSelected?: boolean;
 }
 
 export const AdditionalForm = ({
   data,
   onChange,
   documents,
-}: AdditionalFormProps) => {
+  isExistingDocumentSelected = false,
+}: AdditionalFormProps): JSX.Element => {
+  const isDocumentLocked = !!isExistingDocumentSelected;
+
   // Placeholder data - Replace with actual hooks when ready
   const documentTypes = [
     { Id: 1, Title: "Policy" },
@@ -72,7 +79,8 @@ export const AdditionalForm = ({
             <InputLabel>Document Type</InputLabel>
             <Select
               label="Document Type"
-              value={data.documentTypeId || ""}
+              value={data.documentTypeId ?? ""}
+              disabled={isDocumentLocked}
               onChange={(e) =>
                 onChange("documentTypeId", Number(e.target.value))
               }
@@ -90,6 +98,7 @@ export const AdditionalForm = ({
             <Select
               label="Document Category"
               value={data.documentCategoryIds[0] || ""}
+              disabled={isDocumentLocked}
               onChange={(e) =>
                 onChange("documentCategoryIds", [Number(e.target.value)])
               }
@@ -107,6 +116,7 @@ export const AdditionalForm = ({
             <Select
               label="Classification"
               value={data.classification}
+              disabled={isDocumentLocked}
               onChange={(e) => onChange("classification", e.target.value)}
             >
               <MenuItem value="Public">Public</MenuItem>
@@ -120,7 +130,8 @@ export const AdditionalForm = ({
             <InputLabel>Audience</InputLabel>
             <Select
               label="Audience"
-              value={data.audienceId || ""}
+              value={data.audienceId ?? ""}
+              disabled={isDocumentLocked}
               onChange={(e) => onChange("audienceId", Number(e.target.value))}
             >
               {audiences.map((audience) => (
@@ -136,6 +147,7 @@ export const AdditionalForm = ({
             <Select
               label="Business Function"
               value={data.businessFunctionIds[0] || ""}
+              disabled={isDocumentLocked}
               onChange={(e) =>
                 onChange("businessFunctionIds", [Number(e.target.value)])
               }
@@ -171,27 +183,29 @@ export const AdditionalForm = ({
             label="Release Authority"
             value={data.releaseAuthority}
             onChange={(person) => onChange("releaseAuthority", person)}
+            disabled={isDocumentLocked}
           />
 
           <PeoplePicker
             label="Author"
             value={data.author}
             onChange={(person) => onChange("author", person)}
+            disabled={isDocumentLocked}
           />
 
           <PeoplePicker
             label="Reviewer"
-            value={null}
+            value={undefined}
             onChange={(person) => {
-              onChange("reviewerIds", person ? [person.Id] : []);
+              onChange("reviewerIds", person?.Id ? [person.Id] : []);
             }}
           />
 
           <PeoplePicker
             label="Contributor"
-            value={null}
+            value={undefined}
             onChange={(person) => {
-              onChange("contributorIds", person ? [person.Id] : []);
+              onChange("contributorIds", person?.Id ? [person.Id] : []);
             }}
           />
         </Box>
@@ -216,6 +230,7 @@ export const AdditionalForm = ({
         <TextField
           label="Draft Document Name"
           value={data.draftDocumentName}
+          disabled={isDocumentLocked}
           onChange={(e) => onChange("draftDocumentName", e.target.value)}
           helperText="Optional: Specify a name for the draft document"
           placeholder="e.g., Safety_Policy_v2_Draft"

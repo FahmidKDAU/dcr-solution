@@ -1,6 +1,7 @@
 import { SharePointPerson } from "./SharePointPerson";
 
 import { LookupFieldItem } from "./LookupFieldItem";
+import { Department } from "./Department";
 export interface IChangeRequest {
   Title: string;
   ChangeRequestNumber: string;
@@ -8,7 +9,7 @@ export interface IChangeRequest {
   Id?: number;
   ScopeOfChange: string;
   NewDocument: boolean;
-  CoreFunctionality?: string;
+  CoreFunctionality?: Department;
   Status:
     | "Submitted"
     | "CA Review"
@@ -25,9 +26,10 @@ export interface IChangeRequest {
   Urgency: "Standard" | "Urgent" | "Minor";
   ReleaseAuthority: SharePointPerson;
   BusinessFunction: LookupFieldItem[];
-  DocumentCategory: LookupFieldItem[];
+  Categories: LookupFieldItem[];
   DocumentType: LookupFieldItem;
   Classification: "Public" | "Internal" | "Confidential" | "Restricted";
   Audience: LookupFieldItem;
   DraftDocumentName?: string;
+  PublishedDate: string;
 }

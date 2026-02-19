@@ -6,6 +6,7 @@ import { IChangeRequest } from "../types/ChangeRequest";
 import "@pnp/sp/attachments";
 import "@pnp/sp/webs";
 import "@pnp/sp/site-users/web";
+import { Task } from "../types/Task";
 
 const getDepartments = async (): Promise<Department[]> => {
   try {
@@ -64,12 +65,90 @@ const getDocuments = async (): Promise<Document[]> => {
     const sp = PnPSetup.getSP();
     const documents = await sp.web.lists
       .getByTitle("Published Documents") // ← Change to your documents list name
-      .items.select("Id", "DocumentTitle")(); // ← Use FileLeafRef, not Title
+      .items.select("Id", "DocumentTitle")();
 
     console.log(documents);
-    return documents as Document[];
+    return documents as unknown as Document[];
   } catch (error) {
     console.error("Error fetching documents:", error);
+    throw error;
+  }
+};
+
+const getDocumentById = async (id: number): Promise<Document | null> => {
+  try {
+    const sp = PnPSetup.getSP();
+    const document = await sp.web.lists
+      .getByTitle("Published Documents")
+      .items.getById(id)
+      .select(
+        "Id",
+        "DocumentTitle",
+        "DocumentType",
+        "Classification",
+        "AudienceId",
+        "CoreFunctionalityId",
+        "ChangeAuthorityId",
+        // Expand lookup fields
+        "Category/Id",
+        "Category/Title",
+        "Audience/Id",
+        "Audience/Title",
+        "BusinessFunction/Id",
+        "BusinessFunction/Title",
+        "CoreFunctionality/Id",
+        "CoreFunctionality/Title",
+        // Expand person fields
+        "ChangeAuthority/Id",
+        "ChangeAuthority/Title",
+        "ChangeAuthority/EMail",
+        "ReleaseAuthority/Id",
+        "ReleaseAuthority/Title",
+        "ReleaseAuthority/EMail",
+        "Author0/Id",
+        "Author0/Title",
+        "Author0/EMail",
+      )
+      .expand(
+        "Category",
+        "Audience",
+        "BusinessFunction",
+        "CoreFunctionality",
+        "ChangeAuthority",
+        "ReleaseAuthority",
+        "Author0",
+      )();
+    console.log(document);
+    return document as Document;
+  } catch (error) {
+    console.error(`Error fetching document with ID ${id}:`, error);
+    throw error;
+  }
+};
+
+const getTasks = async (userId: number): Promise<Task[]> => {
+  try {
+    const sp = PnPSetup.getSP();
+    const tasks = await sp.web.lists
+      .getByTitle("Tasks")
+      .items.filter(`AssignedTo/Id eq ${userId}`)();
+
+    return tasks as Task[];
+  } catch (error) {
+    console.error("Error fetching tasks:", error);
+    throw error;
+  }
+};
+
+const getTaskById = async (id: number): Promise<Task | null> => {
+  try {
+    const sp = PnPSetup.getSP();
+    const task = await sp.web.lists
+      .getByTitle("Tasks")
+      .items.filter(`Id eq ${id}`)();
+    return task.length > 0 ? (task[0] as Task) : null;
+  } catch (error) {
+    console.error(`Error fetching task with ID ${id}:`, error);
     throw error;
   }
 };
@@ -119,15 +198,17 @@ const getCurrentUser = async (): Promise<SharePointPerson> => {
   }
 };
 // Option 2: Search by Title OR Email
-const searchUsers = async (searchText: string): Promise<SharePointPerson[]> => { 
+const searchUsers = async (searchText: string): Promise<SharePointPerson[]> => {
   try {
-    const sp = PnPSetup.getSP(); 
+    const sp = PnPSetup.getSP();
 
     const users = await sp.web.siteUsers
-      .filter(`(startswith(Title,'${searchText}')) or (startswith(EMail,'${searchText}'))`)
+      .filter(
+        `(startswith(Title,'${searchText}')) or (startswith(EMail,'${searchText}'))`,
+      )
       .select("Id", "Title", "EMail")
       .top(10)();
-    
+
     console.log("Search results:", users);
     return users as SharePointPerson[];
   } catch (error) {
@@ -140,8 +221,11 @@ export default {
   getDepartments,
   createChangeRequest,
   getDocuments,
+  getDocumentById,
   uploadAttachments,
   getChangeRequests,
   getCurrentUser,
   searchUsers,
+  getTasks,
+  getTaskById,
 };

@@ -7,8 +7,8 @@ import { SharePointPerson } from "../../../shared/types/SharePointPerson";
 
 interface PeoplePickerProps {
   label: string;
-  value: SharePointPerson | null;
-  onChange: (person: SharePointPerson | null) => void;
+  value: SharePointPerson | undefined;
+  onChange: (person: SharePointPerson | undefined) => void;
   required?: boolean;
   disabled?: boolean;
 }
@@ -24,7 +24,7 @@ export const PeoplePicker = ({
   const [loading, setLoading] = useState(false);
   const [inputValue, setInputValue] = useState("");
 
-  const handleSearch = async (searchText: string) => {
+  const handleSearch = async (searchText: string): Promise<void> => {
     if (searchText.length < 2) {
       setOptions([]);
       return;
@@ -44,12 +44,14 @@ export const PeoplePicker = ({
 
   return (
     <Autocomplete
-      value={value}
-      onChange={(_, newValue) => onChange(newValue)}
+      value={value ?? null}
+      onChange={(_, newValue) => onChange(newValue ?? undefined)}
       inputValue={inputValue}
       onInputChange={(_, newInputValue) => {
         setInputValue(newInputValue);
-        handleSearch(newInputValue);
+        handleSearch(newInputValue).catch((error) => {
+          console.error("Error searching users:", error);
+        });
       }}
       options={options}
       getOptionLabel={(option) => option.Title || ""}
