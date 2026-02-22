@@ -3,7 +3,7 @@ import { SharePointPerson } from "./SharePointPerson";
 export interface Task {
   Id: number;
   Title: string;
-  ChangeRequestestId: number;
+  ChangeRequestId: number;
   TaskType:
     | "CA Review"
     | "Document Review"
@@ -27,7 +27,7 @@ export interface Task {
     | "New"
     | "Marked as Minor Change"
     | "Marked for Documnt Obsoletion";
-
+    Created: Date;
     DueDate: Date;
     Requestor: SharePointPerson;
     RejectionReason?: string;

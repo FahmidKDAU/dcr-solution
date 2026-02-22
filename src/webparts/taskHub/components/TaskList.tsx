@@ -6,6 +6,9 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import InputAdornment from "@mui/material/InputAdornment";
 import SearchIcon from "@mui/icons-material/Search";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import FormControl from "@mui/material/FormControl";
 import TaskCard from "./TaskCard";
 import { Task } from "../../../shared/types/Task";
 import Divider from "@mui/material/Divider";
@@ -16,9 +19,22 @@ interface TaskListProps {
   onTaskSelect: (task: Task) => void;
 }
 
+const taskTypes = [
+  "All",
+  "CA Review",
+  "Document Review",
+  "Final Approval",
+  "CR Completion",
+  "CR Info Required",
+  "Change Authority Approval",
+  "Change Authority Review",
+  "Document Controller Review",
+];
+
 const TaskList = ({ tasks, selectedTask, onTaskSelect }: TaskListProps) => {
   const [tab, setTab] = useState(0);
   const [search, setSearch] = useState("");
+  const [taskTypeFilter, setTaskTypeFilter] = useState<string>("All");
 
   const filtered = tasks
     .filter((t) => {
@@ -28,9 +44,8 @@ const TaskList = ({ tasks, selectedTask, onTaskSelect }: TaskListProps) => {
       if (tab === 3) return t.Status === "Complete";
       return true;
     })
-    .filter((t) =>
-      t.Title.toLowerCase().includes(search.toLowerCase())
-    );
+    .filter((t) => taskTypeFilter === "All" || t.TaskType === taskTypeFilter)
+    .filter((t) => t.Title.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <Box display="flex" flexDirection="column" height="100%" sx={{ borderRight: "1px solid #e0e0e0" }}>
@@ -67,6 +82,28 @@ const TaskList = ({ tasks, selectedTask, onTaskSelect }: TaskListProps) => {
         />
       </Box>
 
+      {/* Task Type Filter */}
+      <Box px={2} pb={1}>
+        <FormControl fullWidth size="small">
+          <Select
+            value={taskTypeFilter}
+            onChange={(e) => setTaskTypeFilter(e.target.value)}
+            sx={{
+              borderRadius: 2,
+              backgroundColor: "#f5f5f5",
+              fontSize: 13,
+              "& fieldset": { border: "none" },
+            }}
+          >
+            {taskTypes.map((type) => (
+              <MenuItem key={type} value={type} sx={{ fontSize: 13 }}>
+                {type}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
+
       {/* Tabs */}
       <Tabs
         value={tab}
@@ -78,8 +115,8 @@ const TaskList = ({ tasks, selectedTask, onTaskSelect }: TaskListProps) => {
         }}
       >
         <Tab label={`Pending (${tasks.filter(t => t.Status === "Pending").length})`} />
-            <Tab label={`Approved (${tasks.filter(t => t.Status === "Approved").length})`} />
-                <Tab label={`Rejected (${tasks.filter(t => t.Status === "Rejected").length})`} />
+        <Tab label={`Approved (${tasks.filter(t => t.Status === "Approved").length})`} />
+        <Tab label={`Rejected (${tasks.filter(t => t.Status === "Rejected").length})`} />
         <Tab label={`Completed (${tasks.filter(t => t.Status === "Complete").length})`} />
         <Tab label={`All (${tasks.length})`} />
       </Tabs>

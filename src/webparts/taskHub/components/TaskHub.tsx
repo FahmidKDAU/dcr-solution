@@ -7,6 +7,9 @@ import SharePointService from "../../../shared/services/SharePointService";
 import TaskList from "./TaskList";
 import TaskPane from "./TaskPane";
 import CircularProgress from "@mui/material/CircularProgress";
+import { Allotment } from "allotment";
+import "allotment/dist/style.css";
+import { TaskDetail } from "./TaskDetail";
 
 const TaskHub = () => {
   const { currentUser, loading } = useCurrentUser();
@@ -25,21 +28,40 @@ const TaskHub = () => {
   if (loading || tasksLoading) return <CircularProgress />;
 
   return (
-    <Box display="flex" height="100vh">
-      {/* Left — Task List */}
-      <Box width="45%" borderRight="1px solid #e0e0e0">
+    <Box
+      height="100vh"
+      overflow="hidden"
+      sx={{
+        border: "1px solid #e0e0e0",
+        borderRadius: 2,
+
+        overflow: "hidden",
+      }}
+    >
+      {!selectedTask ? (
+        // Full width task list — no Allotment
         <TaskList
           tasks={tasks}
           selectedTask={selectedTask}
           onTaskSelect={setSelectedTask}
         />
-      </Box>
+      ) : (
+        // Split view — only when task is selected
+        <Allotment>
+          <Allotment.Pane minSize={250} maxSize={600} preferredSize="45%" snap>
+            <TaskPane
+              task={selectedTask}
+              onBack={() => setSelectedTask(null)}
+            />
+          </Allotment.Pane>
 
-      {/* Right — Task Pane */}
-      <Box width="55%">
-        <TaskPane task={selectedTask} />
-      </Box>
+          <Allotment.Pane minSize={400}>
+            <TaskDetail task={selectedTask} />
+          </Allotment.Pane>
+        </Allotment>
+      )}
     </Box>
   );
 };
+
 export default TaskHub;

@@ -32,4 +32,5 @@ export interface IChangeRequest {
   Audience: LookupFieldItem;
   DraftDocumentName?: string;
   PublishedDate: string;
+  TargetDocumentId?: number;
 }

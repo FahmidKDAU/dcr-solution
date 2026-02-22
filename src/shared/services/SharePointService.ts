@@ -43,6 +43,21 @@ const getChangeRequests = async (): Promise<IChangeRequest[]> => {
   }
 };
 
+const getChangeRequestById = async (
+  id: number,
+): Promise<IChangeRequest | null> => {
+  try {
+    const sp = PnPSetup.getSP();
+    const changeRequest = await sp.web.lists
+      .getByTitle("Change Requests")
+      .items.getById(id)();
+    return changeRequest as IChangeRequest;
+  } catch (error) {
+    console.error(`Error fetching change request with ID ${id}:`, error);
+    return null;
+  }
+};
+
 const createChangeRequest = async (
   data: Record<string, unknown>,
 ): Promise<Record<string, unknown>> => {
@@ -108,6 +123,8 @@ const getDocumentById = async (id: number): Promise<Document | null> => {
         "Author0/Id",
         "Author0/Title",
         "Author0/EMail",
+        "FileRef",
+        "FileLeafRef",
       )
       .expand(
         "Category",
@@ -131,7 +148,27 @@ const getTasks = async (userId: number): Promise<Task[]> => {
     const sp = PnPSetup.getSP();
     const tasks = await sp.web.lists
       .getByTitle("Tasks")
-      .items.filter(`AssignedTo/Id eq ${userId}`)();
+      .items.select(
+        "Id",
+        "Title",
+        "Status",
+        "TaskType",
+        "DueDate",
+        "Created",
+        "ChangeRequestId",
+        "ChangeRequest/Id",
+        "ChangeRequest/Title",
+        "AssignedTo/Id",
+        "AssignedTo/Title",
+        "AssignedTo/EMail",
+        "Author/Id",
+        "Author/EMail",
+        "Requestor/Id",
+        "Requestor/Title",
+        "Requestor/EMail",
+      )
+      .expand("AssignedTo", "Author", "Requestor", "ChangeRequest")
+      .filter(`AssignedTo/Id eq ${userId}`)();
 
     return tasks as Task[];
   } catch (error) {
@@ -145,7 +182,27 @@ const getTaskById = async (id: number): Promise<Task | null> => {
     const sp = PnPSetup.getSP();
     const task = await sp.web.lists
       .getByTitle("Tasks")
-      .items.filter(`Id eq ${id}`)();
+      .items.select(
+        "Id",
+        "Title",
+        "Status",
+        "TaskType",
+        "DueDate",
+        "Created",
+        "ChangeRequestId",
+        "ChangeRequest/Id",
+        "ChangeRequest/Title",
+        "AssignedTo/Id",
+        "AssignedTo/Title",
+        "AssignedTo/EMail",
+        "Author/Id",
+        "Author/EMail",
+        "Requestor/Id",
+        "Requestor/Title",
+        "Requestor/EMail",
+      )
+      .expand("AssignedTo", "Author", "Requestor")
+      .filter(`Id eq ${id}`)();
     return task.length > 0 ? (task[0] as Task) : null;
   } catch (error) {
     console.error(`Error fetching task with ID ${id}:`, error);
@@ -224,6 +281,7 @@ export default {
   getDocumentById,
   uploadAttachments,
   getChangeRequests,
+  getChangeRequestById,
   getCurrentUser,
   searchUsers,
   getTasks,

@@ -60,7 +60,7 @@ const TaskCard = ({ task, selected, onSelect }: TaskCardProps) => {
               {task.TaskType}
             </Typography>
             <Typography variant="caption" color="text.disabled">
-              {task.DueDate ? new Date(task.DueDate).toLocaleDateString("en-AU", { day: "numeric", month: "short" }) : "—"}
+              {task.Created ? new Date(task.Created).toLocaleDateString("en-AU", { day: "numeric", month: "short" }) : "—"}
             </Typography>
           </Box>
 
@@ -80,12 +80,12 @@ const TaskCard = ({ task, selected, onSelect }: TaskCardProps) => {
 
           {/* Bottom row */}
           <Box display="flex" justifyContent="space-between">
-            <Typography variant="caption" color="text.secondary">
+            {/* <Typography variant="caption" color="text.secondary">
               {task.RequestedBy?.Title ?? "—"}
             </Typography>
             <Typography variant="caption" color="text.disabled">
               {task.LinkedCR?.CRNumber ?? "—"}
-            </Typography>
+            </Typography> */}
           </Box>
         </Box>
       </Box>

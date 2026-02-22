@@ -20,4 +20,5 @@ export interface Document {
   ReleaseAuthority?: SharePointPerson;
   Author0?: SharePointPerson; // ← SharePoint's Author field
   ChangeAuthority?: SharePointPerson;
+  FileRef?: string; // Server-relative URL to the file
 }
