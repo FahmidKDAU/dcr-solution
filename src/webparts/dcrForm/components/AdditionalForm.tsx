@@ -10,6 +10,7 @@ import Typography from "@mui/material/Typography";
 import Divider from "@mui/material/Divider";
 import { Document } from "../../../shared/types/Document";
 import { PeoplePicker } from "./PeoplePicker";
+import { MultiPeoplePicker } from "./MultiPeoplePicker";
 
 interface AdditionalFormProps {
   data: ChangeRequestFormData;
@@ -193,20 +194,16 @@ export const AdditionalForm = ({
             disabled={isDocumentLocked}
           />
 
-          <PeoplePicker
-            label="Reviewer"
-            value={undefined}
-            onChange={(person) => {
-              onChange("reviewerIds", person?.Id ? [person.Id] : []);
-            }}
+          <MultiPeoplePicker
+            label="Reviewers"
+            selectedIds={data.reviewerIds}
+            onChange={(ids) => onChange("reviewerIds", ids)}
           />
 
-          <PeoplePicker
-            label="Contributor"
-            value={undefined}
-            onChange={(person) => {
-              onChange("contributorIds", person?.Id ? [person.Id] : []);
-            }}
+          <MultiPeoplePicker
+            label="Contributors"
+            selectedIds={data.contributorIds}
+            onChange={(ids) => onChange("contributorIds", ids)}
           />
         </Box>
       </Box>

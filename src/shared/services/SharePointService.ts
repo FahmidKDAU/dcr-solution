@@ -50,13 +50,58 @@ const getChangeRequestById = async (
     const sp = PnPSetup.getSP();
     const changeRequest = await sp.web.lists
       .getByTitle("Change Requests")
-      .items.getById(id)();
+      .items.getById(id).select(
+        "Id",
+        "Title",
+        "ChangeRequestNumber",
+        "ScopeofChange",
+        "Status",
+        "Urgency",
+        "NewDocument",
+        "Classification",
+        "DraftDocumentName",
+        "PublishedDate",
+        // Lookup fields
+        "CoreFunctionality/Id",
+        "CoreFunctionality/Title",
+        "BusinessFunction/Id",
+        "BusinessFunction/Title",
+        "Audience/Id",
+        "Audience/Title",
+        // People fields
+        "ChangeAuthority/Id",
+        "ChangeAuthority/Title",
+        "ChangeAuthority/EMail",
+        "ReleaseAuthority/Id",
+        "ReleaseAuthority/Title",
+        "ReleaseAuthority/EMail",
+        "Author0/Id",
+        "Author0/Title",
+        "Author0/EMail",
+        "Reviewers/Id",
+        "Reviewers/Title",
+        "Reviewers/EMail",
+        "Contributors/Id",
+        "Contributors/Title",
+        "Contributors/EMail",
+      )
+      .expand(
+        "CoreFunctionality",
+        "BusinessFunction",
+        "Audience",
+        "ChangeAuthority",
+        "ReleaseAuthority",
+        "Author0",
+        "Reviewers",
+        "Contributors",
+      )();
+
     return changeRequest as IChangeRequest;
   } catch (error) {
     console.error(`Error fetching change request with ID ${id}:`, error);
     return null;
   }
-};
+}; 
 
 const createChangeRequest = async (
   data: Record<string, unknown>,
@@ -74,6 +119,21 @@ const createChangeRequest = async (
     throw error;
   }
 };
+
+
+const updateChangeRequest = async (id: number, data: Record<string, unknown>): Promise<void> => {
+  try {
+    const sp = PnPSetup.getSP();
+    await sp.web.lists
+      .getByTitle("Change Requests")
+      .items.getById(id)
+      .update(data);
+  } catch (error) {
+    console.error("Error updating change request:", error);
+    throw error;
+  }
+}; 
+
 
 const getDocuments = async (): Promise<Document[]> => {
   try {
@@ -210,6 +270,19 @@ const getTaskById = async (id: number): Promise<Task | null> => {
   }
 };
 
+const updateTask = async (taskId: number, data: Record<string, unknown>): Promise<void> => {
+  try {
+    const sp = PnPSetup.getSP();
+    await sp.web.lists
+      .getByTitle("Tasks")
+      .items.getById(taskId)
+      .update(data);
+  } catch (error) {
+    console.error("Error updating task:", error);
+    throw error;
+  }
+};
+
 const uploadAttachments = async (
   itemId: number,
   files: File[],
@@ -282,8 +355,10 @@ export default {
   uploadAttachments,
   getChangeRequests,
   getChangeRequestById,
+  updateChangeRequest,
   getCurrentUser,
   searchUsers,
   getTasks,
   getTaskById,
+  updateTask,
 };

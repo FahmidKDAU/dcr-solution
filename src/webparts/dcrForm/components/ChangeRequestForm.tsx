@@ -54,7 +54,7 @@ const TabPanel = ({
 }: TabPanelProps): React.ReactElement => {
   return (
     <div role="tabpanel" hidden={value !== index}>
-      {value === index && <Box>{children}</Box>}
+ <Box>{children}</Box>
     </div>
   );
 };
@@ -232,28 +232,41 @@ const ChangeRequestForm = (props: DcrFormProps): React.ReactElement => {
         Title: formData.title,
         ScopeofChange: formData.scopeOfChange,
         NewDocument: formData.newDocument,
-        CoreFunctionalityId: formData.departmentId, // ← FIXED: Number, not string, correct field name
+        CoreFunctionalityId: formData.departmentId,
         ChangeAuthorityId: formData.changeAuthority?.Id,
         Urgency: formData.urgency || "Standard",
         Status: "Submitted",
 
-        // Part 2 - Optional fields (only include if provided)
-        BusinessFunctionId:
-          formData.businessFunctionIds.length > 0
-            ? { results: formData.businessFunctionIds }
-            : undefined,
-        // DocumentCategoryId:
-        //   formData.documentCategoryIds.length > 0 // ← FIXED: CategoryId not DocumentCategoryId
-        //     ? { results: formData.documentCategoryIds }
-        //     : undefined,
+        // Part 2 - Optional fields
         Classification: formData.classification || undefined,
         AudienceId: formData.audienceId || undefined,
         DraftDocumentName: formData.draftDocumentName || undefined,
         ReleaseAuthorityId: formData.releaseAuthority?.Id || undefined,
         Author0Id: formData.author?.Id || undefined,
+
+        // Multi-person fields
+        ReviewersId:
+          formData.reviewerIds.length > 0
+            ? { results: formData.reviewerIds }
+            : undefined,
+        ContributorsId:
+          formData.contributorIds.length > 0
+            ?  formData.contributorIds 
+            : undefined,
+
+        // Multi-lookup fields
+        BusinessFunctionId:
+          formData.businessFunctionIds.length > 0
+            ? { results: formData.businessFunctionIds }
+            : undefined,
+        CategoryId:
+          formData.documentCategoryIds.length > 0
+            ? { results: formData.documentCategoryIds }
+            : undefined,
       };
 
       console.log("Submitting payload:", payload);
+console.log("Payload being sent:", JSON.stringify(payload, null, 2));
 
       // Create the change request
       await SharePointService.createChangeRequest(payload);

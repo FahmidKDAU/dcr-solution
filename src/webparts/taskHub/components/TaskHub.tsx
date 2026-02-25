@@ -51,7 +51,16 @@ const TaskHub = () => {
           <Allotment.Pane minSize={250} maxSize={600} preferredSize="45%" snap>
             <TaskPane
               task={selectedTask}
+              cr={null}
               onBack={() => setSelectedTask(null)}
+              onTaskComplete={() => {
+                if (currentUser) {
+                  SharePointService.getTasks(currentUser.Id)
+                    .then(setTasks)
+                    .catch(console.error);
+                }
+                setSelectedTask(null);
+              }}
             />
           </Allotment.Pane>
 
