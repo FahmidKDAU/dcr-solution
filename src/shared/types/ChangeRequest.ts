@@ -7,7 +7,7 @@ export interface IChangeRequest {
   ChangeRequestNumber: string;
   ID: number;
   Id?: number;
-  ScopeOfChange: string;
+  ScopeofChange: string;
   NewDocument: boolean;
   CoreFunctionality?: Department;
   Status:
@@ -18,9 +18,9 @@ export interface IChangeRequest {
     | "Document Review"
     | "Published"
     | "Rejected";
-  CreatedBy: SharePointPerson;
-  ChangeAuthority: SharePointPerson;
   Author: SharePointPerson;
+  ChangeAuthority: SharePointPerson;
+  Author0: SharePointPerson;
   Reviewers: SharePointPerson[];
   Contributors: SharePointPerson[];
   Urgency: "Standard" | "Urgent" | "Minor";

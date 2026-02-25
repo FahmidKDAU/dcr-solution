@@ -10,12 +10,24 @@ import CircularProgress from "@mui/material/CircularProgress";
 import { Allotment } from "allotment";
 import "allotment/dist/style.css";
 import { TaskDetail } from "./TaskDetail";
+import { IChangeRequest } from "../../../shared/types/ChangeRequest";
 
 const TaskHub = () => {
   const { currentUser, loading } = useCurrentUser();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tasksLoading, setTasksLoading] = useState(true);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [cr, setCr] = useState<IChangeRequest | null>(null);
+  const [crLoading, setCrLoading] = useState(false);
+
+  useEffect(() => {
+    if (!selectedTask) return;
+    setCrLoading(true);
+    SharePointService.getChangeRequestById(selectedTask.ChangeRequestId)
+      .then(setCr)
+      .catch(console.error)
+      .finally(() => setCrLoading(false));
+  }, [selectedTask]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -26,6 +38,13 @@ const TaskHub = () => {
   }, [currentUser]);
 
   if (loading || tasksLoading) return <CircularProgress />;
+
+  const refreshCR = () => {
+    if (!selectedTask) return;
+    SharePointService.getChangeRequestById(selectedTask.ChangeRequestId)
+      .then(setCr)
+      .catch(console.error);
+  };
 
   return (
     <Box
@@ -51,8 +70,11 @@ const TaskHub = () => {
           <Allotment.Pane minSize={250} maxSize={600} preferredSize="45%" snap>
             <TaskPane
               task={selectedTask}
-              cr={null}
-              onBack={() => setSelectedTask(null)}
+              cr={cr}
+              onBack={() => {
+                setSelectedTask(null);
+                setCr(null);
+              }}
               onTaskComplete={() => {
                 if (currentUser) {
                   SharePointService.getTasks(currentUser.Id)
@@ -65,7 +87,7 @@ const TaskHub = () => {
           </Allotment.Pane>
 
           <Allotment.Pane minSize={400}>
-            <TaskDetail task={selectedTask} />
+            <TaskDetail task={selectedTask} cr={cr} onCRUpdate={refreshCR} />
           </Allotment.Pane>
         </Allotment>
       )}
