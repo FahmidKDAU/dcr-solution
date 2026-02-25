@@ -114,6 +114,8 @@ const ChangeRequestForm = (props: DcrFormProps): React.ReactElement => {
 
   const { departments } = useDepartments();
 
+  
+
   // Auto-populate Part 2 when existing document is selected
   useEffect(() => {
     const autoPopulateFromDocument = async (): Promise<void> => {
@@ -145,7 +147,7 @@ const ChangeRequestForm = (props: DcrFormProps): React.ReactElement => {
           businessFunctionIds:
             selectedDoc.BusinessFunction?.map((bf) => bf.Id) || [],
           documentCategoryIds: selectedDoc.Category?.map((dc) => dc.Id) || [],
-          documentTypeId: mapDocumentTypeToId(selectedDoc.DocumentType),
+          documentTypeId: mapDocumentTypeToId(selectedDoc.DocumentType?.Title),
           classification: selectedDoc.Classification || "",
           audienceId: selectedDoc.Audience?.Id,
           releaseAuthority: selectedDoc.ReleaseAuthority ?? undefined,

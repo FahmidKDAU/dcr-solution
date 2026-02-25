@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -16,6 +16,7 @@ import { Document } from "../../../shared/types/Document";
 import { SharePointPerson } from "../../../shared/types/SharePointPerson";
 import SharePointService from "../../../shared/services/SharePointService";
 import { PeoplePicker } from "../../dcrForm/components/PeoplePicker";
+import { InlineField } from "./InlineField";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -124,232 +125,6 @@ const Avatar = ({ name, size = 26 }: { name: string; size?: number }) => (
     {getInitials(name)}
   </Box>
 );
-
-// ─── Inline Field ─────────────────────────────────────────────────────────────
-
-interface InlineFieldProps {
-  label: string;
-  value: string | undefined | null;
-  onSave: (val: string) => Promise<void>;
-  type?: "text" | "select" | "textarea" | "date";
-  options?: string[];
-  required?: boolean;
-  saving?: boolean;
-  renderValue?: (val: string | undefined | null) => React.ReactNode;
-  placeholder?: string;
-}
-
-const InlineField = ({
-  label,
-  value,
-  onSave,
-  type = "text",
-  options = [],
-  required = false,
-  saving = false,
-  renderValue,
-  placeholder = "None",
-}: InlineFieldProps) => {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(value ?? "");
-  const [hovered, setHovered] = useState(false);
-  const inputRef = useRef<
-    HTMLInputElement & HTMLSelectElement & HTMLTextAreaElement
-  >(null);
-
-  useEffect(() => {
-    setDraft(value ?? "");
-  }, [value]);
-  useEffect(() => {
-    if (editing) inputRef.current?.focus();
-  }, [editing]);
-
-  const commit = async () => {
-    setEditing(false);
-    if (draft !== (value ?? "")) await onSave(draft);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && type !== "textarea") commit();
-    if (e.key === "Escape") {
-      setDraft(value ?? "");
-      setEditing(false);
-    }
-  };
-
-  const isEmpty = !value && value !== "0";
-  const isRequired = required && isEmpty;
-
-  const displayContent = renderValue ? (
-    renderValue(value)
-  ) : isEmpty ? (
-    <Typography variant="body2" color="text.disabled">
-      {placeholder}
-    </Typography>
-  ) : (
-    <Typography variant="body2" color="text.primary">
-      {value}
-    </Typography>
-  );
-
-  return (
-    <Box
-      sx={{
-        display: "grid",
-        gridTemplateColumns: "150px 1fr",
-        alignItems: "start",
-        py: "5px",
-        gap: 1,
-      }}
-    >
-      {/* Label */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, pt: "6px" }}>
-        <Typography
-          variant="caption"
-          sx={{ color: "#605E5C", fontWeight: 500, fontSize: 13 }}
-        >
-          {label}
-        </Typography>
-        {required && (
-          <Typography
-            component="span"
-            sx={{ color: "#D13438", fontSize: 11, lineHeight: 1 }}
-          >
-            *
-          </Typography>
-        )}
-      </Box>
-
-      {/* Value */}
-      <Box
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        onClick={() => {
-          if (!editing) setEditing(true);
-        }}
-        sx={{
-          borderRadius: "4px",
-          cursor: "pointer",
-          transition: "background 0.12s, border-color 0.12s",
-       backgroundColor: editing
-  ? "#fff"
-  : hovered
-    ? "#F3F2F1"
-    : isRequired
-      ? "#FDE7E9"
-      : "transparent",
-border: "2px solid",
-borderColor: editing ? "#0078D4" : "transparent",
-          px: "8px",
-          py: "4px",
-          minHeight: 32,
-          display: "flex",
-          alignItems: "center",
-          position: "relative",
-        }}
-      >
-        {editing ? (
-          type === "select" ? (
-            <Box
-              component="select"
-              ref={inputRef}
-              value={draft}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                setDraft(e.target.value)
-              }
-              onBlur={commit}
-              onKeyDown={handleKeyDown}
-              sx={{
-                border: "none",
-                outline: "none",
-                background: "transparent",
-                fontSize: 13,
-                color: "text.primary",
-                width: "100%",
-                cursor: "pointer",
-                fontFamily: "inherit",
-              }}
-            >
-              <option value="">None</option>
-              {options.map((o) => (
-                <option key={o} value={o}>
-                  {o}
-                </option>
-              ))}
-            </Box>
-          ) : type === "textarea" ? (
-            <Box
-              component="textarea"
-              ref={inputRef}
-              value={draft}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                setDraft(e.target.value)
-              }
-              onBlur={commit}
-              onKeyDown={handleKeyDown}
-              rows={3}
-              sx={{
-                border: "none",
-                outline: "none",
-                background: "transparent",
-                fontSize: 13,
-                color: "text.primary",
-                width: "100%",
-                resize: "vertical",
-                fontFamily: "inherit",
-                lineHeight: 1.6,
-              }}
-            />
-          ) : (
-            <Box
-              component="input"
-              ref={inputRef}
-              type={type}
-              value={draft}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setDraft(e.target.value)
-              }
-              onBlur={commit}
-              onKeyDown={handleKeyDown}
-              sx={{
-                border: "none",
-                outline: "none",
-                background: "transparent",
-                fontSize: 13,
-                color: "text.primary",
-                width: "100%",
-                fontFamily: "inherit",
-              }}
-            />
-          )
-        ) : (
-          <Box sx={{ width: "100%", lineHeight: 1.5 }}>
-            {displayContent}
-            {isRequired && (
-              <Typography
-                variant="caption"
-                color="error"
-                display="block"
-                sx={{ fontSize: 11, mt: 0.25 }}
-              >
-                Required to complete this task
-              </Typography>
-            )}
-          </Box>
-        )}
-
-        {/* Saving indicator */}
-        {saving && !editing && (
-          <CircularProgress
-            size={12}
-            sx={{ position: "absolute", right: 8, color: "#0078D4" }}
-          />
-        )}
-        {/* Saved flash */}
-      </Box>
-    </Box>
-  );
-};
 
 // ─── Person Field — inline editable via PeoplePicker ─────────────────────────
 
@@ -844,13 +619,13 @@ export const TaskDetail = ({ cr, crLoading, onCRUpdate }: TaskDetailProps) => {
         >
           {cr.Title}
         </Typography>
-        {cr.ScopeOfChange && (
+        {cr.ScopeofChange && (
           <Typography
             variant="body2"
             color="text.secondary"
             sx={{ lineHeight: 1.6, fontSize: 13 }}
           >
-            {cr.ScopeOfChange}
+            {cr.ScopeofChange}
           </Typography>
         )}
       </Box>
@@ -898,7 +673,7 @@ export const TaskDetail = ({ cr, crLoading, onCRUpdate }: TaskDetailProps) => {
               />
               <InlineField
                 label="Scope of Change"
-                value={cr.ScopeOfChange}
+                value={cr.ScopeofChange}
                 onSave={(v) => handleFieldSave("ScopeofChange", v)}
                 type="textarea"
                 saving={savingField === "ScopeofChange"}
@@ -912,9 +687,9 @@ export const TaskDetail = ({ cr, crLoading, onCRUpdate }: TaskDetailProps) => {
                 saving={savingField === "Urgency"}
                 renderValue={(v) => {
                   const colors: Record<string, string> = {
-                    Urgent: "#A4262C",
-                    Minor: "#107C10",
-                    Standard: "#605E5C",
+                    Urgent: "#ff1744"
+                    Minor: "#00c853",
+                    Standard: "#757575",
                   };
                   return v ? (
                     <Typography

@@ -17,11 +17,20 @@
           "manifest": "./src/webparts/taskHub/TaskHubWebPart.manifest.json"
         }
       ]
+    },
+    "document-portal-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/documentPortal/DocumentPortalWebPart.js",
+          "manifest": "./src/webparts/documentPortal/DocumentPortalWebPart.manifest.json"
+        }
+      ]
     }
   },
   "externals": {},
   "localizedResources": {
     "DcrFormWebPartStrings": "lib/webparts/dcrForm/loc/{locale}.js",
-    "TaskHubWebPartStrings": "lib/webparts/taskHub/loc/{locale}.js"
+    "TaskHubWebPartStrings": "lib/webparts/taskHub/loc/{locale}.js",
+    "DocumentPortalWebPartStrings": "lib/webparts/documentPortal/loc/{locale}.js"
   }
 }

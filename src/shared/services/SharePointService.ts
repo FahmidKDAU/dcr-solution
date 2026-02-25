@@ -139,8 +139,34 @@ const getDocuments = async (): Promise<Document[]> => {
   try {
     const sp = PnPSetup.getSP();
     const documents = await sp.web.lists
-      .getByTitle("Published Documents") // ← Change to your documents list name
-      .items.select("Id", "DocumentTitle")();
+      .getByTitle("Published Documents")
+      .items.select(
+        "Id",
+        "DocumentTitle",
+        "PublishedDate",
+ 
+        // Lookup fields
+        "DocumentType/Id",
+        "DocumentType/Title",
+        "Category/Id",
+        "Category/Title",
+        "BusinessFunction/Id",
+        "BusinessFunction/Title",
+        "CoreFunctionality/Id",
+        "CoreFunctionality/Title",
+        "Audience/Id",
+        "Audience/Title",
+        // Choice field (no expand needed)
+        "Classification",
+      )
+      .expand(
+        "DocumentType",
+        "Category",
+        "BusinessFunction",
+        "CoreFunctionality",
+        "Audience",
+      )
+      .orderBy("DocumentTitle", true)();
 
     console.log(documents);
     return documents as unknown as Document[];
