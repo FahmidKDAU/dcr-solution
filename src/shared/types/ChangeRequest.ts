@@ -26,7 +26,7 @@ export interface IChangeRequest {
   Urgency: "Standard" | "Urgent" | "Minor";
   ReleaseAuthority: SharePointPerson;
   BusinessFunction: LookupFieldItem[];
-  Categories: LookupFieldItem[];
+  Category: LookupFieldItem[];
   DocumentType: LookupFieldItem;
   Classification: "Public" | "Internal" | "Confidential" | "Restricted";
   Audience: LookupFieldItem;

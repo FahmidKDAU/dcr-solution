@@ -26,6 +26,7 @@ export const useLookupData = () => {
       setCategories(data[1]);
       setAudienceGroups(data[2]);
       setBusinessFunctions(data[3]);
+      console.log(documentTypes, categories, audienceGroups, businessFunctions);
     } catch (error) {
       setError("Error fetching lookup data");
       console.error("Error fetching lookup data:", error);
@@ -35,6 +36,7 @@ export const useLookupData = () => {
   };
   useEffect(() => {
     fetchLookupData().catch(console.error);
+    
   }, []);
 
   return {

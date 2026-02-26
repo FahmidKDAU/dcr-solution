@@ -11,7 +11,7 @@ export interface Document {
   // Metadata fields (using actual SharePoint field names)
   BusinessFunction?: LookupFieldItem[];
   Category?: LookupFieldItem[]; // ← NOT DocumentCategory!
-  DocumentType?: LookupFieldItem; // ← It's a TEXT field, not lookup
+  DocumentType?: LookupFieldItem; 
   Classification?: "Public" | "Internal" | "Confidential" | "Restricted";
   Audience?: LookupFieldItem;
   CoreFunctionality?: LookupFieldItem;

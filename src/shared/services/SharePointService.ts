@@ -191,6 +191,8 @@ const getDocumentById = async (id: number): Promise<Document | null> => {
         "CoreFunctionalityId",
         "ChangeAuthorityId",
         // Expand lookup fields
+        "DocumentType/Id",
+        "DocumentType/Title",
         "Category/Id",
         "Category/Title",
         "Audience/Id",
@@ -215,6 +217,7 @@ const getDocumentById = async (id: number): Promise<Document | null> => {
       .expand(
         "Category",
         "Audience",
+    "    DocumentType",
         "BusinessFunction",
         "CoreFunctionality",
         "ChangeAuthority",

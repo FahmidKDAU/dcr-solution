@@ -34,34 +34,16 @@ export const AdditionalForm = ({
   const isDocumentLocked = !!isExistingDocumentSelected;
 
   // Placeholder data - Replace with actual hooks when ready
-  const documentTypes = [
-    { Id: 1, Title: "Policy" },
-    { Id: 2, Title: "Procedure" },
-    { Id: 3, Title: "Work Instruction" },
-    { Id: 4, Title: "Form" },
-  ];
 
-  const documentCategories = [
-    { Id: 1, Title: "Quality" },
-    { Id: 2, Title: "Safety" },
-    { Id: 3, Title: "Environmental" },
-    { Id: 4, Title: "HR" },
-  ];
 
-  const audiences = [
-    { Id: 1, Title: "All Staff" },
-    { Id: 2, Title: "Management" },
-    { Id: 3, Title: "Department Specific" },
-    { Id: 4, Title: "External" },
-  ];
 
-  const businessFunctions = [
-    { Id: 1, Title: "Operations" },
-    { Id: 2, Title: "Finance" },
-    { Id: 3, Title: "HR" },
-    { Id: 4, Title: "IT" },
-  ];
-
+  const {
+    documentTypes,
+    categories,
+    audienceGroups,
+    businessFunctions,
+  } = useLookupData();
+ console.log(audienceGroups + "")
   return (
     <Box>
       {/* Document Classification Section */}
@@ -107,7 +89,7 @@ export const AdditionalForm = ({
                 onChange("documentCategoryIds", [Number(e.target.value)])
               }
             >
-              {documentCategories.map((category) => (
+              {categories.map((category) => (
                 <MenuItem key={category.Id} value={category.Id}>
                   {category.Title}
                 </MenuItem>
@@ -138,8 +120,8 @@ export const AdditionalForm = ({
               disabled={isDocumentLocked}
               onChange={(e) => onChange("audienceId", Number(e.target.value))}
             >
-              {audiences.map((audience) => (
-                <MenuItem key={audience.Id} value={audience.Id}>
+              {audienceGroups.map((audience) => (
+                <MenuItem key={String(audience.Id)} value={audience.Id}>
                   {audience.Title}
                 </MenuItem>
               ))}

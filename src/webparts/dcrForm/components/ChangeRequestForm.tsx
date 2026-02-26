@@ -54,7 +54,7 @@ const TabPanel = ({
 }: TabPanelProps): React.ReactElement => {
   return (
     <div role="tabpanel" hidden={value !== index}>
- <Box>{children}</Box>
+      <Box>{children}</Box>
     </div>
   );
 };
@@ -113,8 +113,6 @@ const ChangeRequestForm = (props: DcrFormProps): React.ReactElement => {
   const { documents } = useDocuments();
 
   const { departments } = useDepartments();
-
-  
 
   // Auto-populate Part 2 when existing document is selected
   useEffect(() => {
@@ -249,26 +247,26 @@ const ChangeRequestForm = (props: DcrFormProps): React.ReactElement => {
         // Multi-person fields
         ReviewersId:
           formData.reviewerIds.length > 0
-            ? { results: formData.reviewerIds }
+            ?  formData.reviewerIds 
             : undefined,
         ContributorsId:
           formData.contributorIds.length > 0
-            ?  formData.contributorIds 
+            ? formData.contributorIds
             : undefined,
 
         // Multi-lookup fields
         BusinessFunctionId:
           formData.businessFunctionIds.length > 0
-            ? { results: formData.businessFunctionIds }
+            ? formData.businessFunctionIds
             : undefined,
         CategoryId:
           formData.documentCategoryIds.length > 0
-            ? { results: formData.documentCategoryIds }
+            ? formData.documentCategoryIds
             : undefined,
       };
 
       console.log("Submitting payload:", payload);
-console.log("Payload being sent:", JSON.stringify(payload, null, 2));
+      console.log("Payload being sent:", JSON.stringify(payload, null, 2));
 
       // Create the change request
       await SharePointService.createChangeRequest(payload);
