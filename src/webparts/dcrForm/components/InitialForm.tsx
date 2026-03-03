@@ -12,6 +12,7 @@ import MenuItem from "@mui/material/MenuItem";
 import { Document } from "../../../shared/types/Document";
 import { Department } from "../../../shared/types/Department";
 import FileUpload from "../../components/FileUpload";
+import { DocumentSearch } from "./DocumentSearch";
 
 interface InitialFormProps {
   data: ChangeRequestFormData;
@@ -69,25 +70,13 @@ export const InitialForm = ({
         </RadioGroup>
       </FormControl>
 
-      {/* Conditional Document Selection - Only show if NOT new document */}
       {!data.newDocument && (
-        <FormControl fullWidth>
-          <FormLabel>Select Existing Document *</FormLabel>
-          <Select
-            label="Select Existing Document"
-            value={data.documentId ?? ""}
-            onChange={(e) => onChange("documentId", Number(e.target.value))}
-            required={!data.newDocument}
-          >
-            {documents.map((doc) => (
-              <MenuItem key={doc.Id} value={doc.Id}>
-                {doc.DocumentTitle}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <DocumentSearch
+          documents={documents}
+          value={data.documentId}
+          onChange={(id) => onChange("documentId", id)}
+        />
       )}
-
       {/* Core Functionality Dropdown */}
       <FormControl fullWidth>
         <FormLabel>Core Functionality *</FormLabel>
@@ -123,6 +112,39 @@ export const InitialForm = ({
         helperText="Automatically assigned based on selected department"
       />
 
+      {/* External Document Radio Group */}
+      <FormControl fullWidth>
+        <FormLabel>External Document? *</FormLabel>
+        <RadioGroup
+          row
+          value={data.externalDocument ? "yes" : "no"}
+          onChange={(e) =>
+            onChange("externalDocument", e.target.value === "yes")
+          }
+        >
+          <FormControlLabel value="yes" control={<Radio />} label="Yes" />
+          <FormControlLabel value="no" control={<Radio />} label="No" />
+        </RadioGroup>
+      </FormControl>
+
+      {/* Urgency Field */}
+      <FormControl fullWidth required>
+        <FormLabel>Urgency</FormLabel>
+        <Select
+          value={data.urgency}
+          onChange={(e) =>
+            onChange(
+              "urgency",
+              e.target.value as "Standard" | "Urgent" | "Minor",
+            )
+          }
+          required
+        >
+          <MenuItem value="Standard">Standard</MenuItem>
+          <MenuItem value="Urgent">Urgent</MenuItem>
+          <MenuItem value="Minor">Minor</MenuItem>
+        </Select>
+      </FormControl>
       {/* File Upload */}
       <FileUpload
         onFilesSelected={(files) => onChange("attachments", files)}

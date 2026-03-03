@@ -16,18 +16,40 @@ interface PeoplePickerProps {
 }
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
-const AVATAR_COLORS = ["#0078D4", "#107C10", "#5C2D91", "#D83B01", "#008575", "#C239B3"];
-const getColor = (name: string) => AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
+const AVATAR_COLORS = [
+  "#0078D4",
+  "#107C10",
+  "#5C2D91",
+  "#D83B01",
+  "#008575",
+  "#C239B3",
+];
+const getColor = (name: string) =>
+  AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
 const getInitials = (name: string) =>
-  name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
+  name
+    .split(" ")
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 
 const Avatar = ({ name, size = 24 }: { name: string; size?: number }) => (
-  <Box sx={{
-    width: size, height: size, borderRadius: "50%",
-    backgroundColor: getColor(name),
-    display: "flex", alignItems: "center", justifyContent: "center",
-    fontSize: size * 0.36, fontWeight: 700, color: "#fff", flexShrink: 0,
-  }}>
+  <Box
+    sx={{
+      width: size,
+      height: size,
+      borderRadius: "50%",
+      backgroundColor: getColor(name),
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: size * 0.36,
+      fontWeight: 700,
+      color: "#fff",
+      flexShrink: 0,
+    }}
+  >
     {getInitials(name)}
   </Box>
 );
@@ -45,21 +67,18 @@ export const PeoplePicker = ({
   const [loading, setLoading] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const [isFocused, setIsFocused] = useState(false);
+
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  // Auto-focus on mount
-  useEffect(() => {
-    if (!disabled) {
-      inputRef.current?.focus();
-      setOpen(true);
-    }
-  }, []);
 
   // Close on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
         setOpen(false);
         // If nothing selected and user clicked away, call onChange with undefined
         if (!value) onChange(undefined);
@@ -116,15 +135,20 @@ export const PeoplePicker = ({
   return (
     <Box ref={containerRef} sx={{ position: "relative", width: "100%" }}>
       {/* Input */}
-      <Box sx={{
-        display: "flex", alignItems: "center", gap: 1,
-        border: "2px solid #0078D4",
-        borderRadius: "4px",
-        backgroundColor: "#fff",
-        px: 1, py: 0.5,
-        minHeight: 32,
-        opacity: disabled ? 0.5 : 1,
-      }}>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+          border: isFocused ? "2px solid #0078D4" : "1px solid #8A8886",
+          borderRadius: "4px",
+          backgroundColor: "#fff",
+          px: 1,
+          py: 0.5,
+          minHeight: 32,
+          opacity: disabled ? 0.5 : 1,
+        }}
+      >
         {/* Show selected avatar inline if value exists */}
         {value && <Avatar name={value.Title} size={20} />}
 
@@ -133,13 +157,15 @@ export const PeoplePicker = ({
           value={inputValue}
           placeholder={value ? value.Title : `Search ${label || "people"}...`}
           disabled={disabled}
+          
           onChange={(e) => {
             setInputValue(e.target.value);
             setOpen(true);
             handleSearch(e.target.value).catch(console.error);
           }}
           onKeyDown={handleKeyDown}
-          onFocus={() => setOpen(true)}
+       onFocus={() => { setOpen(true); setIsFocused(true); }}
+onBlur={() => setIsFocused(false)}
           sx={{
             flex: 1,
             fontSize: 13,
@@ -151,7 +177,12 @@ export const PeoplePicker = ({
           }}
         />
 
-        {loading && <CircularProgress size={14} sx={{ color: "#0078D4", flexShrink: 0 }} />}
+        {loading && (
+          <CircularProgress
+            size={14}
+            sx={{ color: "#0078D4", flexShrink: 0 }}
+          />
+        )}
       </Box>
 
       {/* Dropdown */}
@@ -161,7 +192,8 @@ export const PeoplePicker = ({
           sx={{
             position: "absolute",
             top: "calc(100% + 4px)",
-            left: 0, right: 0,
+            left: 0,
+            right: 0,
             zIndex: 9999,
             borderRadius: "4px",
             overflow: "hidden",
@@ -173,16 +205,28 @@ export const PeoplePicker = ({
         >
           {/* Loading state */}
           {loading && (
-            <Box sx={{ px: 2, py: 1.5, display: "flex", alignItems: "center", gap: 1 }}>
+            <Box
+              sx={{
+                px: 2,
+                py: 1.5,
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+              }}
+            >
               <CircularProgress size={14} sx={{ color: "#0078D4" }} />
-              <Typography sx={{ fontSize: 13, color: "#605E5C" }}>Searching...</Typography>
+              <Typography sx={{ fontSize: 13, color: "#605E5C" }}>
+                Searching...
+              </Typography>
             </Box>
           )}
 
           {/* No results */}
           {!loading && inputValue.length >= 2 && options.length === 0 && (
             <Box sx={{ px: 2, py: 1.5 }}>
-              <Typography sx={{ fontSize: 13, color: "#A19F9D" }}>No results found</Typography>
+              <Typography sx={{ fontSize: 13, color: "#A19F9D" }}>
+                No results found
+              </Typography>
             </Box>
           )}
 
@@ -196,36 +240,50 @@ export const PeoplePicker = ({
           )}
 
           {/* Results */}
-          {!loading && options.map((person, index) => (
-            <Box
-              key={person.Id}
-              onMouseDown={(e) => {
-                e.preventDefault(); // prevent blur before click
-                handleSelect(person);
-              }}
-              onMouseEnter={() => setHighlightedIndex(index)}
-              sx={{
-                display: "flex", alignItems: "center", gap: 1.5,
-                px: 2, py: 1,
-                cursor: "pointer",
-                backgroundColor: index === highlightedIndex ? "#F3F2F1" : "#fff",
-                transition: "background 0.1s",
-                "&:hover": { backgroundColor: "#F3F2F1" },
-              }}
-            >
-              <Avatar name={person.Title} size={28} />
-              <Box>
-                <Typography sx={{ fontSize: 13, fontWeight: 500, color: "#323130", lineHeight: 1.3 }}>
-                  {person.Title}
-                </Typography>
-                {person.EMail && (
-                  <Typography sx={{ fontSize: 11, color: "#A19F9D", lineHeight: 1.3 }}>
-                    {person.EMail}
+          {!loading &&
+            options.map((person, index) => (
+              <Box
+                key={person.Id}
+                onMouseDown={(e) => {
+                  e.preventDefault(); // prevent blur before click
+                  handleSelect(person);
+                }}
+                onMouseEnter={() => setHighlightedIndex(index)}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1.5,
+                  px: 2,
+                  py: 1,
+                  cursor: "pointer",
+                  backgroundColor:
+                    index === highlightedIndex ? "#F3F2F1" : "#fff",
+                  transition: "background 0.1s",
+                  "&:hover": { backgroundColor: "#F3F2F1" },
+                }}
+              >
+                <Avatar name={person.Title} size={28} />
+                <Box>
+                  <Typography
+                    sx={{
+                      fontSize: 13,
+                      fontWeight: 500,
+                      color: "#323130",
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    {person.Title}
                   </Typography>
-                )}
+                  {person.EMail && (
+                    <Typography
+                      sx={{ fontSize: 11, color: "#A19F9D", lineHeight: 1.3 }}
+                    >
+                      {person.EMail}
+                    </Typography>
+                  )}
+                </Box>
               </Box>
-            </Box>
-          ))}
+            ))}
         </Paper>
       )}
     </Box>

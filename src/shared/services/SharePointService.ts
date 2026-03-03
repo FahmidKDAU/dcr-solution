@@ -7,6 +7,7 @@ import "@pnp/sp/attachments";
 import "@pnp/sp/webs";
 import "@pnp/sp/site-users/web";
 import { Task } from "../types/Task";
+import { Participant } from "../types/Participant";
 
 const getDepartments = async (): Promise<Department[]> => {
   try {
@@ -50,7 +51,8 @@ const getChangeRequestById = async (
     const sp = PnPSetup.getSP();
     const changeRequest = await sp.web.lists
       .getByTitle("Change Requests")
-      .items.getById(id).select(
+      .items.getById(id)
+      .select(
         "Id",
         "Title",
         "ChangeRequestNumber",
@@ -66,6 +68,10 @@ const getChangeRequestById = async (
         "CoreFunctionality/Title",
         "BusinessFunction/Id",
         "BusinessFunction/Title",
+        "DocumentType/Id", // ← add
+        "DocumentType/Title", // ← add
+        "Category/Id", // ← add
+        "Category/Title", // ← add
         "Audience/Id",
         "Audience/Title",
         // People fields
@@ -78,20 +84,28 @@ const getChangeRequestById = async (
         "Author0/Id",
         "Author0/Title",
         "Author0/EMail",
+        "Author/Id",
+        "Author/Title",
+        "Author/EMail",
         "Reviewers/Id",
         "Reviewers/Title",
         "Reviewers/EMail",
         "Contributors/Id",
         "Contributors/Title",
         "Contributors/EMail",
+        // Document reference
+        "TargetDocumentId",
       )
       .expand(
         "CoreFunctionality",
         "BusinessFunction",
+        "DocumentType", // ← add
+        "Category", // ← add
         "Audience",
         "ChangeAuthority",
         "ReleaseAuthority",
         "Author0",
+        "Author", // ← add (needed for Submitted By)
         "Reviewers",
         "Contributors",
       )();
@@ -101,7 +115,7 @@ const getChangeRequestById = async (
     console.error(`Error fetching change request with ID ${id}:`, error);
     return null;
   }
-}; 
+};
 
 const createChangeRequest = async (
   data: Record<string, unknown>,
@@ -120,8 +134,10 @@ const createChangeRequest = async (
   }
 };
 
-
-const updateChangeRequest = async (id: number, data: Record<string, unknown>): Promise<void> => {
+const updateChangeRequest = async (
+  id: number,
+  data: Record<string, unknown>,
+): Promise<void> => {
   try {
     const sp = PnPSetup.getSP();
     await sp.web.lists
@@ -132,8 +148,7 @@ const updateChangeRequest = async (id: number, data: Record<string, unknown>): P
     console.error("Error updating change request:", error);
     throw error;
   }
-}; 
-
+};
 
 const getDocuments = async (): Promise<Document[]> => {
   try {
@@ -144,7 +159,7 @@ const getDocuments = async (): Promise<Document[]> => {
         "Id",
         "DocumentTitle",
         "PublishedDate",
- 
+
         // Lookup fields
         "DocumentType/Id",
         "DocumentType/Title",
@@ -185,11 +200,9 @@ const getDocumentById = async (id: number): Promise<Document | null> => {
       .select(
         "Id",
         "DocumentTitle",
-        "DocumentType",
+
         "Classification",
-        "AudienceId",
-        "CoreFunctionalityId",
-        "ChangeAuthorityId",
+
         // Expand lookup fields
         "DocumentType/Id",
         "DocumentType/Title",
@@ -217,7 +230,7 @@ const getDocumentById = async (id: number): Promise<Document | null> => {
       .expand(
         "Category",
         "Audience",
-    "    DocumentType",
+        "DocumentType",
         "BusinessFunction",
         "CoreFunctionality",
         "ChangeAuthority",
@@ -299,13 +312,13 @@ const getTaskById = async (id: number): Promise<Task | null> => {
   }
 };
 
-const updateTask = async (taskId: number, data: Record<string, unknown>): Promise<void> => {
+const updateTask = async (
+  taskId: number,
+  data: Record<string, unknown>,
+): Promise<void> => {
   try {
     const sp = PnPSetup.getSP();
-    await sp.web.lists
-      .getByTitle("Tasks")
-      .items.getById(taskId)
-      .update(data);
+    await sp.web.lists.getByTitle("Tasks").items.getById(taskId).update(data);
   } catch (error) {
     console.error("Error updating task:", error);
     throw error;
@@ -376,6 +389,97 @@ const searchUsers = async (searchText: string): Promise<SharePointPerson[]> => {
   }
 };
 
+const getAttachments = async (
+  itemId: number,
+): Promise<{ FileName: string; ServerRelativeUrl: string }[]> => {
+  try {
+    const sp = PnPSetup.getSP();
+    const attachments = await sp.web.lists
+      .getByTitle("Change Requests")
+      .items.getById(itemId)
+      .attachmentFiles();
+    return attachments;
+  } catch (error) {
+    console.error("Error fetching attachments:", error);
+    return [];
+  }
+};
+
+const getParticipants = async (
+  changeRequestId: number,
+): Promise<Participant[]> => {
+  try {
+    const sp = PnPSetup.getSP();
+    const participants = await sp.web.lists
+      .getByTitle("CR Participants")
+      .items.select(
+        "Id",
+        "Title",
+        "ChangeRequestId",
+        "Role",
+        "Status",
+        "DueDate",
+        "StartDate",
+        "CompletedDate",
+        "Notes",
+        "Person/Id",
+        "Person/Title",
+        "Person/EMail",
+      )
+      .expand("Person")
+      .filter(`ChangeRequestId eq ${changeRequestId}`)();
+
+    return participants as Participant[];
+  } catch (error) {
+    console.error("Error fetching participants:", error);
+    throw error;
+  }
+};
+
+const createParticipant = async (
+  data: Partial<Participant>,
+): Promise<Participant> => {
+  try {
+    const sp = PnPSetup.getSP();
+    const result = await sp.web.lists.getByTitle("CR Participants").items.add({
+      ChangeRequestId: data.ChangeRequestId,
+      PersonId: data.Person?.Id,
+      Role: data.Role,
+      Status: "Not Started",
+    });
+    return result.data as Participant;
+  } catch (error) {
+    console.error("Error creating participant:", error);
+    throw error;
+  }
+};
+
+const updateParticipant = async (
+  id: number,
+  data: Partial<Participant>,
+): Promise<void> => {
+  try {
+    const sp = PnPSetup.getSP();
+    await sp.web.lists
+      .getByTitle("CR Participants")
+      .items.getById(id)
+      .update(data);
+  } catch (error) {
+    console.error("Error updating participant:", error);
+    throw error;
+  }
+};
+
+const deleteParticipant = async (id: number): Promise<void> => { 
+  try {
+    const sp = PnPSetup.getSP();
+    await sp.web.lists.getByTitle("CR Participants").items.getById(id).delete();
+  } catch (error) {
+    console.error("Error deleting participant:", error);
+    throw error;
+  }
+}
+
 export default {
   getDepartments,
   createChangeRequest,
@@ -390,4 +494,9 @@ export default {
   getTasks,
   getTaskById,
   updateTask,
+  getAttachments,
+  getParticipants,
+  createParticipant,
+  updateParticipant,
+  deleteParticipant,
 };

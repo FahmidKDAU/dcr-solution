@@ -23,8 +23,6 @@ interface AdditionalFormProps {
   isExistingDocumentSelected?: boolean;
 }
 
-
-
 export const AdditionalForm = ({
   data,
   onChange,
@@ -35,15 +33,9 @@ export const AdditionalForm = ({
 
   // Placeholder data - Replace with actual hooks when ready
 
-
-
-  const {
-    documentTypes,
-    categories,
-    audienceGroups,
-    businessFunctions,
-  } = useLookupData();
- console.log(audienceGroups + "")
+  const { documentTypes, categories, audienceGroups, businessFunctions } =
+    useLookupData();
+  console.log(audienceGroups + "");
   return (
     <Box>
       {/* Document Classification Section */}
@@ -165,13 +157,15 @@ export const AdditionalForm = ({
         </Typography>
 
         <Box display="flex" flexDirection="column">
-          <PeoplePicker
-            label="Release Authority"
-            value={data.releaseAuthority}
-            onChange={(person) => onChange("releaseAuthority", person)}
-            disabled={isDocumentLocked}
-          />
-
+          <Box sx={{ mb: 2 }}>
+            <PeoplePicker
+              label="Release Authority"
+              value={data.releaseAuthority}
+              onChange={(person) => onChange("releaseAuthority", person)}
+              disabled={isDocumentLocked}
+            />
+          </Box>
+          
           <PeoplePicker
             label="Author"
             value={data.author}

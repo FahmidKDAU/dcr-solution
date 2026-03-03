@@ -39,6 +39,13 @@ const TaskHub = () => {
 
   if (loading || tasksLoading) return <CircularProgress />;
 
+  const refreshTasks = () => {
+    if (!currentUser) return;
+    SharePointService.getTasks(currentUser.Id)
+      .then(setTasks)
+      .catch(console.error);
+  };
+
   const refreshCR = () => {
     if (!selectedTask) return;
     SharePointService.getChangeRequestById(selectedTask.ChangeRequestId)
@@ -50,44 +57,32 @@ const TaskHub = () => {
     <Box
       height="100vh"
       overflow="hidden"
-      sx={{
-        border: "1px solid #e0e0e0",
-        borderRadius: 2,
-
-        overflow: "hidden",
-      }}
+      sx={{ border: "1px solid #e0e0e0", borderRadius: 2, overflow: "hidden" }}
     >
       {!selectedTask ? (
-        // Full width task list — no Allotment
         <TaskList
           tasks={tasks}
           selectedTask={selectedTask}
           onTaskSelect={setSelectedTask}
         />
       ) : (
-        // Split view — only when task is selected
         <Allotment>
           <Allotment.Pane minSize={250} maxSize={600} preferredSize="45%" snap>
             <TaskPane
               task={selectedTask}
               cr={cr}
-              onBack={() => {
-                setSelectedTask(null);
-                setCr(null);
-              }}
-              onTaskComplete={() => {
-                if (currentUser) {
-                  SharePointService.getTasks(currentUser.Id)
-                    .then(setTasks)
-                    .catch(console.error);
-                }
-                setSelectedTask(null);
-              }}
+              currentUser={currentUser}
+              onBack={() => { setSelectedTask(null); setCr(null); }}
+              onTaskComplete={() => { refreshTasks(); setSelectedTask(null); }}
+              onRefetch={refreshCR}
             />
           </Allotment.Pane>
-
           <Allotment.Pane minSize={400}>
-            <TaskDetail task={selectedTask} cr={cr} onCRUpdate={refreshCR} />
+            <TaskDetail
+              cr={cr}
+              crLoading={crLoading}
+              onCRUpdate={refreshCR}
+            />
           </Allotment.Pane>
         </Allotment>
       )}

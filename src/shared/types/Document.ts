@@ -3,22 +3,22 @@ import { LookupFieldItem } from "./LookupFieldItem";
 import { SharePointPerson } from "./SharePointPerson";
 
 export interface Document {
+  DocumentUrl: JSX.Element;
   Id: number;
   DocumentTitle: string;
   Description?: string;
   Active?: boolean;
-  
-  // Metadata fields (using actual SharePoint field names)
+  PublishedDate: Date;
   BusinessFunction?: LookupFieldItem[];
-  Category?: LookupFieldItem[]; // ← NOT DocumentCategory!
+  Category?: LookupFieldItem[];
   DocumentType?: LookupFieldItem; 
   Classification?: "Public" | "Internal" | "Confidential" | "Restricted";
   Audience?: LookupFieldItem;
   CoreFunctionality?: LookupFieldItem;
   
-  // People fields
   ReleaseAuthority?: SharePointPerson;
-  Author0?: SharePointPerson; // ← SharePoint's Author field
+  Author0?: SharePointPerson;
   ChangeAuthority?: SharePointPerson;
-  FileRef?: string; // Server-relative URL to the file
+  FileRef?: string;
+  FileLeafRef?: string;  
 }

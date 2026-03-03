@@ -20,6 +20,7 @@ export interface ChangeRequestFormData {
   // Tab 1: General Information
   title: string;
   newDocument: boolean;
+  externalDocument: boolean;
   scopeOfChange: string;
   departmentId: number | undefined;
   changeAuthority: SharePointPerson | undefined;
@@ -89,6 +90,7 @@ const ChangeRequestForm = (props: DcrFormProps): React.ReactElement => {
     scopeOfChange: "",
     departmentId: undefined,
     newDocument: false,
+    externalDocument: false,
     changeAuthority: undefined,
     documentId: undefined,
     attachments: [],
@@ -109,6 +111,8 @@ const ChangeRequestForm = (props: DcrFormProps): React.ReactElement => {
 
   const isExistingDocumentSelected =
     !formData.newDocument && !!formData.documentId;
+
+  const isPart2Unlocked = formData.newDocument || !!formData.documentId;
 
   const { documents } = useDocuments();
 
@@ -176,6 +180,7 @@ const ChangeRequestForm = (props: DcrFormProps): React.ReactElement => {
       documentId: undefined,
       departmentId: undefined,
       changeAuthority: undefined,
+      externalDocument: false,
       businessFunctionIds: [],
       documentCategoryIds: [],
       documentTypeId: undefined,
@@ -212,10 +217,10 @@ const ChangeRequestForm = (props: DcrFormProps): React.ReactElement => {
       formData.title &&
       formData.scopeOfChange &&
       formData.departmentId &&
+      formData.urgency && // add this
       (formData.newDocument || formData.documentId)
     );
   };
-
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
 
@@ -232,11 +237,13 @@ const ChangeRequestForm = (props: DcrFormProps): React.ReactElement => {
         Title: formData.title,
         ScopeofChange: formData.scopeOfChange,
         NewDocument: formData.newDocument,
+        ExternalDocument: formData.externalDocument,
+
         CoreFunctionalityId: formData.departmentId,
         ChangeAuthorityId: formData.changeAuthority?.Id,
         Urgency: formData.urgency || "Standard",
         Status: "Submitted",
-
+        TargetDocumentId: formData.documentId || undefined,
         // Part 2 - Optional fields
         Classification: formData.classification || undefined,
         AudienceId: formData.audienceId || undefined,
@@ -246,9 +253,7 @@ const ChangeRequestForm = (props: DcrFormProps): React.ReactElement => {
 
         // Multi-person fields
         ReviewersId:
-          formData.reviewerIds.length > 0
-            ?  formData.reviewerIds 
-            : undefined,
+          formData.reviewerIds.length > 0 ? formData.reviewerIds : undefined,
         ContributorsId:
           formData.contributorIds.length > 0
             ? formData.contributorIds
@@ -263,11 +268,27 @@ const ChangeRequestForm = (props: DcrFormProps): React.ReactElement => {
           formData.documentCategoryIds.length > 0
             ? formData.documentCategoryIds
             : undefined,
+
+        // True only when all team members are specified
+        isCrComplete: !!(
+          formData.releaseAuthority &&
+          formData.author &&
+          formData.reviewerIds.length > 0 &&
+          formData.contributorIds.length > 0
+        ),
       };
 
       console.log("Submitting payload:", payload);
       console.log("Payload being sent:", JSON.stringify(payload, null, 2));
-
+      console.log(
+        "isCrComplete:",
+        !!(
+          formData.releaseAuthority &&
+          formData.author &&
+          formData.reviewerIds.length > 0 &&
+          formData.contributorIds.length > 0
+        ),
+      );
       // Create the change request
       await SharePointService.createChangeRequest(payload);
 
@@ -323,6 +344,7 @@ const ChangeRequestForm = (props: DcrFormProps): React.ReactElement => {
         reviewerIds: [],
         contributorIds: [],
         draftDocumentName: "",
+        externalDocument: false,
       });
       setTabValue(0); // Reset to first tab
     } catch (error: unknown) {
@@ -352,6 +374,7 @@ const ChangeRequestForm = (props: DcrFormProps): React.ReactElement => {
         <Tab
           label="Part 2: Additional Details (Optional)"
           sx={{ fontStyle: "italic" }}
+          disabled={!isPart2Unlocked}
         />
       </Tabs>
 
@@ -410,6 +433,7 @@ const ChangeRequestForm = (props: DcrFormProps): React.ReactElement => {
                 variant="outlined"
                 onClick={() => setTabValue(tabValue + 1)}
                 sx={{ ml: "auto" }}
+                disabled={!isPart2Unlocked}
               >
                 Next (Optional Details) →
               </Button>

@@ -12,7 +12,9 @@ export interface Task {
     | "CR Info Requried"
     | "Change Authority Approval"
     | "Change Authority Review"
-    | "Document Controller Review";
+    | "Document Controller Review"
+    | "Author Review"
+    | "Document Change Process";
   AssignedTo: SharePointPerson;
   Status:
     | "Pending"

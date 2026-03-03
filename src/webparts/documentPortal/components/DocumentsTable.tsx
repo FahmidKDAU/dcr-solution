@@ -102,7 +102,7 @@ const DocumentsTable = ({ documents, onRowClick }: DocumentsTableProps): React.R
 
   // Unique type options for filter dropdown
   const typeOptions = useMemo(() => {
-    const types = [...new Set(documents.map((d) => d.DocumentType?.Title).filter(Boolean))] as string[];
+    const types = Array.from(new Set(documents.map((d) => d.DocumentType?.Title).filter(Boolean))) as string[];
     return types.sort();
   }, [documents]);
 
