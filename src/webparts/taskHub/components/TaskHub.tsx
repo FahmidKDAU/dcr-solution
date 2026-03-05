@@ -72,8 +72,14 @@ const TaskHub = () => {
               task={selectedTask}
               cr={cr}
               currentUser={currentUser}
-              onBack={() => { setSelectedTask(null); setCr(null); }}
-              onTaskComplete={() => { refreshTasks(); setSelectedTask(null); }}
+              onBack={() => {
+                setSelectedTask(null);
+                setCr(null);
+              }}
+              onTaskComplete={() => {
+                refreshTasks();
+                setSelectedTask(null);
+              }}
               onRefetch={refreshCR}
             />
           </Allotment.Pane>
@@ -82,6 +88,7 @@ const TaskHub = () => {
               cr={cr}
               crLoading={crLoading}
               onCRUpdate={refreshCR}
+              currentUser={currentUser}
             />
           </Allotment.Pane>
         </Allotment>

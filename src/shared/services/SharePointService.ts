@@ -470,7 +470,7 @@ const updateParticipant = async (
   }
 };
 
-const deleteParticipant = async (id: number): Promise<void> => { 
+const deleteParticipant = async (id: number): Promise<void> => {
   try {
     const sp = PnPSetup.getSP();
     await sp.web.lists.getByTitle("CR Participants").items.getById(id).delete();
@@ -478,7 +478,32 @@ const deleteParticipant = async (id: number): Promise<void> => {
     console.error("Error deleting participant:", error);
     throw error;
   }
-}
+};
+
+const getDraftDocumentFolderByChangeRequestId = async (
+  changeRequestId: number,
+): Promise<string | null> => {
+  try {
+    const sp = PnPSetup.getSP();
+    const results = await sp.web.lists
+      .getByTitle("Draft Documents")
+      .items.select(
+        "Id",
+        "Title",
+        "FileRef",
+        "FileLeafRef",
+        "ChangeRequest/Id",
+        "ChangeRequest/Title",
+      )
+      .expand("ChangeRequest")
+      .filter(`ChangeRequest/Id eq ${changeRequestId}`)();
+
+    return results[0]?.FileRef ?? null;
+  } catch (error) {
+    console.error("Error fetching draft document folder:", error);
+    return null;
+  }
+};
 
 export default {
   getDepartments,
@@ -499,4 +524,5 @@ export default {
   createParticipant,
   updateParticipant,
   deleteParticipant,
+  getDraftDocumentFolderByChangeRequestId,
 };

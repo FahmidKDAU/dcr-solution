@@ -16,6 +16,7 @@ export interface InlineFieldProps {
   renderValue?: (val: string | undefined | null) => React.ReactNode;
   placeholder?: string;
   editMode?: "read" | "edit";
+  disabled?: boolean;
 }
 
 export const InlineField = ({
@@ -29,6 +30,7 @@ export const InlineField = ({
   renderValue,
   placeholder = "None",
   editMode = "edit",
+  disabled = false,
 }: InlineFieldProps) => {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value ?? "");
@@ -37,7 +39,7 @@ export const InlineField = ({
     HTMLInputElement & HTMLSelectElement & HTMLTextAreaElement
   >(null);
 
-  const isReadOnly = editMode === "read";
+  const isReadOnly = editMode === "read" ;
 
   useEffect(() => {
     setDraft(value ?? "");
@@ -53,7 +55,7 @@ export const InlineField = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && type !== "textarea") commit();
+    if (e.key === "Enter" && type !== "textarea") void commit();
     if (e.key === "Escape") {
       setDraft(value ?? "");
       setEditing(false);

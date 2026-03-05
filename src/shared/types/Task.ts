@@ -14,7 +14,9 @@ export interface Task {
     | "Change Authority Review"
     | "Document Controller Review"
     | "Author Review"
-    | "Document Change Process";
+    | "Document Change Process"
+    | "Reviewer Task"
+    | "Contributor Task";
   AssignedTo: SharePointPerson;
   Status:
     | "Pending"

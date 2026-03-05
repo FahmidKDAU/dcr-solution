@@ -66,9 +66,10 @@ const getTypeConfig = (type?: string) =>
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const formatDate = (dateString?: string): string => {
+const formatDate = (dateString?: string | Date): string => {
   if (!dateString) return "—";
-  return new Date(dateString).toLocaleDateString("en-AU", {
+  const date = typeof dateString === "string" ? new Date(dateString) : dateString;
+  return date.toLocaleDateString("en-AU", {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -496,7 +497,7 @@ const DocumentsTable = ({ documents, onRowClick }: DocumentsTableProps): React.R
                             size="small"
                             onClick={(e) => {
                               e.stopPropagation();
-                              window.open(doc.DocumentUrl, "_blank");
+                              window.open(doc.DocumentUrl as unknown as string, "_blank");
                             }}
                             sx={{
                               opacity: 0,
