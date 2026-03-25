@@ -14,6 +14,7 @@ interface PeoplePickerProps {
   onChange: (person: SharePointPerson | undefined) => void;
   required?: boolean;
   disabled?: boolean;
+  excludeIds?: number[];
 }
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
@@ -30,7 +31,7 @@ const Avatar = ({ name, size = 24 }: { name: string; size?: number }) => (
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export const PeoplePicker = ({ label, value, onChange, required = false, disabled = false }: PeoplePickerProps) => {
+export const PeoplePicker = ({ label, value, onChange, required = false, disabled = false, excludeIds = [] }: PeoplePickerProps) => {
   const [open, setOpen] = useState(false);
   const [options, setOptions] = useState<SharePointPerson[]>([]);
   const [loading, setLoading] = useState(false);
@@ -41,6 +42,7 @@ export const PeoplePicker = ({ label, value, onChange, required = false, disable
 
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Recalculate dropdown position whenever it opens
   useEffect(() => {
@@ -57,21 +59,25 @@ export const PeoplePicker = ({ label, value, onChange, required = false, disable
   // Close on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      const clickedInsideContainer = containerRef.current?.contains(target) ?? false;
+      const clickedInsideDropdown = dropdownRef.current?.contains(target) ?? false;
+
+      if (!clickedInsideContainer && !clickedInsideDropdown) {
         setOpen(false);
-        if (!value) onChange(undefined);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [value]);
+  }, []);
 
   const handleSearch = async (searchText: string): Promise<void> => {
     if (searchText.length < 2) { setOptions([]); return; }
     setLoading(true);
     try {
       const results = await SharePointService.searchUsers(searchText);
-      setOptions(results);
+      const filteredResults = results.filter((person) => !excludeIds.includes(person.Id));
+      setOptions(filteredResults);
       setHighlightedIndex(0);
     } catch (error) {
       console.error("Error searching users:", error);
@@ -97,7 +103,25 @@ export const PeoplePicker = ({ label, value, onChange, required = false, disable
   };
 
   return (
-    <Box ref={containerRef} sx={{ position: "relative", width: "100%" }}>
+    <Box ref={containerRef} sx={{ position: "relative", width: "100%", my: 0.75 }}>
+      {label && (
+        <Typography
+          sx={{
+            fontSize: 12,
+            fontWeight: 600,
+            color: "#323130",
+            mb: 0.5,
+            px: 0.25,
+          }}
+        >
+          {label}
+          {required && (
+            <Box component="span" sx={{ color: "#D13438", ml: 0.5 }}>
+              *
+            </Box>
+          )}
+        </Typography>
+      )}
       {/* Input */}
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, border: isFocused ? "2px solid #0078D4" : "1px solid #8A8886", borderRadius: "4px", backgroundColor: "#fff", px: 1, py: 0.5, minHeight: 32, opacity: disabled ? 0.5 : 1 }}>
         {value && <Avatar name={value.Title} size={20} />}
@@ -123,6 +147,7 @@ export const PeoplePicker = ({ label, value, onChange, required = false, disable
       {open && (
         <Portal>
           <Paper
+            ref={dropdownRef}
             elevation={8}
             sx={{
               position: "fixed",

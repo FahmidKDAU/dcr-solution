@@ -181,8 +181,7 @@ const renderTaskContent = (
           onTaskComplete={onTaskComplete}
         />
       );
-    case "Contributor Task":
-    case "Reviewer Task":
+    case "Participant Task":
       return (
         <ParticipantTask task={task} cr={cr} onTaskComplete={onTaskComplete} />
       );

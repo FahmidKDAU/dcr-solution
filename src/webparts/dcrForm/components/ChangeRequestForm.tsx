@@ -11,6 +11,7 @@ import { useDocuments } from "../../../shared/hooks/useDocuments";
 import { InitialForm } from "./InitialForm";
 import { AdditionalForm } from "./AdditionalForm";
 import { useDepartments } from "../../../shared/hooks/useDepartments";
+import SharePointService from "../../../shared/services/SharePointService";
 
 interface DcrFormProps {
   context?: unknown;
@@ -294,6 +295,8 @@ const ChangeRequestForm = (props: DcrFormProps): React.ReactElement => {
 
       // Get the created item
       const changeRequests = await SharePointService.getChangeRequests();
+      console.log("create result:", changeRequests);
+
       const latestItem = changeRequests[changeRequests.length - 1];
       const itemId = latestItem?.Id;
 
@@ -302,7 +305,17 @@ const ChangeRequestForm = (props: DcrFormProps): React.ReactElement => {
       }
 
       console.log("Change Request created with ID:", itemId);
-
+      // Create participant rows
+      if (
+        formData.reviewerIds.length > 0 ||
+        formData.contributorIds.length > 0
+      ) {
+        await SharePointService.createParticipant(
+          itemId,
+          formData.contributorIds,
+          formData.reviewerIds,
+        );
+      }
       // Upload attachments if any
       if (formData.attachments.length > 0) {
         console.log(`Uploading ${formData.attachments.length} file(s)...`);

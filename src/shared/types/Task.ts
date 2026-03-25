@@ -15,8 +15,7 @@ export interface Task {
     | "Document Controller Review"
     | "Author Review"
     | "Document Change Process"
-    | "Reviewer Task"
-    | "Contributor Task";
+    | "Participant Task"
   AssignedTo: SharePointPerson;
   Status:
     | "Pending"
@@ -34,5 +33,5 @@ export interface Task {
     Created: Date;
     DueDate: Date;
     Requestor: SharePointPerson;
-    RejectionReason?: string;
+    Comments?: string;
 }

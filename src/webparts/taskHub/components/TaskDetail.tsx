@@ -17,6 +17,7 @@ import { PeoplePicker } from "../../dcrForm/components/PeoplePicker";
 import { InlineField } from "./InlineField";
 import { useLookupData } from "../../../shared/hooks/useLookupData";
 import { useDepartments } from "../../../shared/hooks/useDepartments";
+import { useParticipants } from "../../../shared/hooks/useParticipants";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -245,6 +246,7 @@ interface MultiPersonFieldProps {
   onSave: (people: SharePointPerson[]) => Promise<void>;
   saving?: boolean;
   canEdit?: boolean;
+  excludeIds?: number[];
 }
 
 const MultiPersonField = ({
@@ -253,6 +255,7 @@ const MultiPersonField = ({
   onSave,
   saving = false,
   canEdit = false,
+  excludeIds = [],
 }: MultiPersonFieldProps) => {
   const [adding, setAdding] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -343,7 +346,12 @@ const MultiPersonField = ({
         {canEdit &&
           (adding ? (
             <Box sx={{ maxWidth: 280 }}>
-              <PeoplePicker label="" value={undefined} onChange={handleAdd} />
+              <PeoplePicker
+                label=""
+                value={undefined}
+                onChange={handleAdd}
+                excludeIds={excludeIds}
+              />
             </Box>
           ) : (
             <Box
@@ -642,7 +650,8 @@ export const TaskDetail = ({
     { FileName: string; ServerRelativeUrl: string }[]
   >([]);
   const [attachmentsLoading, setAttachmentsLoading] = useState(false);
-
+  const { contributors, reviewers, refetch: refetchParticipants } =
+    useParticipants(cr?.ID);
   const { documentTypes, categories, audienceGroups, businessFunctions } =
     useLookupData();
   const { departments } = useDepartments();
@@ -755,23 +764,34 @@ export const TaskDetail = ({
     }
   };
 
-  const handleMultiPersonSave = async (
-    spFieldName: string,
-    people: SharePointPerson[],
-  ) => {
+  const handleAddParticipant = async (
+    person: SharePointPerson,
+    role: "Reviewer" | "Contributor",
+  ): Promise<void> => {
     if (!cr) return;
-    setSavingField(spFieldName);
-    try {
-      await SharePointService.updateChangeRequest(cr.ID, {
-        [spFieldName]: people.map((p) => p.Id),
-      });
-      onCRUpdate();
-    } catch (err) {
-      console.error(`Failed to save ${spFieldName}:`, err);
-    } finally {
-      setSavingField(null);
-    }
+    await SharePointService.addParticipant(cr.ID, person.Id, role);
+    refetchParticipants();
   };
+
+  const handleRemoveParticipant = async (
+    personId: number,
+    role: "Reviewer" | "Contributor",
+  ): Promise<void> => {
+    const row = [...contributors, ...reviewers].find(
+      (p) => p.Person?.Id === personId && p.Role === role,
+    );
+    if (!row) return;
+    await SharePointService.deleteParticipant(row.Id);
+    refetchParticipants();
+  };
+
+  const contributorPeople = contributors
+    .map((participant) => participant.Person)
+    .filter((person): person is SharePointPerson => !!person?.Id);
+
+  const reviewerPeople = reviewers
+    .map((participant) => participant.Person)
+    .filter((person): person is SharePointPerson => !!person?.Id);
 
   if (crLoading)
     return (
@@ -1101,16 +1121,50 @@ export const TaskDetail = ({
                 disabled
               />
               <MultiPersonField
-                label="Reviewers"
-                people={cr.Reviewers}
-                onSave={(p) => handleMultiPersonSave("ReviewersId", p)}
+                label="Contributors"
+                people={contributorPeople}
+                onSave={async (newPeople) => {
+                  const added = newPeople.filter(
+                    (p) => !contributors.some((c) => c.Person?.Id === p.Id),
+                  );
+                  const removed = contributors.filter(
+                    (c) => !newPeople.some((p) => p.Id === c.Person?.Id),
+                  );
+                  await Promise.all(
+                    added.map((p) => handleAddParticipant(p, "Contributor")),
+                  );
+                  await Promise.all(
+                    removed
+                      .map((r) => r.Person?.Id)
+                      .filter((id): id is number => id !== undefined)
+                      .map((id) => handleRemoveParticipant(id, "Contributor")),
+                  );
+                }}
                 canEdit={canEdit}
+                excludeIds={reviewerPeople.map((p) => p.Id)}
               />
               <MultiPersonField
-                label="Contributors"
-                people={cr.Contributors}
-                onSave={(p) => handleMultiPersonSave("ContributorsId", p)}
+                label="Reviewers"
+                people={reviewerPeople}
+                onSave={async (newPeople) => {
+                  const added = newPeople.filter(
+                    (p) => !reviewers.some((r) => r.Person?.Id === p.Id),
+                  );
+                  const removed = reviewers.filter(
+                    (r) => !newPeople.some((p) => p.Id === r.Person?.Id),
+                  );
+                  await Promise.all(
+                    added.map((p) => handleAddParticipant(p, "Reviewer")),
+                  );
+                  await Promise.all(
+                    removed
+                      .map((r) => r.Person?.Id)
+                      .filter((id): id is number => id !== undefined)
+                      .map((id) => handleRemoveParticipant(id, "Reviewer")),
+                  );
+                }}
                 canEdit={canEdit}
+                excludeIds={contributorPeople.map((p) => p.Id)}
               />
             </Section>
           </Box>

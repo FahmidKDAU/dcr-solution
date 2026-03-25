@@ -158,32 +158,33 @@ export const AdditionalForm = ({
 
         <Box display="flex" flexDirection="column">
           <Box sx={{ mb: 2 }}>
-            <PeoplePicker
-              label="Release Authority"
-              value={data.releaseAuthority}
-              onChange={(person) => onChange("releaseAuthority", person)}
-              disabled={isDocumentLocked}
-            />
-          </Box>
-          
-          <PeoplePicker
-            label="Author"
-            value={data.author}
-            onChange={(person) => onChange("author", person)}
-            disabled={isDocumentLocked}
-          />
+           <PeoplePicker
+  label="Release Authority"
+  value={data.releaseAuthority}
+  onChange={(person) => onChange("releaseAuthority", person)}
+  disabled={isDocumentLocked}
+/>
 
-          <MultiPeoplePicker
-            label="Reviewers"
-            selectedIds={data.reviewerIds}
-            onChange={(ids) => onChange("reviewerIds", ids)}
-          />
+<PeoplePicker
+  label="Author"
+  value={data.author}
+  onChange={(person) => onChange("author", person)}
+  disabled={isDocumentLocked}
+/>
 
-          <MultiPeoplePicker
-            label="Contributors"
-            selectedIds={data.contributorIds}
-            onChange={(ids) => onChange("contributorIds", ids)}
-          />
+<MultiPeoplePicker
+  label="Reviewers"
+  selectedIds={data.reviewerIds}
+  onChange={(ids) => onChange("reviewerIds", ids)}
+  excludeIds={data.contributorIds}  // ← exclude contributors
+/>
+
+<MultiPeoplePicker
+  label="Contributors"
+  selectedIds={data.contributorIds}
+  onChange={(ids) => onChange("contributorIds", ids)}
+  excludeIds={data.reviewerIds}     // ← exclude reviewers
+/>
         </Box>
       </Box>
 

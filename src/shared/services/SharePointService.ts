@@ -257,6 +257,7 @@ const getTasks = async (userId: number): Promise<Task[]> => {
         "TaskType",
         "DueDate",
         "Created",
+        "Comments",
         "ChangeRequestId",
         "ChangeRequest/Id",
         "ChangeRequest/Title",
@@ -291,6 +292,7 @@ const getTaskById = async (id: number): Promise<Task | null> => {
         "TaskType",
         "DueDate",
         "Created",
+        "Comments",
         "ChangeRequestId",
         "ChangeRequest/Id",
         "ChangeRequest/Title",
@@ -314,7 +316,7 @@ const getTaskById = async (id: number): Promise<Task | null> => {
 
 const updateTask = async (
   taskId: number,
-  data: Record<string, unknown>,
+  data: Partial<Task>,
 ): Promise<void> => {
   try {
     const sp = PnPSetup.getSP();
@@ -437,21 +439,42 @@ const getParticipants = async (
 };
 
 const createParticipant = async (
-  data: Partial<Participant>,
-): Promise<Participant> => {
-  try {
-    const sp = PnPSetup.getSP();
-    const result = await sp.web.lists.getByTitle("CR Participants").items.add({
-      ChangeRequestId: data.ChangeRequestId,
-      PersonId: data.Person?.Id,
-      Role: data.Role,
-      Status: "Not Started",
-    });
-    return result.data as Participant;
-  } catch (error) {
-    console.error("Error creating participant:", error);
-    throw error;
-  }
+  changeRequestId: number,
+  contributorIds: number[],
+  reviewerIds: number[],
+): Promise<void> => {
+  const sp = PnPSetup.getSP();
+  const list = sp.web.lists.getByTitle("CR Participants");
+
+  const all = [
+    ...contributorIds.map((id) => ({ PersonId: id, Role: "Contributor" })),
+    ...reviewerIds.map((id) => ({ PersonId: id, Role: "Reviewer" })),
+  ];
+
+  await Promise.all(
+    all.map((p) =>
+      list.items.add({
+        ChangeRequestId: changeRequestId,
+        PersonId: p.PersonId,
+        Role: p.Role,
+        Status: "Not Started",
+      }),
+    ),
+  );
+};
+
+const addParticipant = async (
+  changeRequestId: number,
+  personId: number,
+  role: "Reviewer" | "Contributor",
+): Promise<void> => {
+  const sp = PnPSetup.getSP();
+  await sp.web.lists.getByTitle("CR Participants").items.add({
+    ChangeRequestId: changeRequestId,
+    PersonId: personId,
+    Role: role,
+    Status: "Not Started",
+  });
 };
 
 const updateParticipant = async (
@@ -478,6 +501,80 @@ const deleteParticipant = async (id: number): Promise<void> => {
     console.error("Error deleting participant:", error);
     throw error;
   }
+};
+const getParticipantsByChangeRequestId = async (changeRequestId: number) => {
+  const sp = PnPSetup.getSP();
+  const rows = await sp.web.lists
+    .getByTitle("CR Participants")
+    .items
+    .select("Id", "PersonId", "Role", "Status", "DueDate", "StartDate", "CompletedDate", "Notes")
+    .filter(`ChangeRequestId eq ${changeRequestId}`)
+    .top(50)();
+
+  const enriched = await Promise.all(
+    rows.map(async (row: any) => {
+      const user = await sp.web.getUserById(row.PersonId).select("Id", "Title")();
+      return {
+        Id: row.Id,
+        PersonId: row.PersonId,
+        Role: row.Role,
+        Status: row.Status ?? "Not Started",
+        DueDate: row.DueDate,
+        StartDate: row.StartDate,
+        CompletedDate: row.CompletedDate,
+        Notes: row.Notes,
+        Person: { Id: row.PersonId, Title: user.Title, EMail: "" },
+      };
+    })
+  );
+
+  return enriched;
+};
+
+const getParticipantByTaskContext = async (
+  changeRequestId: number,
+  userId: number,
+): Promise<{ Id: number; Notes?: string } | null> => {
+  const sp = PnPSetup.getSP();
+
+  const results = await sp.web.lists
+    .getByTitle("CR Participants")
+    .items.select("Id", "Notes", "Role")
+    .filter(
+      `ChangeRequestId eq ${changeRequestId} and PersonId eq ${userId}`,
+    )
+    .top(1)();
+
+  return results[0] ?? null;
+};
+
+const getParticipantTaskByContext = async (
+  changeRequestId: number,
+  userId: number,
+  role: "Contributor" | "Reviewer",
+): Promise<{ Id: number; Comments?: string } | null> => {
+  const sp = PnPSetup.getSP();
+  const taskType = role === "Reviewer" ? "Reviewer Task" : "Contributor Task";
+
+  // Filter by ChangeRequestId and AssignedTo separately to avoid compound OData
+  // filter issues with expanded person fields, then match TaskType in JS.
+  const tasks = await sp.web.lists
+    .getByTitle("Tasks")
+    .items.select("Id", "Comments", "TaskType", "AssignedTo/Id")
+    .expand("AssignedTo")
+    .filter(`ChangeRequestId eq ${changeRequestId} and AssignedTo/Id eq ${userId}`)
+    .top(10)();
+
+  const match = tasks.find((t: { TaskType: string }) => t.TaskType === taskType);
+  if (match) {
+    return match as { Id: number; Comments?: string };
+  }
+  // Fallback: return first result if no TaskType match (e.g. task type not yet set)
+  console.warn(
+    `[getParticipantTaskByContext] No task with TaskType "${taskType}" found for CR ${changeRequestId}, user ${userId}. Tasks found:`,
+    tasks,
+  );
+  return (tasks[0] as { Id: number; Comments?: string }) ?? null;
 };
 
 const getDraftDocumentFolderByChangeRequestId = async (
@@ -522,7 +619,11 @@ export default {
   getAttachments,
   getParticipants,
   createParticipant,
+  addParticipant,
   updateParticipant,
   deleteParticipant,
+  getParticipantsByChangeRequestId,
+  getParticipantByTaskContext,
+  getParticipantTaskByContext,
   getDraftDocumentFolderByChangeRequestId,
 };

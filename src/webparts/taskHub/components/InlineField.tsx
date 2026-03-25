@@ -13,6 +13,7 @@ export interface InlineFieldProps {
   options?: string[];
   required?: boolean;
   saving?: boolean;
+  saved?: boolean;
   renderValue?: (val: string | undefined | null) => React.ReactNode;
   placeholder?: string;
   editMode?: "read" | "edit";

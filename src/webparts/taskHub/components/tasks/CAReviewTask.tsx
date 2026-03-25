@@ -97,8 +97,8 @@ const CAReviewTask = ({ task, cr, onTaskComplete }: CAReviewTaskProps) => {
     setSubmitting(true);
     try {
       await SharePointService.updateTask(task.Id, {
-        Status: "Complete",
-        Comment: comment || undefined,
+        Status: "Approved",
+        Comments: comment || undefined,
       });
       handleClose();
       onTaskComplete?.();
@@ -114,7 +114,7 @@ const CAReviewTask = ({ task, cr, onTaskComplete }: CAReviewTaskProps) => {
     try {
       await SharePointService.updateTask(task.Id, {
         Status: "Needs more info",
-        Comment: infoRequest,
+        Comments: infoRequest,
       });
       handleClose();
       onTaskComplete?.();

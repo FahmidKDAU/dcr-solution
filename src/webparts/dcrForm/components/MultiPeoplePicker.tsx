@@ -11,6 +11,7 @@ interface MultiPeoplePickerProps {
   selectedIds: number[];
   onChange: (ids: number[]) => void;
   disabled?: boolean;
+  excludeIds?: number[]; // Optional prop to exclude certain user IDs from the options
 }
 
 export const MultiPeoplePicker = ({
@@ -18,28 +19,32 @@ export const MultiPeoplePicker = ({
   selectedIds,
   onChange,
   disabled = false,
+  excludeIds = [],
 }: MultiPeoplePickerProps) => {
   const [options, setOptions] = useState<SharePointPerson[]>([]);
   const [selectedPeople, setSelectedPeople] = useState<SharePointPerson[]>([]);
   const [loading, setLoading] = useState(false);
-const handleSearch = async (searchText: string): Promise<void> => {
-  if (searchText.length < 2) {
-    setOptions([]);
-    return;
-  }
-  setLoading(true);
-  try {
-    const results = await SharePointService.searchUsers(searchText);
-    // Guard against undefined selectedIds
-    const currentIds = selectedIds ?? [];
-    setOptions(results.filter(r => !currentIds.includes(r.Id)));
-  } catch (error) {
-    console.error("Error searching users:", error);
-    setOptions([]);
-  } finally {
-    setLoading(false);
-  }
-};
+  const handleSearch = async (searchText: string): Promise<void> => {
+    if (searchText.length < 2) {
+      setOptions([]);
+      return;
+    }
+    setLoading(true);
+    try {
+      const results = await SharePointService.searchUsers(searchText);
+      const currentIds = selectedIds ?? [];
+      setOptions(
+        results.filter(
+          (r) => !currentIds.includes(r.Id) && !excludeIds.includes(r.Id), // ← add excludeIds check
+        ),
+      );
+    } catch (error) {
+      console.error("Error searching users:", error);
+      setOptions([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Autocomplete
@@ -47,7 +52,7 @@ const handleSearch = async (searchText: string): Promise<void> => {
       value={selectedPeople}
       onChange={(_, newValue) => {
         setSelectedPeople(newValue);
-        onChange(newValue.map(p => p.Id));
+        onChange(newValue.map((p) => p.Id));
       }}
       options={options}
       getOptionLabel={(option) => option.Title || ""}
@@ -59,11 +64,7 @@ const handleSearch = async (searchText: string): Promise<void> => {
       }}
       renderTags={(value, getTagProps) =>
         value.map((option, index) => (
-          <Chip
-            label={option.Title}
-            size="small"
-            {...getTagProps({ index })}
-          />
+          <Chip label={option.Title} size="small" {...getTagProps({ index })} />
         ))
       }
       renderInput={(params) => (

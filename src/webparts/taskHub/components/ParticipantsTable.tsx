@@ -33,6 +33,17 @@ interface ParticipantsTableProps {
   onRefetch: () => void;
 }
 
+export interface ParticipantRow {
+  Id: number;
+  PersonId: number;
+  Role: string;
+  Status: string;
+  DueDate?: string;
+  StartDate?: string;
+  CompletedDate?: string;
+  Notes?: string;
+  Person: { Id: number; Title: string; EMail: string };
+}
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 
 const STATUS_STYLES: Record<string, { bg: string; color: string; dot: string }> = {
@@ -99,34 +110,121 @@ const RemoveConfirmModal = ({
   </Dialog>
 );
 
+const StartConfirmModal = ({
+  open,
+  participant,
+  onConfirm,
+  onClose,
+}: {
+  open: boolean;
+  participant: Participant | null;
+  onConfirm: (notes: string) => Promise<void>;
+  onClose: () => void;
+}) => {
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const handleConfirm = async (): Promise<void> => {
+    setSaving(true);
+    try {
+      await onConfirm(notes.trim());
+      setNotes("");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleClose = (): void => {
+    if (saving) {
+      return;
+    }
+    setNotes("");
+    onClose();
+  };
+
+  return (
+    <Dialog open={open} onClose={handleClose} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 2 } }}>
+      <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 14, fontWeight: 700, color: "#323130" }}>
+        Start Task
+        <IconButton size="small" onClick={handleClose}><CloseIcon sx={{ fontSize: 16 }} /></IconButton>
+      </DialogTitle>
+      <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1, p: 1.5, backgroundColor: "#FFF4CE", borderRadius: 1, border: "1px solid #FFB900" }}>
+          <WarningAmberIcon sx={{ fontSize: 14, color: "#835B00", mt: 0.25, flexShrink: 0 }} />
+          <Typography sx={{ fontSize: 12, color: "#835B00" }}>
+            This will start the task for <Box component="span" sx={{ fontWeight: 600 }}>{participant?.Person?.Title}</Box> and send them a notification.
+          </Typography>
+        </Box>
+
+        <TextField
+          label="Notes (optional)"
+          multiline
+          rows={3}
+          fullWidth
+          size="small"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Add any instructions or context for the participant..."
+          helperText="This will be included in the notification sent to the participant."
+        />
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+        <Button size="small" onClick={handleClose} sx={{ textTransform: "none", color: "#605E5C" }}>
+          Cancel
+        </Button>
+        <Button
+          size="small"
+          variant="contained"
+          disableElevation
+          disabled={saving}
+          onClick={handleConfirm}
+          startIcon={<PlayArrowIcon sx={{ fontSize: 13 }} />}
+          sx={{ textTransform: "none" }}
+        >
+          {saving ? "Starting..." : "Start Task"}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
 // ─── Add Participant Modal ────────────────────────────────────────────────────
 
 const AddParticipantModal = ({
   open,
   role,
   existingParticipants,
+  excludeIds,
   onConfirm,
   onClose,
 }: {
   open: boolean;
   role: "Contributor" | "Reviewer";
   existingParticipants: Participant[];
+  excludeIds?: number[];
   onConfirm: (person: SharePointPerson) => Promise<void>;
   onClose: () => void;
 }) => {
   const [selectedPerson, setSelectedPerson] = useState<SharePointPerson | undefined>(undefined);
   const [saving, setSaving] = useState(false);
 
-  const isDuplicate = selectedPerson
-    ? existingParticipants.some((p) => p.Person?.Id === selectedPerson.Id)
+  const selectedPersonId = selectedPerson?.Id;
+
+  const isDuplicate = selectedPersonId !== undefined
+    ? existingParticipants.some((p) => p.Person?.Id === selectedPersonId)
     : false;
 
-  const handleConfirm = async () => {
+  const handleConfirm = async (): Promise<void> => {
     if (!selectedPerson || isDuplicate) return;
     setSaving(true);
-    await onConfirm(selectedPerson);
-    setSaving(false);
-    setSelectedPerson(undefined);
+    try {
+      await onConfirm(selectedPerson);
+      setSelectedPerson(undefined);
+    } catch (err) {
+      console.error("Failed to add participant:", err);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleClose = () => {
@@ -145,6 +243,7 @@ const AddParticipantModal = ({
           label={`Search for a ${role.toLowerCase()}`}
           value={selectedPerson}
           onChange={setSelectedPerson}
+          excludeIds={excludeIds ?? []}
         />
         {isDuplicate && (
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1.5, p: 1.25, backgroundColor: "#FDE7E9", borderRadius: 1, border: "1px solid #F1707B" }}>
@@ -161,7 +260,7 @@ const AddParticipantModal = ({
           size="small"
           variant="contained"
           disableElevation
-          disabled={!selectedPerson || isDuplicate || saving}
+          disabled={!selectedPersonId || isDuplicate || saving}
           onClick={handleConfirm}
           sx={{ textTransform: "none" }}
         >
@@ -285,6 +384,7 @@ const ParticipantSection = ({
   title,
   role,
   participants,
+  excludeIds,
   canAdd,
   canStart,
   changeRequestId,
@@ -293,20 +393,44 @@ const ParticipantSection = ({
   title: string;
   role: "Contributor" | "Reviewer";
   participants: Participant[];
+  excludeIds: number[];
   canAdd: boolean;
   canStart: boolean;
   changeRequestId: number;
   onRefetch: () => void;
 }) => {
   const [addOpen, setAddOpen] = useState(false);
+  const [startTarget, setStartTarget] = useState<Participant | null>(null);
   const [removeTarget, setRemoveTarget] = useState<Participant | null>(null);
 
-  const handleStart = async (participant: Participant) => {
+  const handleStartConfirm = async (notes: string): Promise<void> => {
+    if (!startTarget) return;
     try {
-      await SharePointService.updateParticipant(participant.Id, {
+      await SharePointService.updateParticipant(startTarget.Id, {
         Status: "In Progress",
         StartDate: new Date().toISOString(),
       });
+
+      const participantTask = await SharePointService.getParticipantTaskByContext(
+        changeRequestId,
+        startTarget.Person.Id,
+        role,
+      );
+
+      if (participantTask) {
+        if (notes) {
+          await SharePointService.updateTask(participantTask.Id, {
+            Comments: notes,
+          });
+        }
+      } else {
+        console.warn(
+          "[handleStartConfirm] No task found for participant — notes not saved.",
+          { changeRequestId, userId: startTarget.Person.Id, role },
+        );
+      }
+
+      setStartTarget(null);
       onRefetch();
     } catch (err) {
       console.error("Failed to start participant:", err);
@@ -333,21 +457,15 @@ const ParticipantSection = ({
     }
   };
 
-  const handleAdd = async (person: SharePointPerson) => {
-    try {
-      await SharePointService.createParticipant({
-        ChangeRequestId: changeRequestId,
-        Person: person,
-        Role: role,
-        Status: "Not Started",
-      });
-      setAddOpen(false);
-      onRefetch();
-    } catch (err) {
-      console.error("Failed to add participant:", err);
-    }
-  };
-
+const handleAdd = async (person: SharePointPerson) => {
+  try {
+    await SharePointService.addParticipant(changeRequestId, person.Id, role);
+    setAddOpen(false);
+    onRefetch();
+  } catch (err) {
+    console.error("Failed to add participant:", err);
+  }
+};
   return (
     <Box>
       {/* Section header */}
@@ -374,17 +492,25 @@ const ParticipantSection = ({
             participant={p}
             canStart={canStart}
             canAdd={canAdd}
-            onStart={handleStart}
+            onStart={(participant) => setStartTarget(participant)}
             onRemove={(participant) => setRemoveTarget(participant)}
             onDueDateChange={handleDueDateChange}
           />
         ))
       )}
 
+      <StartConfirmModal
+        open={!!startTarget}
+        participant={startTarget}
+        onConfirm={handleStartConfirm}
+        onClose={() => setStartTarget(null)}
+      />
+
       <AddParticipantModal
         open={addOpen}
         role={role}
         existingParticipants={participants}
+        excludeIds={excludeIds}
         onConfirm={handleAdd}
         onClose={() => setAddOpen(false)}
       />
@@ -402,6 +528,14 @@ const ParticipantSection = ({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const ParticipantsTable = ({ changeRequestId, contributors, reviewers, loading, canAdd, canStart, onRefetch }: ParticipantsTableProps) => {
+  const excludeContributorIds = reviewers
+    .map((r) => r.Person?.Id)
+    .filter((id): id is number => id !== undefined);
+
+  const excludeReviewerIds = contributors
+    .map((c) => c.Person?.Id)
+    .filter((id): id is number => id !== undefined);
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" py={4}>
@@ -412,8 +546,8 @@ const ParticipantsTable = ({ changeRequestId, contributors, reviewers, loading, 
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      <ParticipantSection title="Contributors" role="Contributor" participants={contributors} canAdd={canAdd} canStart={canStart} changeRequestId={changeRequestId} onRefetch={onRefetch} />
-      <ParticipantSection title="Reviewers" role="Reviewer" participants={reviewers} canAdd={canAdd} canStart={canStart} changeRequestId={changeRequestId} onRefetch={onRefetch} />
+      <ParticipantSection title="Contributors" role="Contributor" participants={contributors} excludeIds={excludeContributorIds} canAdd={canAdd} canStart={canStart} changeRequestId={changeRequestId} onRefetch={onRefetch} />
+      <ParticipantSection title="Reviewers" role="Reviewer" participants={reviewers} excludeIds={excludeReviewerIds} canAdd={canAdd} canStart={canStart} changeRequestId={changeRequestId} onRefetch={onRefetch} />
     </Box>
   );
 };

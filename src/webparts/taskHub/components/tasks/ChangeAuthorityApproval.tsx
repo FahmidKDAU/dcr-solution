@@ -109,7 +109,7 @@ const CAApprovalTask = ({ task, cr, onTaskComplete }: CAApprovalTaskProps) => {
     try {
       await SharePointService.updateTask(task.Id, {
         Status: "Approved",
-        Comment: comment || undefined,
+        Comments: comment || undefined,
       });
       handleClose();
       onTaskComplete?.();
@@ -125,8 +125,7 @@ const CAApprovalTask = ({ task, cr, onTaskComplete }: CAApprovalTaskProps) => {
     try {
       await SharePointService.updateTask(task.Id, {
         Status: "Rejected",
-        RejectionReason: rejectionReason,
-        Comment: comment || undefined,
+        Comments: comment || undefined,
       });
       handleClose();
       onTaskComplete?.();
