@@ -15,6 +15,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import ReplayIcon from "@mui/icons-material/Replay";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import { Participant } from "../../../shared/types/Participant";
 import { SharePointPerson } from "../../../shared/types/SharePointPerson";
@@ -44,6 +45,7 @@ export interface ParticipantRow {
   Notes?: string;
   Person: { Id: number; Title: string; EMail: string };
 }
+
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 
 const STATUS_STYLES: Record<string, { bg: string; color: string; dot: string }> = {
@@ -83,38 +85,67 @@ const formatDate = (value?: string) =>
 // ─── Remove Confirm Modal ─────────────────────────────────────────────────────
 
 const RemoveConfirmModal = ({
-  open,
-  participant,
-  onConfirm,
-  onClose,
+  open, participant, onConfirm, onClose,
 }: {
   open: boolean;
   participant: Participant | null;
   onConfirm: () => void;
   onClose: () => void;
-}) => (
-  <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 2 } }}>
-    <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 14, fontWeight: 700, color: "#323130" }}>
-      Remove Participant
-      <IconButton size="small" onClick={onClose}><CloseIcon sx={{ fontSize: 16 }} /></IconButton>
-    </DialogTitle>
-    <DialogContent>
-      <Typography sx={{ fontSize: 13, color: "#605E5C" }}>
-        Are you sure you want to remove <Box component="span" sx={{ fontWeight: 600, color: "#323130" }}>{participant?.Person?.Title}</Box> from this change request?
-      </Typography>
-    </DialogContent>
-    <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-      <Button size="small" onClick={onClose} sx={{ textTransform: "none", color: "#605E5C" }}>Cancel</Button>
-      <Button size="small" variant="contained" color="error" disableElevation onClick={onConfirm} sx={{ textTransform: "none" }}>Remove</Button>
-    </DialogActions>
-  </Dialog>
-);
+}) => {
+  const isInProgress = participant?.Status === "In Progress";
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 2 } }}>
+      <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 14, fontWeight: 700, color: "#323130" }}>
+        Remove Participant
+        <IconButton size="small" onClick={onClose}><CloseIcon sx={{ fontSize: 16 }} /></IconButton>
+      </DialogTitle>
+      <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 1.5, pt: 1 }}>
+
+        {/* Extra warning if task is already in progress */}
+        {isInProgress && (
+          <Box sx={{
+            display: "flex", alignItems: "flex-start", gap: 1,
+            p: 1.25, backgroundColor: "#FDE7E9",
+            borderRadius: "8px", border: "1px solid #F1707B",
+          }}>
+            <WarningAmberIcon sx={{ fontSize: 14, color: "#A4262C", mt: 0.15, flexShrink: 0 }} />
+            <Typography sx={{ fontSize: 12, color: "#A4262C", lineHeight: 1.5 }}>
+              <strong>{participant?.Person?.Title}</strong> has already started their task.
+              Removing them will cancel their work in progress.
+            </Typography>
+          </Box>
+        )}
+
+        <Typography sx={{ fontSize: 13, color: "#605E5C" }}>
+          Are you sure you want to remove{" "}
+          <Box component="span" sx={{ fontWeight: 600, color: "#323130" }}>
+            {participant?.Person?.Title}
+          </Box>{" "}
+          from this change request?
+          {isInProgress ? " Their active task will be cancelled." : ""}
+        </Typography>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+        <Button size="small" onClick={onClose} sx={{ textTransform: "none", color: "#605E5C" }}>
+          Cancel
+        </Button>
+        <Button
+          size="small" variant="contained" color="error" disableElevation
+          onClick={onConfirm}
+          sx={{ textTransform: "none" }}
+        >
+          {isInProgress ? "Remove & Cancel Task" : "Remove"}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+// ─── Start Confirm Modal ──────────────────────────────────────────────────────
 
 const StartConfirmModal = ({
-  open,
-  participant,
-  onConfirm,
-  onClose,
+  open, participant, onConfirm, onClose,
 }: {
   open: boolean;
   participant: Participant | null;
@@ -135,9 +166,7 @@ const StartConfirmModal = ({
   };
 
   const handleClose = (): void => {
-    if (saving) {
-      return;
-    }
+    if (saving) return;
     setNotes("");
     onClose();
   };
@@ -152,16 +181,14 @@ const StartConfirmModal = ({
         <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1, p: 1.5, backgroundColor: "#FFF4CE", borderRadius: 1, border: "1px solid #FFB900" }}>
           <WarningAmberIcon sx={{ fontSize: 14, color: "#835B00", mt: 0.25, flexShrink: 0 }} />
           <Typography sx={{ fontSize: 12, color: "#835B00" }}>
-            This will start the task for <Box component="span" sx={{ fontWeight: 600 }}>{participant?.Person?.Title}</Box> and send them a notification.
+            This will start the task for{" "}
+            <Box component="span" sx={{ fontWeight: 600 }}>{participant?.Person?.Title}</Box>{" "}
+            and send them a notification.
           </Typography>
         </Box>
-
         <TextField
           label="Notes (optional)"
-          multiline
-          rows={3}
-          fullWidth
-          size="small"
+          multiline rows={3} fullWidth size="small"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Add any instructions or context for the participant..."
@@ -169,15 +196,10 @@ const StartConfirmModal = ({
         />
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-        <Button size="small" onClick={handleClose} sx={{ textTransform: "none", color: "#605E5C" }}>
-          Cancel
-        </Button>
+        <Button size="small" onClick={handleClose} sx={{ textTransform: "none", color: "#605E5C" }}>Cancel</Button>
         <Button
-          size="small"
-          variant="contained"
-          disableElevation
-          disabled={saving}
-          onClick={handleConfirm}
+          size="small" variant="contained" disableElevation
+          disabled={saving} onClick={handleConfirm}
           startIcon={<PlayArrowIcon sx={{ fontSize: 13 }} />}
           sx={{ textTransform: "none" }}
         >
@@ -188,15 +210,64 @@ const StartConfirmModal = ({
   );
 };
 
+// ─── Restart Confirm Modal ────────────────────────────────────────────────────
+
+const RestartConfirmModal = ({
+  open, participant, onConfirm, onClose,
+}: {
+  open: boolean;
+  participant: Participant | null;
+  onConfirm: () => Promise<void>;
+  onClose: () => void;
+}) => {
+  const [saving, setSaving] = useState(false);
+
+  const handleConfirm = async (): Promise<void> => {
+    setSaving(true);
+    try {
+      await onConfirm();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 2 } }}>
+      <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 14, fontWeight: 700, color: "#323130" }}>
+        Re-assign Task
+        <IconButton size="small" onClick={onClose}><CloseIcon sx={{ fontSize: 16 }} /></IconButton>
+      </DialogTitle>
+      <DialogContent sx={{ pt: 1 }}>
+        <Typography sx={{ fontSize: 13, color: "#605E5C", mb: 1 }}>
+          This will reset{" "}
+          <Box component="span" sx={{ fontWeight: 600, color: "#323130" }}>{participant?.Person?.Title}</Box>'s
+          task back to <strong>Not Started</strong> so you can start it again.
+        </Typography>
+        <Typography sx={{ fontSize: 12, color: "#A19F9D" }}>
+          Their previous completion will be cleared.
+        </Typography>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+        <Button size="small" onClick={onClose} sx={{ textTransform: "none", color: "#605E5C" }}>
+          Cancel
+        </Button>
+        <Button
+          size="small" variant="contained" disableElevation
+          disabled={saving} onClick={handleConfirm}
+          startIcon={<ReplayIcon sx={{ fontSize: 13 }} />}
+          sx={{ textTransform: "none", backgroundColor: "#0078D4" }}
+        >
+          {saving ? "Resetting..." : "Re-assign"}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
 // ─── Add Participant Modal ────────────────────────────────────────────────────
 
 const AddParticipantModal = ({
-  open,
-  role,
-  existingParticipants,
-  excludeIds,
-  onConfirm,
-  onClose,
+  open, role, existingParticipants, excludeIds, onConfirm, onClose,
 }: {
   open: boolean;
   role: "Contributor" | "Reviewer";
@@ -209,7 +280,6 @@ const AddParticipantModal = ({
   const [saving, setSaving] = useState(false);
 
   const selectedPersonId = selectedPerson?.Id;
-
   const isDuplicate = selectedPersonId !== undefined
     ? existingParticipants.some((p) => p.Person?.Id === selectedPersonId)
     : false;
@@ -257,9 +327,7 @@ const AddParticipantModal = ({
       <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
         <Button size="small" onClick={handleClose} sx={{ textTransform: "none", color: "#605E5C" }}>Cancel</Button>
         <Button
-          size="small"
-          variant="contained"
-          disableElevation
+          size="small" variant="contained" disableElevation
           disabled={!selectedPersonId || isDuplicate || saving}
           onClick={handleConfirm}
           sx={{ textTransform: "none" }}
@@ -274,12 +342,8 @@ const AddParticipantModal = ({
 // ─── Row ──────────────────────────────────────────────────────────────────────
 
 const ParticipantRow = ({
-  participant,
-  canStart,
-  canAdd,
-  onStart,
-  onRemove,
-  onDueDateChange,
+  participant, canStart, canAdd,
+  onStart, onRemove, onDueDateChange, onRestart,
 }: {
   participant: Participant;
   canStart: boolean;
@@ -287,8 +351,10 @@ const ParticipantRow = ({
   onStart: (p: Participant) => void;
   onRemove: (p: Participant) => void;
   onDueDateChange: (p: Participant, date: string) => void;
+  onRestart: (p: Participant) => void;
 }) => {
   const isStarted = participant.Status !== "Not Started";
+  const isComplete = participant.Status === "Complete";
   const inputValue = participant.DueDate ? participant.DueDate.split("T")[0] : "";
 
   return (
@@ -300,13 +366,13 @@ const ParticipantRow = ({
           {participant.Person?.Title ?? "—"}
         </Typography>
         <StatusBadge status={participant.Status} />
+
+        {/* Start button — only when not started */}
         {canStart && !isStarted && (
           <Tooltip title={!participant.DueDate ? "Set a due date first" : "Start task"}>
             <span>
               <Button
-                size="small"
-                variant="contained"
-                disableElevation
+                size="small" variant="contained" disableElevation
                 disabled={!participant.DueDate}
                 onClick={() => onStart(participant)}
                 startIcon={<PlayArrowIcon sx={{ fontSize: 13 }} />}
@@ -317,9 +383,33 @@ const ParticipantRow = ({
             </span>
           </Tooltip>
         )}
+
+        {/* Re-assign button — only when complete and canStart */}
+        {isComplete && canStart && (
+          <Tooltip title="Reset and re-assign this task">
+            <Button
+              size="small" variant="outlined"
+              onClick={() => onRestart(participant)}
+              startIcon={<ReplayIcon sx={{ fontSize: 12 }} />}
+              sx={{
+                fontSize: 11, textTransform: "none", borderRadius: "6px",
+                borderColor: "#EDEBE9", color: "#605E5C", py: 0.25,
+                "&:hover": { borderColor: "#0078D4", color: "#0078D4", backgroundColor: "#EFF6FC" },
+              }}
+            >
+              Re-assign
+            </Button>
+          </Tooltip>
+        )}
+
+        {/* Remove button */}
         {canAdd && (
           <Tooltip title="Remove participant">
-            <IconButton size="small" onClick={() => onRemove(participant)} sx={{ color: "#A19F9D", "&:hover": { color: "#D13438" } }}>
+            <IconButton
+              size="small"
+              onClick={() => onRemove(participant)}
+              sx={{ color: "#A19F9D", "&:hover": { color: "#D13438" } }}
+            >
               <DeleteOutlineIcon sx={{ fontSize: 16 }} />
             </IconButton>
           </Tooltip>
@@ -332,9 +422,7 @@ const ParticipantRow = ({
           <Typography sx={{ fontSize: 10, fontWeight: 600, color: "#A19F9D", textTransform: "uppercase", letterSpacing: 0.4, mb: 0.5 }}>Due</Typography>
           {canStart ? (
             <TextField
-              type="date"
-              size="small"
-              value={inputValue}
+              type="date" size="small" value={inputValue}
               onChange={(e) => { if (e.target.value) onDueDateChange(participant, e.target.value); }}
               InputLabelProps={{ shrink: true }}
               inputProps={{ style: { fontSize: 12, padding: "4px 8px" } }}
@@ -381,14 +469,8 @@ const ParticipantRow = ({
 // ─── Section ──────────────────────────────────────────────────────────────────
 
 const ParticipantSection = ({
-  title,
-  role,
-  participants,
-  excludeIds,
-  canAdd,
-  canStart,
-  changeRequestId,
-  onRefetch,
+  title, role, participants, excludeIds,
+  canAdd, canStart, changeRequestId, onRefetch,
 }: {
   title: string;
   role: "Contributor" | "Reviewer";
@@ -402,6 +484,7 @@ const ParticipantSection = ({
   const [addOpen, setAddOpen] = useState(false);
   const [startTarget, setStartTarget] = useState<Participant | null>(null);
   const [removeTarget, setRemoveTarget] = useState<Participant | null>(null);
+  const [restartTarget, setRestartTarget] = useState<Participant | null>(null);
 
   const handleStartConfirm = async (notes: string): Promise<void> => {
     if (!startTarget) return;
@@ -419,15 +502,12 @@ const ParticipantSection = ({
 
       if (participantTask) {
         if (notes) {
-          await SharePointService.updateTask(participantTask.Id, {
-            Comments: notes,
-          });
+          await SharePointService.updateTask(participantTask.Id, { Comments: notes });
         }
       } else {
-        console.warn(
-          "[handleStartConfirm] No task found for participant — notes not saved.",
-          { changeRequestId, userId: startTarget.Person.Id, role },
-        );
+        console.warn("[handleStartConfirm] No task found for participant — notes not saved.", {
+          changeRequestId, userId: startTarget.Person.Id, role,
+        });
       }
 
       setStartTarget(null);
@@ -437,10 +517,30 @@ const ParticipantSection = ({
     }
   };
 
-  const handleRemoveConfirm = async () => {
+  const handleRestartConfirm = async (): Promise<void> => {
+    if (!restartTarget) return;
+    try {
+      await SharePointService.updateParticipant(restartTarget.Id, {
+        Status: "Not Started",
+        StartDate: null,
+        CompletedDate: null,
+      });
+      setRestartTarget(null);
+      onRefetch();
+    } catch (err) {
+      console.error("Failed to re-assign participant:", err);
+    }
+  };
+
+  const handleRemoveConfirm = async (): Promise<void> => {
     if (!removeTarget) return;
     try {
-      await SharePointService.deleteParticipant(removeTarget.Id);
+      // Passes personId so deleteParticipant can cancel any active task first
+      await SharePointService.deleteParticipant(
+        removeTarget.Id,
+        changeRequestId,
+        removeTarget.Person.Id,
+      );
       setRemoveTarget(null);
       onRefetch();
     } catch (err) {
@@ -457,15 +557,16 @@ const ParticipantSection = ({
     }
   };
 
-const handleAdd = async (person: SharePointPerson) => {
-  try {
-    await SharePointService.addParticipant(changeRequestId, person.Id, role);
-    setAddOpen(false);
-    onRefetch();
-  } catch (err) {
-    console.error("Failed to add participant:", err);
-  }
-};
+  const handleAdd = async (person: SharePointPerson) => {
+    try {
+      await SharePointService.addParticipant(changeRequestId, person.Id, role);
+      setAddOpen(false);
+      onRefetch();
+    } catch (err) {
+      console.error("Failed to add participant:", err);
+    }
+  };
+
   return (
     <Box>
       {/* Section header */}
@@ -474,7 +575,12 @@ const handleAdd = async (person: SharePointPerson) => {
           {title} ({participants.length})
         </Typography>
         {canAdd && (
-          <Button size="small" variant="outlined" onClick={() => setAddOpen(true)} startIcon={<AddIcon sx={{ fontSize: 13 }} />} sx={{ fontSize: 11, py: 0.4, px: 1.25, textTransform: "none" }}>
+          <Button
+            size="small" variant="outlined"
+            onClick={() => setAddOpen(true)}
+            startIcon={<AddIcon sx={{ fontSize: 13 }} />}
+            sx={{ fontSize: 11, py: 0.4, px: 1.25, textTransform: "none" }}
+          >
             Add
           </Button>
         )}
@@ -495,6 +601,7 @@ const handleAdd = async (person: SharePointPerson) => {
             onStart={(participant) => setStartTarget(participant)}
             onRemove={(participant) => setRemoveTarget(participant)}
             onDueDateChange={handleDueDateChange}
+            onRestart={(participant) => setRestartTarget(participant)}
           />
         ))
       )}
@@ -505,7 +612,12 @@ const handleAdd = async (person: SharePointPerson) => {
         onConfirm={handleStartConfirm}
         onClose={() => setStartTarget(null)}
       />
-
+      <RestartConfirmModal
+        open={!!restartTarget}
+        participant={restartTarget}
+        onConfirm={handleRestartConfirm}
+        onClose={() => setRestartTarget(null)}
+      />
       <AddParticipantModal
         open={addOpen}
         role={role}
@@ -514,7 +626,6 @@ const handleAdd = async (person: SharePointPerson) => {
         onConfirm={handleAdd}
         onClose={() => setAddOpen(false)}
       />
-
       <RemoveConfirmModal
         open={!!removeTarget}
         participant={removeTarget}
@@ -527,7 +638,10 @@ const handleAdd = async (person: SharePointPerson) => {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-const ParticipantsTable = ({ changeRequestId, contributors, reviewers, loading, canAdd, canStart, onRefetch }: ParticipantsTableProps) => {
+const ParticipantsTable = ({
+  changeRequestId, contributors, reviewers,
+  loading, canAdd, canStart, onRefetch,
+}: ParticipantsTableProps) => {
   const excludeContributorIds = reviewers
     .map((r) => r.Person?.Id)
     .filter((id): id is number => id !== undefined);
@@ -546,8 +660,18 @@ const ParticipantsTable = ({ changeRequestId, contributors, reviewers, loading, 
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      <ParticipantSection title="Contributors" role="Contributor" participants={contributors} excludeIds={excludeContributorIds} canAdd={canAdd} canStart={canStart} changeRequestId={changeRequestId} onRefetch={onRefetch} />
-      <ParticipantSection title="Reviewers" role="Reviewer" participants={reviewers} excludeIds={excludeReviewerIds} canAdd={canAdd} canStart={canStart} changeRequestId={changeRequestId} onRefetch={onRefetch} />
+      <ParticipantSection
+        title="Contributors" role="Contributor"
+        participants={contributors} excludeIds={excludeContributorIds}
+        canAdd={canAdd} canStart={canStart}
+        changeRequestId={changeRequestId} onRefetch={onRefetch}
+      />
+      <ParticipantSection
+        title="Reviewers" role="Reviewer"
+        participants={reviewers} excludeIds={excludeReviewerIds}
+        canAdd={canAdd} canStart={canStart}
+        changeRequestId={changeRequestId} onRefetch={onRefetch}
+      />
     </Box>
   );
 };

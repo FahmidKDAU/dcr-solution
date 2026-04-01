@@ -5,52 +5,67 @@ import InputBase from "@mui/material/InputBase";
 import SearchIcon from "@mui/icons-material/Search";
 import TaskCard from "./TaskCard";
 import { Task } from "../../../shared/types/Task";
+import RefreshButton from "../../components/RefreshButton";
 
 interface TaskListProps {
   tasks: Task[];
   selectedTask: Task | null;
   onTaskSelect: (task: Task) => void;
+  onRefresh: () => void;
 }
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const STATUS_TABS = [
-  { label: "Pending",   value: "Pending"   },
-  { label: "Approved",  value: "Approved"  },
-  { label: "Rejected",  value: "Rejected"  },
-  { label: "Complete",  value: "Complete"  },
-  { label: "All",       value: "All"       },
+  { label: "Pending", value: "Pending" },
+  { label: "Approved", value: "Approved" },
+  { label: "Rejected", value: "Rejected" },
+  { label: "Complete", value: "Complete" },
+  { label: "All", value: "All" },
 ];
 
 const TASK_TYPE_COLORS: Record<string, string> = {
-  "Change Authority Approval":  "#0078D4",
-  "Change Authority Review":    "#5C2D91",
-  "Document Review":            "#107C10",
+  "Change Authority Approval": "#0078D4",
+  "Change Authority Review": "#5C2D91",
+  "Document Review": "#107C10",
   "Document Controller Review": "#D83B01",
-  "CR Completion":              "#835B00",
-  "CR Info Required":           "#008575",
+  "CR Completion": "#835B00",
+  "CR Info Required": "#008575",
 };
 
 // ─── Type Filter Pill ─────────────────────────────────────────────────────────
 
 const TypePill = ({
-  label, color, active, count, onClick,
+  label,
+  color,
+  active,
+  count,
+  onClick,
 }: {
-  label: string; color: string; active: boolean; count: number; onClick: () => void;
+  label: string;
+  color: string;
+  active: boolean;
+  count: number;
+  onClick: () => void;
 }) => (
   <Box
     component="button"
     onClick={onClick}
     sx={{
-      display: "inline-flex", alignItems: "center", gap: 0.75,
-      px: 1.25, py: 0.4,
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 0.75,
+      px: 1.25,
+      py: 0.4,
       borderRadius: "20px",
       border: "1.5px solid",
       borderColor: active ? color : "transparent",
       backgroundColor: active ? `${color}15` : "#F3F2F1",
       color: active ? color : "#605E5C",
-      fontSize: 12, fontWeight: active ? 700 : 500,
-      cursor: "pointer", flexShrink: 0,
+      fontSize: 12,
+      fontWeight: active ? 700 : 500,
+      cursor: "pointer",
+      flexShrink: 0,
       transition: "all 0.15s",
       "&:hover": {
         borderColor: color,
@@ -60,13 +75,22 @@ const TypePill = ({
     }}
   >
     {label}
-    <Box component="span" sx={{
-      display: "inline-flex", alignItems: "center", justifyContent: "center",
-      backgroundColor: active ? color : "#C8C6C4",
-      color: "#fff",
-      fontSize: 10, fontWeight: 700,
-      minWidth: 16, height: 16, borderRadius: "10px", px: 0.5,
-    }}>
+    <Box
+      component="span"
+      sx={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: active ? color : "#C8C6C4",
+        color: "#fff",
+        fontSize: 10,
+        fontWeight: 700,
+        minWidth: 16,
+        height: 16,
+        borderRadius: "10px",
+        px: 0.5,
+      }}
+    >
       {count}
     </Box>
   </Box>
@@ -74,11 +98,16 @@ const TypePill = ({
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-const TaskList = ({ tasks, selectedTask, onTaskSelect }: TaskListProps) => {
+const TaskList = ({
+  tasks,
+  selectedTask,
+  onTaskSelect,
+  onRefresh,
+}: TaskListProps) => {
   const [activeStatus, setActiveStatus] = useState("Pending");
-  const [activeType, setActiveType]     = useState<string | null>(null);
-  const [search, setSearch]             = useState("");
-
+  const [activeType, setActiveType] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<"Created" | "DueDate">("Created");
   // Get unique task types present in the list
   const taskTypes = Array.from(new Set(tasks.map((t) => t.TaskType)));
 
@@ -86,8 +115,14 @@ const TaskList = ({ tasks, selectedTask, onTaskSelect }: TaskListProps) => {
   const filtered = tasks
     .filter((t) => activeStatus === "All" || t.Status === activeStatus)
     .filter((t) => !activeType || t.TaskType === activeType)
-    .filter((t) => !search || t.Title.toLowerCase().includes(search.toLowerCase()));
-
+    .filter(
+      (t) => !search || t.Title.toLowerCase().includes(search.toLowerCase()),
+    )
+    .sort((a, b) => {
+      const dateA = new Date(a[sortBy] ?? 0).getTime();
+      const dateB = new Date(b[sortBy] ?? 0).getTime();
+      return dateB - dateA; // newest first
+    });
   // Count per status tab (ignoring type filter for accurate counts)
   const countByStatus = (status: string) =>
     status === "All"
@@ -101,15 +136,21 @@ const TaskList = ({ tasks, selectedTask, onTaskSelect }: TaskListProps) => {
       .filter((t) => t.TaskType === type).length;
 
   return (
-    <Box display="flex" flexDirection="column" height="100%" sx={{ backgroundColor: "#fff" }}>
-
+    <Box
+      display="flex"
+      flexDirection="column"
+      height="100%"
+      sx={{ backgroundColor: "#fff" }}
+    >
       {/* ── Header ── */}
       <Box sx={{ px: 2.5, pt: 2.5, pb: 1.5 }}>
-        <Typography sx={{ fontSize: 16, fontWeight: 700, color: "#323130", mb: 0.25 }}>
+        <Typography
+          sx={{ fontSize: 16, fontWeight: 700, color: "#323130", mb: 0.25 }}
+        >
           My Tasks
         </Typography>
         <Typography sx={{ fontSize: 12, color: "#A19F9D" }}>
-          {tasks.filter(t => t.Status === "Pending").length} pending
+          {tasks.filter((t) => t.Status === "Pending").length} pending
           {" · "}
           {tasks.length} total
         </Typography>
@@ -117,17 +158,23 @@ const TaskList = ({ tasks, selectedTask, onTaskSelect }: TaskListProps) => {
 
       {/* ── Search ── */}
       <Box sx={{ px: 2.5, pb: 1.5 }}>
-        <Box sx={{
-          display: "flex", alignItems: "center", gap: 1,
-          backgroundColor: "#F3F2F1", borderRadius: "6px",
-          px: 1.5, py: 0.75,
-          border: "1.5px solid transparent",
-          transition: "border-color 0.15s, background 0.15s",
-          "&:focus-within": {
-            backgroundColor: "#fff",
-            borderColor: "#0078D4",
-          },
-        }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            backgroundColor: "#F3F2F1",
+            borderRadius: "6px",
+            px: 1.5,
+            py: 0.75,
+            border: "1.5px solid transparent",
+            transition: "border-color 0.15s, background 0.15s",
+            "&:focus-within": {
+              backgroundColor: "#fff",
+              borderColor: "#0078D4",
+            },
+          }}
+        >
           <SearchIcon sx={{ fontSize: 16, color: "#A19F9D", flexShrink: 0 }} />
           <InputBase
             placeholder="Search tasks..."
@@ -148,9 +195,15 @@ const TaskList = ({ tasks, selectedTask, onTaskSelect }: TaskListProps) => {
               component="button"
               onClick={() => setSearch("")}
               sx={{
-                border: "none", background: "none", cursor: "pointer",
-                color: "#A19F9D", fontSize: 16, lineHeight: 1, p: 0,
-                display: "flex", alignItems: "center",
+                border: "none",
+                background: "none",
+                cursor: "pointer",
+                color: "#A19F9D",
+                fontSize: 16,
+                lineHeight: 1,
+                p: 0,
+                display: "flex",
+                alignItems: "center",
                 "&:hover": { color: "#323130" },
               }}
             >
@@ -161,10 +214,14 @@ const TaskList = ({ tasks, selectedTask, onTaskSelect }: TaskListProps) => {
       </Box>
 
       {/* ── Status Tabs ── */}
-      <Box sx={{
-        display: "flex", borderBottom: "1px solid #EDEBE9",
-        px: 2.5, gap: 0,
-      }}>
+      <Box
+        sx={{
+          display: "flex",
+          borderBottom: "1px solid #EDEBE9",
+          px: 2.5,
+          gap: 0,
+        }}
+      >
         {STATUS_TABS.map((tab) => {
           const count = countByStatus(tab.value);
           const active = activeStatus === tab.value;
@@ -174,28 +231,42 @@ const TaskList = ({ tasks, selectedTask, onTaskSelect }: TaskListProps) => {
               component="button"
               onClick={() => setActiveStatus(tab.value)}
               sx={{
-                background: "none", border: "none", cursor: "pointer",
-                px: 1.25, py: 1,
-                fontSize: 12, fontWeight: active ? 700 : 400,
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                px: 1.25,
+                py: 1,
+                fontSize: 12,
+                fontWeight: active ? 700 : 400,
                 color: active ? "#0078D4" : "#605E5C",
                 borderBottom: "2px solid",
                 borderColor: active ? "#0078D4" : "transparent",
                 transition: "all 0.15s",
-                display: "flex", alignItems: "center", gap: 0.6,
+                display: "flex",
+                alignItems: "center",
+                gap: 0.6,
                 "&:hover": { color: "#323130" },
                 mb: "-1px",
               }}
             >
               {tab.label}
               {count > 0 && (
-                <Box component="span" sx={{
-                  backgroundColor: active ? "#0078D4" : "#EDEBE9",
-                  color: active ? "#fff" : "#605E5C",
-                  fontSize: 10, fontWeight: 700,
-                  minWidth: 16, height: 16, borderRadius: "10px",
-                  display: "inline-flex", alignItems: "center",
-                  justifyContent: "center", px: 0.5,
-                }}>
+                <Box
+                  component="span"
+                  sx={{
+                    backgroundColor: active ? "#0078D4" : "#EDEBE9",
+                    color: active ? "#fff" : "#605E5C",
+                    fontSize: 10,
+                    fontWeight: 700,
+                    minWidth: 16,
+                    height: 16,
+                    borderRadius: "10px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    px: 0.5,
+                  }}
+                >
                   {count}
                 </Box>
               )}
@@ -206,11 +277,16 @@ const TaskList = ({ tasks, selectedTask, onTaskSelect }: TaskListProps) => {
 
       {/* ── Type Filter Pills ── */}
       {taskTypes.length > 1 && (
-        <Box sx={{
-          px: 2.5, py: 1.25,
-          display: "flex", gap: 0.75, flexWrap: "wrap",
-          borderBottom: "1px solid #EDEBE9",
-        }}>
+        <Box
+          sx={{
+            px: 2.5,
+            py: 1.25,
+            display: "flex",
+            gap: 0.75,
+            flexWrap: "wrap",
+            borderBottom: "1px solid #EDEBE9",
+          }}
+        >
           {taskTypes.map((type) => (
             <TypePill
               key={type}
@@ -223,17 +299,71 @@ const TaskList = ({ tasks, selectedTask, onTaskSelect }: TaskListProps) => {
           ))}
         </Box>
       )}
+      {/* ── Sort Bar ── */}
+      <Box
+        sx={{
+          px: 2.5,
+          py: 0.75,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          borderBottom: "1px solid #EDEBE9",
+          backgroundColor: "#FAFAFA",
+        }}
+      >
+        <Box display="flex" alignItems="center" gap={1}>
+          <Typography sx={{ fontSize: 11, color: "#A19F9D" }}>
+            {filtered.length} {filtered.length === 1 ? "task" : "tasks"}
+          </Typography>
+          <RefreshButton onRefresh={onRefresh} />
+        </Box>
+        <Box display="flex" alignItems="center" gap={0.5}>
+          <Typography sx={{ fontSize: 11, color: "#A19F9D", mr: 0.25 }}>
+            Sort by
+          </Typography>
+          {(["Created", "DueDate"] as const).map((opt) => (
+            <Box
+              key={opt}
+              component="button"
+              onClick={() => setSortBy(opt)}
+              sx={{
+                border: "none",
+                borderBottom: "2px solid",
+                borderBottomColor: sortBy === opt ? "#0078D4" : "transparent",
+                backgroundColor: "transparent",
+                color: sortBy === opt ? "#0078D4" : "#605E5C",
+                fontSize: 11,
+                fontWeight: sortBy === opt ? 700 : 400,
+                px: 0.75,
+                py: 0.4,
+                cursor: "pointer",
+                transition: "all 0.15s",
+                "&:hover": { color: "#0078D4" },
+              }}
+            >
+              {opt === "Created" ? "Date Created" : "Due Date"}
+            </Box>
+          ))}
+        </Box>
+      </Box>
 
       {/* ── Task Cards ── */}
       <Box overflow="auto" flex={1}>
         {filtered.length === 0 ? (
-          <Box sx={{
-            display: "flex", flexDirection: "column",
-            alignItems: "center", justifyContent: "center",
-            height: "60%", gap: 1,
-          }}>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              height: "60%",
+              gap: 1,
+            }}
+          >
             <Typography sx={{ fontSize: 32 }}>📋</Typography>
-            <Typography sx={{ fontSize: 14, color: "#605E5C", fontWeight: 500 }}>
+            <Typography
+              sx={{ fontSize: 14, color: "#605E5C", fontWeight: 500 }}
+            >
               No tasks found
             </Typography>
             <Typography sx={{ fontSize: 12, color: "#A19F9D" }}>
@@ -242,11 +372,19 @@ const TaskList = ({ tasks, selectedTask, onTaskSelect }: TaskListProps) => {
             {(search || activeType) && (
               <Box
                 component="button"
-                onClick={() => { setSearch(""); setActiveType(null); }}
+                onClick={() => {
+                  setSearch("");
+                  setActiveType(null);
+                }}
                 sx={{
-                  mt: 0.5, border: "none", background: "none",
-                  color: "#0078D4", fontSize: 12, cursor: "pointer",
-                  fontWeight: 600, p: 0,
+                  mt: 0.5,
+                  border: "none",
+                  background: "none",
+                  color: "#0078D4",
+                  fontSize: 12,
+                  cursor: "pointer",
+                  fontWeight: 600,
+                  p: 0,
                   "&:hover": { textDecoration: "underline" },
                 }}
               >

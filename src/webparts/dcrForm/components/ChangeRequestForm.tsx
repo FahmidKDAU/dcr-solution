@@ -273,9 +273,7 @@ const ChangeRequestForm = (props: DcrFormProps): React.ReactElement => {
         // True only when all team members are specified
         isCrComplete: !!(
           formData.releaseAuthority &&
-          formData.author &&
-          formData.reviewerIds.length > 0 &&
-          formData.contributorIds.length > 0
+          formData.author 
         ),
       };
 

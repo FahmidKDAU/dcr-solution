@@ -493,15 +493,47 @@ const updateParticipant = async (
   }
 };
 
-const deleteParticipant = async (id: number): Promise<void> => {
+const deleteParticipant = async (
+  id: number,
+  changeRequestId: number,
+  personId: number,
+): Promise<void> => {
   try {
     const sp = PnPSetup.getSP();
-    await sp.web.lists.getByTitle("CR Participants").items.getById(id).delete();
+
+    // 1. Find their active task
+    const tasks = await sp.web.lists
+      .getByTitle("Tasks")
+      .items.select("Id", "Status", "AssignedTo/Id")
+      .expand("AssignedTo")
+      .filter(`ChangeRequestId eq ${changeRequestId} and TaskType eq 'Participant Task'`)();
+
+    const participantTask = tasks.find(
+      (t) => t.AssignedTo?.Id === personId &&
+      t.Status !== "Complete" &&
+      t.Status !== "Cancelled"
+    );
+
+    // 2. Cancel it if found
+    if (participantTask) {
+      await sp.web.lists
+        .getByTitle("Tasks")
+        .items.getById(participantTask.Id)
+        .update({ Status: "Cancelled" });
+    }
+
+    // 3. Delete the participant row
+    await sp.web.lists
+      .getByTitle("CR Participants")
+      .items.getById(id)
+      .delete();
+
   } catch (error) {
     console.error("Error deleting participant:", error);
     throw error;
   }
 };
+
 const getParticipantsByChangeRequestId = async (changeRequestId: number) => {
   const sp = PnPSetup.getSP();
   const rows = await sp.web.lists

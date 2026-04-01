@@ -64,6 +64,7 @@ const TaskHub = () => {
           tasks={tasks}
           selectedTask={selectedTask}
           onTaskSelect={setSelectedTask}
+          onRefresh={() => SharePointService.getTasks(currentUser.Id).then(setTasks)}
         />
       ) : (
         <Allotment>
