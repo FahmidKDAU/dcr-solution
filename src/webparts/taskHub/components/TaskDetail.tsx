@@ -18,6 +18,8 @@ import { InlineField } from "./InlineField";
 import { useLookupData } from "../../../shared/hooks/useLookupData";
 import { useDepartments } from "../../../shared/hooks/useDepartments";
 import { useParticipants } from "../../../shared/hooks/useParticipants";
+import MinorChangesTab from "./tabs/MinorChangesTab";
+import ProgressTab from "./tabs/ProgressTab";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -650,8 +652,11 @@ export const TaskDetail = ({
     { FileName: string; ServerRelativeUrl: string }[]
   >([]);
   const [attachmentsLoading, setAttachmentsLoading] = useState(false);
-  const { contributors, reviewers, refetch: refetchParticipants } =
-    useParticipants(cr?.ID);
+  const {
+    contributors,
+    reviewers,
+    refetch: refetchParticipants,
+  } = useParticipants(cr?.ID);
   const { documentTypes, categories, audienceGroups, businessFunctions } =
     useLookupData();
   const { departments } = useDepartments();
@@ -780,8 +785,8 @@ export const TaskDetail = ({
     const row = [...contributors, ...reviewers].find(
       (p) => p.Person?.Id === personId && p.Role === role,
     );
-    if (!row) return;
-    await SharePointService.deleteParticipant(row.Id);
+    if (!row || !cr) return;
+    await SharePointService.deleteParticipant(row.Id, cr.ID, personId);
     refetchParticipants();
   };
 
@@ -901,6 +906,8 @@ export const TaskDetail = ({
       <Tabs
         value={tab}
         onChange={(_, v) => setTab(v)}
+        variant="scrollable"
+        scrollButtons="auto"
         sx={{
           backgroundColor: "#fff",
           borderBottom: "1px solid #EDEBE9",
@@ -913,7 +920,10 @@ export const TaskDetail = ({
         <Tab
           label={`Attachments${attachments.length > 0 ? ` (${attachments.length})` : ""}`}
         />
+
         <Tab label="Published Document" />
+        {!cr.NewDocument && <Tab label={`Minor Changes`} />}
+        <Tab label="Progress" value={4} />
       </Tabs>
 
       {/* ── Content ── */}
@@ -1319,6 +1329,10 @@ export const TaskDetail = ({
             )}
           </Box>
         )}
+        {!cr.NewDocument && tab === 3 && (
+          <MinorChangesTab documentId={cr.TargetDocumentId} />
+        )}
+        {tab === 4 && <ProgressTab cr={cr} />}
       </Box>
     </Box>
   );

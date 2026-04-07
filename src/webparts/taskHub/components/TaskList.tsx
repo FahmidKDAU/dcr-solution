@@ -315,7 +315,7 @@ const TaskList = ({
           <Typography sx={{ fontSize: 11, color: "#A19F9D" }}>
             {filtered.length} {filtered.length === 1 ? "task" : "tasks"}
           </Typography>
-          <RefreshButton onRefresh={onRefresh} />
+          <RefreshButton onRefresh={async () => onRefresh()} />
         </Box>
         <Box display="flex" alignItems="center" gap={0.5}>
           <Typography sx={{ fontSize: 11, color: "#A19F9D", mr: 0.25 }}>

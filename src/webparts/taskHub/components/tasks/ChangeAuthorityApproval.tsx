@@ -140,10 +140,10 @@ const CAApprovalTask = ({ task, cr, onTaskComplete }: CAApprovalTaskProps) => {
     setSubmitting(true);
     try {
       const selectedDept = departments.find((d) => d.Id === selectedDepartmentId);
-      if (!selectedDept) return;
+      if (!selectedDept || !selectedDept.ChangeAuthority) return;
       await SharePointService.updateTask(task.Id, {
         Status: "Reassigned",
-        AssignedToId: selectedDept.ChangeAuthority?.Id,
+        AssignedTo: selectedDept.ChangeAuthority,
       });
       handleClose();
       onTaskComplete?.();

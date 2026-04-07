@@ -8,6 +8,7 @@ import "@pnp/sp/webs";
 import "@pnp/sp/site-users/web";
 import { Task } from "../types/Task";
 import { Participant } from "../types/Participant";
+import { MinorChange } from "../types/MinorChange";
 
 const getDepartments = async (): Promise<Department[]> => {
   try {
@@ -506,12 +507,15 @@ const deleteParticipant = async (
       .getByTitle("Tasks")
       .items.select("Id", "Status", "AssignedTo/Id")
       .expand("AssignedTo")
-      .filter(`ChangeRequestId eq ${changeRequestId} and TaskType eq 'Participant Task'`)();
+      .filter(
+        `ChangeRequestId eq ${changeRequestId} and TaskType eq 'Participant Task'`,
+      )();
 
     const participantTask = tasks.find(
-      (t) => t.AssignedTo?.Id === personId &&
-      t.Status !== "Complete" &&
-      t.Status !== "Cancelled"
+      (t) =>
+        t.AssignedTo?.Id === personId &&
+        t.Status !== "Complete" &&
+        t.Status !== "Cancelled",
     );
 
     // 2. Cancel it if found
@@ -523,11 +527,7 @@ const deleteParticipant = async (
     }
 
     // 3. Delete the participant row
-    await sp.web.lists
-      .getByTitle("CR Participants")
-      .items.getById(id)
-      .delete();
-
+    await sp.web.lists.getByTitle("CR Participants").items.getById(id).delete();
   } catch (error) {
     console.error("Error deleting participant:", error);
     throw error;
@@ -538,14 +538,24 @@ const getParticipantsByChangeRequestId = async (changeRequestId: number) => {
   const sp = PnPSetup.getSP();
   const rows = await sp.web.lists
     .getByTitle("CR Participants")
-    .items
-    .select("Id", "PersonId", "Role", "Status", "DueDate", "StartDate", "CompletedDate", "Notes")
+    .items.select(
+      "Id",
+      "PersonId",
+      "Role",
+      "Status",
+      "DueDate",
+      "StartDate",
+      "CompletedDate",
+      "Notes",
+    )
     .filter(`ChangeRequestId eq ${changeRequestId}`)
     .top(50)();
 
   const enriched = await Promise.all(
     rows.map(async (row: any) => {
-      const user = await sp.web.getUserById(row.PersonId).select("Id", "Title")();
+      const user = await sp.web
+        .getUserById(row.PersonId)
+        .select("Id", "Title")();
       return {
         Id: row.Id,
         PersonId: row.PersonId,
@@ -557,7 +567,7 @@ const getParticipantsByChangeRequestId = async (changeRequestId: number) => {
         Notes: row.Notes,
         Person: { Id: row.PersonId, Title: user.Title, EMail: "" },
       };
-    })
+    }),
   );
 
   return enriched;
@@ -572,9 +582,7 @@ const getParticipantByTaskContext = async (
   const results = await sp.web.lists
     .getByTitle("CR Participants")
     .items.select("Id", "Notes", "Role")
-    .filter(
-      `ChangeRequestId eq ${changeRequestId} and PersonId eq ${userId}`,
-    )
+    .filter(`ChangeRequestId eq ${changeRequestId} and PersonId eq ${userId}`)
     .top(1)();
 
   return results[0] ?? null;
@@ -594,10 +602,14 @@ const getParticipantTaskByContext = async (
     .getByTitle("Tasks")
     .items.select("Id", "Comments", "TaskType", "AssignedTo/Id")
     .expand("AssignedTo")
-    .filter(`ChangeRequestId eq ${changeRequestId} and AssignedTo/Id eq ${userId}`)
+    .filter(
+      `ChangeRequestId eq ${changeRequestId} and AssignedTo/Id eq ${userId}`,
+    )
     .top(10)();
 
-  const match = tasks.find((t: { TaskType: string }) => t.TaskType === taskType);
+  const match = tasks.find(
+    (t: { TaskType: string }) => t.TaskType === taskType,
+  );
   if (match) {
     return match as { Id: number; Comments?: string };
   }
@@ -634,6 +646,29 @@ const getDraftDocumentFolderByChangeRequestId = async (
   }
 };
 
+const getMinorChangesByDocument = async (documentId: number): Promise<MinorChange[]> => {
+  try {
+    const sp = PnPSetup.getSP();
+    const allItems = await sp.web.lists
+      .getByTitle("Minor Changes Register")
+      .items.select(
+        "Id", "Title", "ScopeOfChange", "Status",
+        "Created", "Notes",
+        "ImplementedInCR", 
+        "TargetDocumentId",
+        "RequestedBy/Id", "RequestedBy/Title"
+      )
+      .expand("RequestedBy")
+      .orderBy("Created", false)();
+
+    return (allItems as MinorChange[]).filter(
+      (item) => item.TargetDocumentId === documentId
+    );
+  } catch (error) {
+    console.error("Error fetching minor changes:", error);
+    return [];
+  }
+};
 export default {
   getDepartments,
   createChangeRequest,
@@ -658,4 +693,5 @@ export default {
   getParticipantByTaskContext,
   getParticipantTaskByContext,
   getDraftDocumentFolderByChangeRequestId,
+  getMinorChangesByDocument,
 };

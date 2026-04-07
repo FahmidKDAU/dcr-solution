@@ -79,6 +79,82 @@ const theme = createTheme({
   },
 
   components: {
+    // ─── Dialog ────────────────────────────────────────────────────────
+    MuiDialog: {
+      styleOverrides: {
+        paper: {
+          borderRadius: '12px',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.14), 0 2px 8px rgba(0, 0, 0, 0.08)',
+          overflow: 'hidden',
+        },
+      },
+    },
+
+    MuiDialogTitle: {
+      styleOverrides: {
+        root: {
+          fontSize: '1.125rem',
+          fontWeight: 700,
+          color: '#323130',
+          padding: '24px 28px 8px 28px',
+          lineHeight: 1.4,
+        },
+      },
+    },
+
+    MuiDialogContent: {
+      styleOverrides: {
+        root: {
+          padding: '12px 28px 24px 28px',
+          '& .MuiTypography-root:first-of-type': {
+            marginTop: 0,
+          },
+        },
+      },
+    },
+
+    MuiDialogActions: {
+      styleOverrides: {
+        root: {
+          padding: '16px 28px 24px 28px',
+          gap: '10px',
+          borderTop: '1px solid #EDEBE9',
+          '& .MuiButton-root': {
+            borderRadius: '6px',
+            padding: '8px 20px',
+            fontSize: '0.8125rem',
+            fontWeight: 600,
+            minWidth: '100px',
+            textTransform: 'none',
+          },
+          // Outlined cancel/secondary buttons
+          '& .MuiButton-outlined': {
+            borderColor: '#D2D0CE',
+            color: '#605E5C',
+            '&:hover': {
+              borderColor: '#C8C6C4',
+              backgroundColor: '#F9F9F9',
+            },
+          },
+          // Contained primary buttons
+          '& .MuiButton-contained': {
+            boxShadow: 'none',
+            '&:hover': {
+              boxShadow: 'none',
+            },
+          },
+        },
+      },
+    },
+
+    MuiBackdrop: {
+      styleOverrides: {
+        root: {
+          backgroundColor: 'rgba(0, 0, 0, 0.4)',
+        },
+      },
+    },
+
     // TextField customization
     MuiTextField: {
       defaultProps: {
@@ -95,7 +171,7 @@ const theme = createTheme({
             position: 'static',
             display: 'block',
             transform: 'none !important',
-            marginBottom: '8px', // Increased from 4px to 8px
+            marginBottom: '8px',
             color: '#323130',
             fontSize: '0.875rem',
             fontWeight: 600,
@@ -120,7 +196,7 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           backgroundColor: '#FFFFFF',
-          borderRadius: '4px', // Increased from 2px to 4px
+          borderRadius: '4px',
           fontSize: '0.875rem',
           '&:hover': {
             backgroundColor: '#FFFFFF',
@@ -132,7 +208,7 @@ const theme = createTheme({
             backgroundColor: '#FFFFFF',
             '& .MuiOutlinedInput-notchedOutline': {
               borderColor: '#0078D4',
-              borderWidth: '2px', // Increased from 1px to 2px for better focus visibility
+              borderWidth: '2px',
             },
           },
           '&.Mui-disabled': {
@@ -147,7 +223,7 @@ const theme = createTheme({
           },
         },
         input: {
-          padding: '10px 14px', // Increased from 8px 12px for more comfortable spacing
+          padding: '10px 14px',
           fontSize: '0.875rem',
           color: '#323130',
           '&::placeholder': {
@@ -156,7 +232,7 @@ const theme = createTheme({
           },
         },
         multiline: {
-          padding: '10px 14px', // Increased from 8px 12px
+          padding: '10px 14px',
         },
         notchedOutline: {
           '& legend': {
@@ -171,8 +247,8 @@ const theme = createTheme({
       styleOverrides: {
         select: {
           backgroundColor: '#FFFFFF',
-          borderRadius: '4px', // Increased from 2px to 4px
-          padding: '10px 14px', // Increased from 8px 12px
+          borderRadius: '4px',
+          padding: '10px 14px',
           '&:focus': {
             backgroundColor: '#FFFFFF',
           },
@@ -184,7 +260,7 @@ const theme = createTheme({
     MuiFormControl: {
       styleOverrides: {
         root: {
-          marginBottom: '20px', // Changed from 0px - adds spacing between fields
+          marginBottom: '20px',
         },
       },
     },
@@ -196,7 +272,7 @@ const theme = createTheme({
           position: 'static',
           display: 'block',
           transform: 'none !important',
-          marginBottom: '8px', // Increased from 4px to 8px
+          marginBottom: '8px',
           color: '#323130',
           fontSize: '0.875rem',
           fontWeight: 600,
@@ -219,7 +295,7 @@ const theme = createTheme({
           position: 'static',
           display: 'block',
           transform: 'none !important',
-          marginBottom: '8px', // Increased from 4px to 8px
+          marginBottom: '8px',
           color: '#323130',
           fontSize: '0.875rem',
           fontWeight: 600,
@@ -238,7 +314,7 @@ const theme = createTheme({
       },
     },
 
-    // FormHelperText customization - for better guidance
+    // FormHelperText customization
     MuiFormHelperText: {
       styleOverrides: {
         root: {
@@ -255,11 +331,11 @@ const theme = createTheme({
     MuiButton: {
       styleOverrides: {
         root: {
-          borderRadius: '4px', // Increased from 2px to 4px
+          borderRadius: '4px',
           textTransform: 'none',
           fontWeight: 600,
           fontSize: '0.875rem',
-          padding: '10px 24px', // Increased padding for better click target
+          padding: '10px 24px',
           boxShadow: 'none',
           '&:hover': {
             boxShadow: 'none',
@@ -292,7 +368,7 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           '& .MuiOutlinedInput-root': {
-            padding: '4px 14px', // Increased from 2px 12px
+            padding: '4px 14px',
           },
         },
         inputRoot: {
@@ -302,12 +378,12 @@ const theme = createTheme({
           },
         },
         paper: {
-          borderRadius: '4px', // Increased from 2px to 4px
+          borderRadius: '4px',
           boxShadow: '0 3.2px 7.2px rgba(0, 0, 0, 0.132), 0 0.6px 1.8px rgba(0, 0, 0, 0.108)',
         },
         option: {
           fontSize: '0.875rem',
-          padding: '10px 14px', // Increased from 8px 12px
+          padding: '10px 14px',
           '&[aria-selected="true"]': {
             backgroundColor: '#EDEBE9',
           },
@@ -322,9 +398,9 @@ const theme = createTheme({
     MuiChip: {
       styleOverrides: {
         root: {
-          borderRadius: '4px', // Increased from 2px to 4px
+          borderRadius: '4px',
           fontSize: '0.8125rem',
-          height: '26px', // Slightly increased from 24px
+          height: '26px',
           backgroundColor: '#EDEBE9',
           color: '#323130',
         },
@@ -345,7 +421,7 @@ const theme = createTheme({
           fontWeight: 600,
           fontSize: '0.875rem',
           minHeight: '48px',
-          padding: '12px 20px', // Added horizontal padding
+          padding: '12px 20px',
           color: '#605E5C',
           '&.Mui-selected': {
             color: '#0078D4',
@@ -362,11 +438,11 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           borderBottom: '1px solid #EDEBE9',
-          marginBottom: '24px', // Added spacing between tabs and content
+          marginBottom: '24px',
         },
         indicator: {
           backgroundColor: '#0078D4',
-          height: '3px', // Increased from 2px for better visibility
+          height: '3px',
         },
       },
     },
@@ -376,7 +452,7 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           color: '#605E5C',
-          padding: '8px', // Slightly reduced for tighter spacing
+          padding: '8px',
           '&.Mui-checked': {
             color: '#0078D4',
           },
@@ -388,7 +464,7 @@ const theme = createTheme({
     MuiFormGroup: {
       styleOverrides: {
         root: {
-          gap: '4px', // Adds spacing between radio options
+          gap: '4px',
         },
       },
     },

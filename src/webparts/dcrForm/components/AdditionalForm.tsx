@@ -214,5 +214,6 @@ export const AdditionalForm = ({
         />
       </Box>
     </Box>
+    </Box>
   );
 };

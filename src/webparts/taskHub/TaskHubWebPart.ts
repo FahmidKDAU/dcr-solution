@@ -12,6 +12,9 @@ import * as strings from 'TaskHubWebPartStrings';
 import TaskHub from './components/TaskHub';
 import { ITaskHubProps } from './components/ITaskHubProps';
 import { PnPSetup } from '../../shared/services/PnPSetup';
+import { ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import theme from '../../shared/theme/theme';
 
 export interface ITaskHubWebPartProps {
   description: string;
@@ -22,20 +25,22 @@ export default class TaskHubWebPart extends BaseClientSideWebPart<ITaskHubWebPar
   private _isDarkTheme: boolean = false;
   private _environmentMessage: string = '';
 
-  public render(): void {
-    const element: React.ReactElement<ITaskHubProps> = React.createElement(
-      TaskHub,
-      {
-        description: this.properties.description,
-        isDarkTheme: this._isDarkTheme,
-        environmentMessage: this._environmentMessage,
-        hasTeamsContext: !!this.context.sdks.microsoftTeams,
-        userDisplayName: this.context.pageContext.user.displayName
-      }
-    );
+public render(): void {
+  const element: React.ReactElement = React.createElement(
+    ThemeProvider,
+    { theme },
+    React.createElement(CssBaseline),
+    React.createElement(TaskHub, {
+      description: this.properties.description,
+      isDarkTheme: this._isDarkTheme,
+      environmentMessage: this._environmentMessage,
+      hasTeamsContext: !!this.context.sdks.microsoftTeams,
+      userDisplayName: this.context.pageContext.user.displayName
+    })
+  );
 
-    ReactDom.render(element, this.domElement);
-  }
+  ReactDom.render(element, this.domElement);
+}
 
   protected async onInit(): Promise<void> {
     await super.onInit();

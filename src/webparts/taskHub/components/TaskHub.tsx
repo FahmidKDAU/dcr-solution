@@ -64,7 +64,10 @@ const TaskHub = () => {
           tasks={tasks}
           selectedTask={selectedTask}
           onTaskSelect={setSelectedTask}
-          onRefresh={() => SharePointService.getTasks(currentUser.Id).then(setTasks)}
+          onRefresh={async () => {
+            if (!currentUser) return;
+            await SharePointService.getTasks(currentUser.Id).then(setTasks);
+          }}
         />
       ) : (
         <Allotment>
@@ -89,7 +92,7 @@ const TaskHub = () => {
               cr={cr}
               crLoading={crLoading}
               onCRUpdate={refreshCR}
-              currentUser={currentUser}
+              currentUser={currentUser ?? undefined}
             />
           </Allotment.Pane>
         </Allotment>

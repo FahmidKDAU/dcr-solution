@@ -522,8 +522,8 @@ const ParticipantSection = ({
     try {
       await SharePointService.updateParticipant(restartTarget.Id, {
         Status: "Not Started",
-        StartDate: null,
-        CompletedDate: null,
+        StartDate: undefined,
+        CompletedDate: undefined,
       });
       setRestartTarget(null);
       onRefetch();

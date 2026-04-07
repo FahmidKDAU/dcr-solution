@@ -5,7 +5,6 @@ import Tab from "@mui/material/Tab";
 import Button from "@mui/material/Button";
 import Alert from "@mui/material/Alert";
 import Typography from "@mui/material/Typography";
-import SharePointService from "../../../shared/services/SharePointService";
 import { SharePointPerson } from "../../../shared/types/SharePointPerson";
 import { useDocuments } from "../../../shared/hooks/useDocuments";
 import { InitialForm } from "./InitialForm";
