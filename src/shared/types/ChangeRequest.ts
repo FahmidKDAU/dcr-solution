@@ -32,8 +32,8 @@ export interface IChangeRequest {
   Audience: LookupFieldItem;
   DraftDocumentName?: string;
   PublishedDate: string;
-
   isCrComplete?: boolean;
   ExternalDocument: boolean;
   TargetDocumentId?: number;
+  DraftDocumentUrl?: string;
 }

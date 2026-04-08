@@ -4,6 +4,7 @@ export interface MinorChange {
   Id: number;
   Title: string;
   TargetDocumentId: number;
+  ChangeRequestId?: number;
   ScopeOfChange: string;
   Status: "Pending" | "Implemented" | "Cancelled";
   Created: Date;

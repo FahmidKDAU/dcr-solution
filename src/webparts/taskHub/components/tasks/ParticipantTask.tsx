@@ -12,6 +12,7 @@ import { Task } from "../../../../shared/types/Task";
 import { IChangeRequest } from "../../../../shared/types/ChangeRequest";
 import SharePointService from "../../../../shared/services/SharePointService";
 import { emitParticipantRefetch } from "../../../../shared/hooks/useParticipants";
+import { useWebPartContext } from "../../../../shared/contexts/WebPartContext";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -30,7 +31,7 @@ const ParticipantTask = ({
 }: ParticipantTaskProps): React.ReactElement => {
   const [participantNotes, setParticipantNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [docUrl, setDocUrl] = useState<string | null>(null);
+ 
   const [docLoading, setDocLoading] = useState(false);
   const [participant, setParticipant] = useState<{
     Id: number;
@@ -41,9 +42,14 @@ const ParticipantTask = ({
   const isReviewer = participantRole === "Reviewer";
   const positiveLabel = isReviewer ? "Approve" : "Mark Complete";
   const authorSuggestions = (task.Comments ?? "").trim();
+    const { webAbsoluteUrl } = useWebPartContext();
 
+const draftUrl = cr?.DraftDocumentUrl
+  ? `${webAbsoluteUrl}${cr.DraftDocumentUrl}`
+  : null;
   
 
+  console.log(draftUrl + " is the draft url");
   useEffect(() => {
     SharePointService.getParticipantByTaskContext(
       task.ChangeRequestId,
@@ -66,14 +72,6 @@ const ParticipantTask = ({
       });
   }, [task.ChangeRequestId, task.AssignedTo.Id]);
 
-  useEffect(() => {
-    if (!cr?.ID) return;
-    setDocLoading(true);
-    SharePointService.getDraftDocumentFolderByChangeRequestId(cr.ID)
-      .then(setDocUrl)
-      .catch(console.error)
-      .finally(() => setDocLoading(false));
-  }, [cr?.ID]);
 
   console.log("Participant:", participant);
 
@@ -123,10 +121,10 @@ const ParticipantTask = ({
             Loading document...
           </Typography>
         </Box>
-      ) : docUrl ? (
+      ) : draftUrl ? (
         <Box
           component="a"
-          href={docUrl}
+          href={draftUrl}
           target="_blank"
           rel="noopener noreferrer"
           sx={{

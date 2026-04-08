@@ -96,6 +96,7 @@ const getChangeRequestById = async (
         "Contributors/EMail",
         // Document reference
         "TargetDocumentId",
+        "DraftDocumentUrl",
       )
       .expand(
         "CoreFunctionality",
@@ -669,6 +670,17 @@ const getMinorChangesByDocument = async (documentId: number): Promise<MinorChang
     return [];
   }
 };
+
+const updateMinorChange = async (id: number, data: Record<string, unknown>): Promise<void> => { 
+  try {
+    const sp = PnPSetup.getSP();
+    await sp.web.lists.getByTitle("Minor Changes Register").items.getById(id).update(data);
+  } catch (error) {
+    console.error("Error updating minor change:", error); 
+  }
+};
+
+
 export default {
   getDepartments,
   createChangeRequest,
@@ -694,4 +706,5 @@ export default {
   getParticipantTaskByContext,
   getDraftDocumentFolderByChangeRequestId,
   getMinorChangesByDocument,
+  updateMinorChange,
 };

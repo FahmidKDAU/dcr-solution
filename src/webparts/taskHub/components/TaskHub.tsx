@@ -11,9 +11,14 @@ import { Allotment } from "allotment";
 import "allotment/dist/style.css";
 import { TaskDetail } from "./TaskDetail";
 import { IChangeRequest } from "../../../shared/types/ChangeRequest";
+import { WebPartProvider  } from "../../../shared/contexts/WebPartContext";
+interface TaskHubProps {
+  webAbsoluteUrl: string;
+}
 
-const TaskHub = () => {
+const TaskHub = (props: TaskHubProps) => {
   const { currentUser, loading } = useCurrentUser();
+
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tasksLoading, setTasksLoading] = useState(true);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -54,11 +59,8 @@ const TaskHub = () => {
   };
 
   return (
-    <Box
-      height="100vh"
-      overflow="hidden"
-      sx={{ border: "1px solid #e0e0e0", borderRadius: 2, overflow: "hidden" }}
-    >
+     <WebPartProvider value={{ webAbsoluteUrl: props.webAbsoluteUrl }}>
+<Box sx={{ height: "calc(100vh - 50px)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
       {!selectedTask ? (
         <TaskList
           tasks={tasks}
@@ -98,6 +100,7 @@ const TaskHub = () => {
         </Allotment>
       )}
     </Box>
+    </WebPartProvider>
   );
 };
 
