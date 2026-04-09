@@ -110,7 +110,7 @@ const ParticipantTask = ({
       ) : draftUrl ? (
         <Box
           component="a"
-          href={draftUrl}
+          href={`${draftUrl}${draftUrl.includes("?") ? "&" : "?"}web=1`}
           target="_blank"
           rel="noopener noreferrer"
           sx={{

@@ -459,7 +459,7 @@ const DocumentChangeProcessTask = ({
                     />
                     <Box
                       component="a"
-                      href={fileUrl}
+                      href={`${fileUrl}?web=1`}
                       target="_blank"
                       rel="noopener noreferrer"
                       sx={{
