@@ -12,7 +12,6 @@ import { Task } from "../../../../shared/types/Task";
 import { IChangeRequest } from "../../../../shared/types/ChangeRequest";
 import SharePointService from "../../../../shared/services/SharePointService";
 import { emitParticipantRefetch } from "../../../../shared/hooks/useParticipants";
-import { useWebPartContext } from "../../../../shared/contexts/WebPartContext";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -42,14 +41,7 @@ const ParticipantTask = ({
   const isReviewer = participantRole === "Reviewer";
   const positiveLabel = isReviewer ? "Approve" : "Mark Complete";
   const authorSuggestions = (task.Comments ?? "").trim();
-    const { webAbsoluteUrl } = useWebPartContext();
-
-const draftUrl = cr?.DraftDocumentUrl
-  ? `${webAbsoluteUrl}${cr.DraftDocumentUrl}`
-  : null;
-  
-
-  console.log(draftUrl + " is the draft url");
+  const draftUrl = cr?.DraftDocumentUrl ?? null;
   useEffect(() => {
     SharePointService.getParticipantByTaskContext(
       task.ChangeRequestId,
@@ -71,9 +63,6 @@ const draftUrl = cr?.DraftDocumentUrl
         console.error("Failed to fetch participant for task:", err);
       });
   }, [task.ChangeRequestId, task.AssignedTo.Id]);
-
-
-  console.log("Participant:", participant);
 
   const handleAction = async (action: "positive" | "reject"): Promise<void> => {
     setSubmitting(true);
@@ -107,9 +96,6 @@ const draftUrl = cr?.DraftDocumentUrl
       setSubmitting(false);
     }
   };
-
-  console.log("task:", task);
-  console.log("Participant:" ,participant)
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>

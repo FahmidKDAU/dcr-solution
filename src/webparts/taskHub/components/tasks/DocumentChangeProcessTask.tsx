@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
@@ -9,6 +9,7 @@ import DialogActions from "@mui/material/DialogActions";
 import IconButton from "@mui/material/IconButton";
 import TextField from "@mui/material/TextField";
 import Checkbox from "@mui/material/Checkbox";
+import Radio from "@mui/material/Radio";
 import CircularProgress from "@mui/material/CircularProgress";
 import CloseIcon from "@mui/icons-material/Close";
 import PeopleIcon from "@mui/icons-material/People";
@@ -16,6 +17,9 @@ import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import EditNoteIcon from "@mui/icons-material/EditNote";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import FolderOpenIcon from "@mui/icons-material/FolderOpen";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
+import InsertDriveFileOutlinedIcon from "@mui/icons-material/InsertDriveFileOutlined";
 import { IChangeRequest } from "../../../../shared/types/ChangeRequest";
 import { SharePointPerson } from "../../../../shared/types/SharePointPerson";
 import { Task } from "../../../../shared/types/Task";
@@ -29,6 +33,7 @@ interface DocumentChangeProcessTaskProps {
   cr: IChangeRequest;
   currentUser: SharePointPerson;
   onTaskComplete: () => void;
+  onCRUpdate?: () => void;
 }
 
 const getInitials = (name: string) =>
@@ -68,6 +73,43 @@ const DetailField = ({
   </Box>
 );
 
+// ─── URL helpers (regex-only, no new URL — SP URLs may have unencoded spaces) ──
+
+/** Strip origin from a full URL to get a server-relative path. */
+const toServerRelativePath = (url: string): string => {
+  const m = url.trim().match(/^https?:\/\/[^/]+(\/.*)/i);
+  return m ? m[1] : url.startsWith("/") ? url : `/${url}`;
+};
+
+/** Build a SharePoint library AllItems.aspx link that opens the folder. */
+const toFolderAllItemsUrl = (folderUrl: string): string => {
+  const origin = window.location.origin;
+  const serverRelative = toServerRelativePath(folderUrl);
+  // Library root is the first 3 segments for /sites/ paths: /sites/{site}/{library}
+  const segments = serverRelative.split("/").filter(Boolean);
+  const libraryRoot = `/${segments.slice(0, 3).join("/")}`;
+  return `${origin}${libraryRoot}/Forms/AllItems.aspx?id=${encodeURIComponent(serverRelative)}`;
+};
+
+/** Convert a server-relative path to an absolute SharePoint URL. */
+const toAbsoluteSharePointUrl = (serverRelativePath: string): string =>
+  `${window.location.origin}${serverRelativePath}`;
+
+const EXT_COLORS: Record<string, string> = {
+  docx: "#2B579A",
+  doc: "#2B579A",
+  xlsx: "#217346",
+  xls: "#217346",
+  pptx: "#D24726",
+  ppt: "#D24726",
+  pdf: "#D32F2F",
+};
+
+const getExtColor = (name: string): string => {
+  const ext = name.split(".").pop()?.toLowerCase() ?? "";
+  return EXT_COLORS[ext] ?? "#605E5C";
+};
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const DocumentChangeProcessTask = ({
@@ -75,6 +117,7 @@ const DocumentChangeProcessTask = ({
   cr,
   currentUser,
   onTaskComplete,
+  onCRUpdate,
 }: DocumentChangeProcessTaskProps): React.ReactElement => {
   const { contributors, reviewers, loading, refetch } = useParticipants(cr.ID);
   const [manageOpen, setManageOpen] = useState(false);
@@ -87,6 +130,15 @@ const DocumentChangeProcessTask = ({
   const [savingMinorId, setSavingMinorId] = useState<number | null>(null);
   const [selectedMinorChange, setSelectedMinorChange] =
     useState<MinorChange | null>(null);
+
+  // Draft documents state
+  const [draftFolderPath, setDraftFolderPath] = useState<string | null>(null);
+  const [draftFiles, setDraftFiles] = useState<
+    { Name: string; ServerRelativeUrl: string; TimeLastModified: string }[]
+  >([]);
+  const [draftFilesLoading, setDraftFilesLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [settingActive, setSettingActive] = useState(false);
 
   const isAuthor = cr.Author0?.Id === currentUser.Id;
   const isCa = cr.ChangeAuthority?.Id === currentUser.Id;
@@ -118,7 +170,101 @@ const DocumentChangeProcessTask = ({
     pendingMinorChanges.length === 0 ||
     pendingMinorChanges.every((mc) => mc.Status === "Implemented");
 
-  const canSubmit = allParticipantsComplete && allMinorChangesActioned;
+  const hasActiveDocument = !!cr.DraftDocumentUrl;
+  const canSubmit =
+    allParticipantsComplete && allMinorChangesActioned && hasActiveDocument;
+
+  // Resolve draft folder: try library lookup first, fall back to cr.DraftFolderUrl
+  // ensureServerRelativePath in the service handles site-relative → full server-relative
+  useEffect(() => {
+    const resolve = async (): Promise<void> => {
+      try {
+        const path =
+          await SharePointService.getDraftDocumentFolderByChangeRequestId(
+            cr.ID,
+          );
+        if (path) {
+          setDraftFolderPath(path);
+        } else if (cr.DraftFolderUrl) {
+          setDraftFolderPath(
+            await SharePointService.ensureServerRelativePath(cr.DraftFolderUrl),
+          );
+        } else {
+          setDraftFolderPath(null);
+        }
+      } catch {
+        if (cr.DraftFolderUrl) {
+          try {
+            setDraftFolderPath(
+              await SharePointService.ensureServerRelativePath(
+                cr.DraftFolderUrl,
+              ),
+            );
+          } catch {
+            setDraftFolderPath(null);
+          }
+        } else {
+          setDraftFolderPath(null);
+        }
+      }
+    };
+    resolve().catch(console.error);
+  }, [cr.ID, cr.DraftFolderUrl]);
+
+  // Fetch draft files once we have the folder path
+  const fetchDraftFiles = useCallback(async () => {
+    if (!draftFolderPath) return;
+    setDraftFilesLoading(true);
+    try {
+      const files = await SharePointService.getDraftFolderFiles(draftFolderPath);
+      setDraftFiles(files);
+    } catch (err) {
+      console.error("Failed to fetch draft files:", err);
+    } finally {
+      setDraftFilesLoading(false);
+    }
+  }, [draftFolderPath]);
+
+  useEffect(() => {
+    fetchDraftFiles().catch(console.error);
+  }, [fetchDraftFiles]);
+
+  const handleUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ): Promise<void> => {
+    const input = e.target;
+    const fileList = input.files;
+    if (!fileList || fileList.length === 0 || !draftFolderPath) return;
+    setUploading(true);
+    try {
+      await SharePointService.uploadFilesToDraftFolder(
+        draftFolderPath,
+        Array.from(fileList),
+      );
+      await fetchDraftFiles();
+    } catch (err) {
+      console.error("Upload failed:", err);
+    } finally {
+      setUploading(false);
+      input.value = "";
+    }
+  };
+
+  const handleSetActiveDocument = async (
+    serverRelativeUrl: string,
+  ): Promise<void> => {
+    setSettingActive(true);
+    try {
+      await SharePointService.updateChangeRequest(cr.ID, {
+        DraftDocumentUrl: toAbsoluteSharePointUrl(serverRelativeUrl),
+      });
+      onCRUpdate?.();
+    } catch (err) {
+      console.error("Failed to set active document:", err);
+    } finally {
+      setSettingActive(false);
+    }
+  };
 
   useEffect(() => {
     if (!isExistingDocument || !cr.TargetDocumentId) return;
@@ -199,9 +345,198 @@ const DocumentChangeProcessTask = ({
   const blockingReasons: string[] = [];
   if (!allParticipantsComplete) blockingReasons.push("participants to complete");
   if (!allMinorChangesActioned) blockingReasons.push("minor changes to be actioned");
+  if (!hasActiveDocument) blockingReasons.push("an active document to be selected");
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2, p: 2.5 }}>
+
+      {/* ── Draft Documents Card ── */}
+      <Box
+        sx={{
+          border: "1px solid #EDEBE9",
+          borderRadius: "10px",
+          backgroundColor: "#fff",
+          overflow: "hidden",
+        }}
+      >
+          {/* Header */}
+          <Box
+            sx={{
+              px: 2,
+              py: 1.25,
+              borderBottom: "1px solid #EDEBE9",
+              backgroundColor: "#FAFAFA",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <FolderOpenIcon sx={{ fontSize: 15, color: "#605E5C" }} />
+              <Typography
+                sx={{ fontSize: 12, fontWeight: 600, color: "#323130" }}
+              >
+                Draft Documents
+              </Typography>
+            </Box>
+            {draftFolderPath && (
+              <Box
+                component="a"
+                href={toFolderAllItemsUrl(draftFolderPath)}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.5,
+                  color: "#0078D4",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  textDecoration: "none",
+                  "&:hover": { textDecoration: "underline" },
+                }}
+              >
+                <OpenInNewIcon sx={{ fontSize: 14 }} />
+                Open folder
+              </Box>
+            )}
+          </Box>
+
+          {/* File list */}
+          <Box sx={{ py: 0.5 }}>
+            {draftFilesLoading ? (
+              <Box display="flex" justifyContent="center" py={2}>
+                <CircularProgress size={20} />
+              </Box>
+            ) : draftFiles.length === 0 ? (
+              <Typography
+                sx={{
+                  fontSize: 12,
+                  color: "#A19F9D",
+                  fontStyle: "italic",
+                  px: 2,
+                  py: 1.5,
+                }}
+              >
+                No files uploaded yet
+              </Typography>
+            ) : (
+              draftFiles.map((file) => {
+                const fileUrl = toAbsoluteSharePointUrl(file.ServerRelativeUrl);
+                const isActive =
+                  cr.DraftDocumentUrl ===  fileUrl ||
+                  cr.DraftDocumentUrl === file.ServerRelativeUrl;
+
+                return (
+                  <Box
+                    key={file.ServerRelativeUrl}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      px: 2,
+                      py: 0.75,
+                      borderBottom: "1px solid #F3F2F1",
+                      "&:last-child": { borderBottom: "none" },
+                      "&:hover": { backgroundColor: "#F9F9F9" },
+                    }}
+                  >
+                    <Radio
+                      checked={isActive}
+                      disabled={settingActive}
+                      onChange={() =>
+                        handleSetActiveDocument(file.ServerRelativeUrl)
+                      }
+                      size="small"
+                      sx={{
+                        p: 0,
+                        color: "#C8C6C4",
+                        "&.Mui-checked": { color: "#0078D4" },
+                      }}
+                    />
+                    <InsertDriveFileOutlinedIcon
+                      sx={{ fontSize: 16, color: getExtColor(file.Name) }}
+                    />
+                    <Box
+                      component="a"
+                      href={fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      sx={{
+                        flex: 1,
+                        fontSize: 13,
+                        color: "#323130",
+                        textDecoration: "none",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        "&:hover": {
+                          color: "#0078D4",
+                          textDecoration: "underline",
+                        },
+                      }}
+                    >
+                      {file.Name}
+                    </Box>
+                    {isActive && (
+                      <Typography
+                        sx={{
+                          fontSize: 10,
+                          fontWeight: 600,
+                          color: "#107C10",
+                          backgroundColor: "#DFF6DD",
+                          px: 0.75,
+                          py: 0.15,
+                          borderRadius: "10px",
+                          flexShrink: 0,
+                        }}
+                      >
+                        Active
+                      </Typography>
+                    )}
+                  </Box>
+                );
+              })
+            )}
+          </Box>
+
+          {/* Upload button */}
+          <Box sx={{ px: 2, py: 1.5, borderTop: "1px solid #EDEBE9" }}>
+            <Button
+              component="label"
+              variant="outlined"
+              size="small"
+              disabled={uploading || !draftFolderPath}
+              startIcon={
+                uploading ? (
+                  <CircularProgress size={14} color="inherit" />
+                ) : (
+                  <UploadFileIcon sx={{ fontSize: 16 }} />
+                )
+              }
+              sx={{
+                textTransform: "none",
+                fontSize: 12,
+                fontWeight: 500,
+                borderRadius: "6px",
+                borderColor: "#EDEBE9",
+                color: "#323130",
+                "&:hover": {
+                  borderColor: "#0078D4",
+                  backgroundColor: "#F3F2F1",
+                },
+              }}
+            >
+              {uploading ? "Uploading..." : "Upload files"}
+              <input
+                type="file"
+                hidden
+                multiple
+                onChange={handleUpload}
+              />
+            </Button>
+          </Box>
+        </Box>
 
       {/* ── Participants Card (with manage button inside) ── */}
       <Box

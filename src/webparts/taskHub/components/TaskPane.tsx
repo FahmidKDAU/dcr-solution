@@ -179,6 +179,7 @@ const renderTaskContent = (
           cr={cr}
           currentUser={currentUser}
           onTaskComplete={onTaskComplete}
+          onCRUpdate={onRefetch ?? (() => undefined)}
         />
       );
     case "Participant Task":

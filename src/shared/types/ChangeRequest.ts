@@ -36,4 +36,5 @@ export interface IChangeRequest {
   ExternalDocument: boolean;
   TargetDocumentId?: number;
   DraftDocumentUrl?: string;
+  DraftFolderUrl?: string;
 }

@@ -6,9 +6,57 @@ import { IChangeRequest } from "../types/ChangeRequest";
 import "@pnp/sp/attachments";
 import "@pnp/sp/webs";
 import "@pnp/sp/site-users/web";
+import "@pnp/sp/folders";
+import "@pnp/sp/files";
+import "@pnp/sp/sites";
 import { Task } from "../types/Task";
 import { Participant } from "../types/Participant";
 import { MinorChange } from "../types/MinorChange";
+
+const normalizeServerRelativePath = (path: string): string => {
+  const trimmed = path.trim();
+
+  // Strip origin from full URLs (handles spaces that break new URL())
+  const originMatch = trimmed.match(/^https?:\/\/[^/]+(\/.*)/i);
+  if (originMatch) {
+    return originMatch[1];
+  }
+
+  if (trimmed.startsWith("/")) {
+    return trimmed;
+  }
+
+  if (trimmed.startsWith("sites/") || trimmed.startsWith("teams/")) {
+    return `/${trimmed}`;
+  }
+
+  return `/${trimmed.replace(/^\/+/, "")}`;
+};
+
+// Cached web server-relative URL (e.g. "/sites/DocumentChangeManagementDemo")
+let _webServerRelativeUrl: string | undefined;
+
+const getWebServerRelativeUrl = async (): Promise<string> => {
+  if (_webServerRelativeUrl) return _webServerRelativeUrl;
+  const sp = PnPSetup.getSP();
+  const webInfo = await sp.web.select("ServerRelativeUrl")();
+  const url = webInfo.ServerRelativeUrl;
+  if (!_webServerRelativeUrl) {
+    _webServerRelativeUrl = url;
+  }
+  return _webServerRelativeUrl;
+};
+
+/**
+ * Ensure a path is fully server-relative by prepending the web's server-relative URL
+ * if the path is only site-relative (e.g. "/Change Request Documents/...").
+ */
+const ensureServerRelativePath = async (path: string): Promise<string> => {
+  const normalized = normalizeServerRelativePath(path);
+  const webUrl = await getWebServerRelativeUrl();
+  if (normalized.startsWith(webUrl)) return normalized;
+  return `${webUrl}${normalized}`;
+};
 
 const getDepartments = async (): Promise<Department[]> => {
   try {
@@ -97,6 +145,7 @@ const getChangeRequestById = async (
         // Document reference
         "TargetDocumentId",
         "DraftDocumentUrl",
+        "DraftFolderUrl",
       )
       .expand(
         "CoreFunctionality",
@@ -647,23 +696,30 @@ const getDraftDocumentFolderByChangeRequestId = async (
   }
 };
 
-const getMinorChangesByDocument = async (documentId: number): Promise<MinorChange[]> => {
+const getMinorChangesByDocument = async (
+  documentId: number,
+): Promise<MinorChange[]> => {
   try {
     const sp = PnPSetup.getSP();
     const allItems = await sp.web.lists
       .getByTitle("Minor Changes Register")
       .items.select(
-        "Id", "Title", "ScopeOfChange", "Status",
-        "Created", "Notes",
-        "ImplementedInCR", 
+        "Id",
+        "Title",
+        "ScopeOfChange",
+        "Status",
+        "Created",
+        "Notes",
+        "ImplementedInCR",
         "TargetDocumentId",
-        "RequestedBy/Id", "RequestedBy/Title"
+        "RequestedBy/Id",
+        "RequestedBy/Title",
       )
       .expand("RequestedBy")
       .orderBy("Created", false)();
 
     return (allItems as MinorChange[]).filter(
-      (item) => item.TargetDocumentId === documentId
+      (item) => item.TargetDocumentId === documentId,
     );
   } catch (error) {
     console.error("Error fetching minor changes:", error);
@@ -671,15 +727,67 @@ const getMinorChangesByDocument = async (documentId: number): Promise<MinorChang
   }
 };
 
-const updateMinorChange = async (id: number, data: Record<string, unknown>): Promise<void> => { 
+const updateMinorChange = async (
+  id: number,
+  data: Record<string, unknown>,
+): Promise<void> => {
   try {
     const sp = PnPSetup.getSP();
-    await sp.web.lists.getByTitle("Minor Changes Register").items.getById(id).update(data);
+    await sp.web.lists
+      .getByTitle("Minor Changes Register")
+      .items.getById(id)
+      .update(data);
   } catch (error) {
-    console.error("Error updating minor change:", error); 
+    console.error("Error updating minor change:", error);
   }
 };
 
+const getDraftFolderFiles = async (
+  folderUrl: string,
+): Promise<
+  { Name: string; ServerRelativeUrl: string; TimeLastModified: string }[]
+> => {
+  try {
+    const sp = PnPSetup.getSP();
+    const normalizedFolderUrl = await ensureServerRelativePath(folderUrl);
+    const files = await sp.web
+      .getFolderByServerRelativePath(normalizedFolderUrl)
+      .files.select("Name", "ServerRelativeUrl", "TimeLastModified")
+      .orderBy("TimeLastModified", false)();
+    return files;
+  } catch (error) {
+    console.error("Error fetching draft folder files:", error);
+    return [];
+  }
+};
+
+const uploadFilesToDraftFolder = async (
+  folderUrl: string,
+  files: File[],
+): Promise<void> => {
+  if (!folderUrl) {
+    throw new Error("Draft folder URL is required.");
+  }
+
+  if (!files || files.length === 0) {
+    return;
+  }
+
+  try {
+    const sp = PnPSetup.getSP();
+    const normalizedFolderUrl = await ensureServerRelativePath(folderUrl);
+    const folder = sp.web.getFolderByServerRelativePath(normalizedFolderUrl);
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const buffer = await file.arrayBuffer();
+      await folder.files.addUsingPath(file.name, buffer, { Overwrite: true });
+    }
+  } catch (error) {
+    console.error("Error uploading files to draft folder:", error);
+    throw error;
+  }
+};
 
 export default {
   getDepartments,
@@ -707,4 +815,7 @@ export default {
   getDraftDocumentFolderByChangeRequestId,
   getMinorChangesByDocument,
   updateMinorChange,
+  getDraftFolderFiles,
+  uploadFilesToDraftFolder,
+  ensureServerRelativePath,
 };
