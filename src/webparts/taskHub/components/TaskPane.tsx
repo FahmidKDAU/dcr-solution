@@ -10,6 +10,7 @@ import CAApprovalTask from "./tasks/ChangeAuthorityApproval";
 import CAReviewTask from "./tasks/CAReviewTask";
 import DocumentChangeProcessTask from "./tasks/DocumentChangeProcessTask";
 import ParticipantTask from "./tasks/ParticipantTask";
+import VerifyReviewTask from "./tasks/VerifyReviewTask";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -30,6 +31,8 @@ const TASK_TYPE_STYLES: Record<string, { bg: string; color: string }> = {
   "Document Review": { bg: "#DFF6DD", color: "#107C10" },
   "CR Completion": { bg: "#FFF4CE", color: "#835B00" },
   "Document Controller Review": { bg: "#FDE7E9", color: "#A4262C" },
+  "Compliance Authority Review": { bg: "#E8F5E9", color: "#2E7D32" },
+  "Publishing Review": { bg: "#E8F0F8", color: "#004578" },
   "Document Change Process": { bg: "#EFF6FC", color: "#0078D4" },
 };
 
@@ -185,6 +188,12 @@ const renderTaskContent = (
     case "Participant Task":
       return (
         <ParticipantTask task={task} cr={cr} onTaskComplete={onTaskComplete} />
+      );
+    case "Compliance Authority Review":
+    case "Document Controller Review":
+    case "Publishing Review":
+      return (
+        <VerifyReviewTask task={task} cr={cr} onTaskComplete={onTaskComplete} />
       );
     default:
       return (

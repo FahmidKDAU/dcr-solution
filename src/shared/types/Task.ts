@@ -13,6 +13,8 @@ export interface Task {
     | "Change Authority Approval"
     | "Change Authority Review"
     | "Document Controller Review"
+    | "Compliance Authority Review"
+    | "Publishing Review"
     | "Author Review"
     | "Document Change Process"
     | "Participant Task"

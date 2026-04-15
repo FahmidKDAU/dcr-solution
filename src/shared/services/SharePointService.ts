@@ -210,7 +210,8 @@ const getDocuments = async (): Promise<Document[]> => {
         "Id",
         "DocumentTitle",
         "PublishedDate",
-
+        "FileRef", // ← ADD THIS
+        "FileLeafRef", // ← ADD THIS
         // Lookup fields
         "DocumentType/Id",
         "DocumentType/Title",
@@ -789,6 +790,21 @@ const uploadFilesToDraftFolder = async (
   }
 };
 
+const getSystemConfigValue = async (key: string): Promise<boolean> => {
+  try {
+    const sp = PnPSetup.getSP();
+    const items = await sp.web.lists
+      .getByTitle("System Configuration")
+      .items.select("Title", "Active")
+      .filter(`Title eq '${key}'`)
+      .top(1)();
+    return items.length > 0 ? !!items[0].Active : false;
+  } catch (error) {
+    console.error(`Error fetching system config '${key}':`, error);
+    return false;
+  }
+};
+
 export default {
   getDepartments,
   createChangeRequest,
@@ -818,4 +834,5 @@ export default {
   getDraftFolderFiles,
   uploadFilesToDraftFolder,
   ensureServerRelativePath,
+  getSystemConfigValue,
 };

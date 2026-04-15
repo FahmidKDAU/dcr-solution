@@ -6,7 +6,7 @@ import Typography from "@mui/material/Typography";
 import { Document } from "../../../shared/types/Document";
 import { useDocuments } from "../../../shared/hooks/useDocuments";
 import DocumentsTable from "./DocumentsTable";
-
+import DocumentDetail from "./DocumentDetail";
 
 // ── Simple state-based navigation ────────────────────────────────────────────
 // SPFx doesn't have a router, so we swap between 'list' and 'detail' views
@@ -45,15 +45,17 @@ const DocumentPortal = (): React.ReactElement => {
     );
   }
 
+  // ── Detail View ──
   if (view === "detail" && selectedDocument) {
-    // return (
-    //   // <DocumentDetail
-    //   //   document={selectedDocument}
-    //   //   onBack={handleBack}
-    //   // />
-    // );
+    return (
+      <DocumentDetail
+        document={selectedDocument}
+        onBack={handleBack}
+      />
+    );
   }
 
+  // ── List View ──
   return (
     <Box
       sx={{
