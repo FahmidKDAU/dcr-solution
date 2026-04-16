@@ -1,219 +1,361 @@
+// src/webparts/submitChangeRequest/components/AdditionalForm.tsx
 import React from "react";
+import {
+  Box,
+  TextField,
+  Select,
+  MenuItem,
+  Typography,
+} from "@mui/material";
 import { ChangeRequestFormData } from "./ChangeRequestForm";
-import Box from "@mui/material/Box";
-import TextField from "@mui/material/TextField";
-import FormControl from "@mui/material/FormControl";
-import InputLabel from "@mui/material/InputLabel";
-import Select from "@mui/material/Select";
-import MenuItem from "@mui/material/MenuItem";
-import Typography from "@mui/material/Typography";
-import Divider from "@mui/material/Divider";
 import { Document } from "../../../shared/types/Document";
 import { PeoplePicker } from "./PeoplePicker";
 import { MultiPeoplePicker } from "./MultiPeoplePicker";
 import { useLookupData } from "../../../shared/hooks/useLookupData";
+import { BRANDING } from "../../../shared/theme/theme";
 
 interface AdditionalFormProps {
   data: ChangeRequestFormData;
   onChange: (
     field: keyof ChangeRequestFormData,
-    value: ChangeRequestFormData[keyof ChangeRequestFormData],
+    value: ChangeRequestFormData[keyof ChangeRequestFormData]
   ) => void;
   documents: Document[];
   isExistingDocumentSelected?: boolean;
 }
 
-export const AdditionalForm = ({
+// Section header component
+const SectionHeader: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => (
+  <Typography
+    sx={{
+      fontSize: "12px",
+      color: BRANDING.primary,
+      textTransform: "uppercase",
+      letterSpacing: "0.5px",
+      fontWeight: 600,
+      marginBottom: "14px",
+      paddingBottom: "8px",
+      borderBottom: "1px solid #E2E8F0",
+    }}
+  >
+    {children}
+  </Typography>
+);
+
+// Field label component
+const FieldLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <Typography
+    component="label"
+    sx={{
+      fontSize: "11px",
+      color: "#64748B",
+      fontWeight: 500,
+      display: "block",
+      marginBottom: "5px",
+    }}
+  >
+    {children}
+  </Typography>
+);
+
+// Common select styles
+const selectSx = {
+  fontSize: "13px",
+  borderRadius: "6px",
+  "& .MuiOutlinedInput-notchedOutline": {
+    borderColor: "#E2E8F0",
+  },
+  "&:hover .MuiOutlinedInput-notchedOutline": {
+    borderColor: "#CBD5E1",
+  },
+  "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+    borderColor: BRANDING.primary,
+    borderWidth: "1px",
+  },
+  "& .MuiSelect-select": {
+    padding: "9px 12px",
+  },
+};
+
+const inputSx = {
+  "& .MuiOutlinedInput-root": {
+    fontSize: "13px",
+    borderRadius: "6px",
+    "& fieldset": {
+      borderColor: "#E2E8F0",
+    },
+    "&:hover fieldset": {
+      borderColor: "#CBD5E1",
+    },
+    "&.Mui-focused fieldset": {
+      borderColor: BRANDING.primary,
+      borderWidth: "1px",
+    },
+  },
+  "& .MuiInputBase-input": {
+    padding: "9px 12px",
+  },
+};
+
+export const AdditionalForm: React.FC<AdditionalFormProps> = ({
   data,
   onChange,
-  documents,
   isExistingDocumentSelected = false,
-}: AdditionalFormProps): JSX.Element => {
+}) => {
   const isDocumentLocked = !!isExistingDocumentSelected;
-
-  // Placeholder data - Replace with actual hooks when ready
 
   const { documentTypes, categories, audienceGroups, businessFunctions } =
     useLookupData();
-  console.log(audienceGroups + "");
+
   return (
     <Box>
       {/* Document Classification Section */}
-      <Box sx={{ marginBottom: 4 }}>
-        <Typography
-          variant="h3"
+      <Box sx={{ marginBottom: "24px" }}>
+        <SectionHeader>Document classification</SectionHeader>
+
+        <Box
           sx={{
-            marginBottom: 3,
-            paddingBottom: 1,
-            borderBottom: "2px solid",
-            borderColor: "primary.main",
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "14px",
           }}
         >
-          Document Classification
-        </Typography>
-
-        <Box display="flex" flexDirection="column">
-          <FormControl fullWidth>
-            <InputLabel>Document Type</InputLabel>
+          {/* Document Type */}
+          <Box>
+            <FieldLabel>Document type</FieldLabel>
             <Select
-              label="Document Type"
               value={data.documentTypeId ?? ""}
+              displayEmpty
+              fullWidth
               disabled={isDocumentLocked}
               onChange={(e) =>
-                onChange("documentTypeId", Number(e.target.value))
+                onChange("documentTypeId", Number(e.target.value) || undefined)
               }
+              sx={selectSx}
             >
+              <MenuItem value="">
+                <Typography sx={{ color: "#94A3B8", fontSize: "13px" }}>
+                  Select...
+                </Typography>
+              </MenuItem>
               {documentTypes.map((type) => (
                 <MenuItem key={type.Id} value={type.Id}>
                   {type.Title}
                 </MenuItem>
               ))}
             </Select>
-          </FormControl>
+          </Box>
 
-          <FormControl fullWidth>
-            <InputLabel>Document Category</InputLabel>
+          {/* Category */}
+          <Box>
+            <FieldLabel>Category</FieldLabel>
             <Select
-              label="Document Category"
               value={data.documentCategoryIds[0] || ""}
+              displayEmpty
+              fullWidth
               disabled={isDocumentLocked}
               onChange={(e) =>
-                onChange("documentCategoryIds", [Number(e.target.value)])
+                onChange(
+                  "documentCategoryIds",
+                  e.target.value ? [Number(e.target.value)] : []
+                )
               }
+              sx={selectSx}
             >
+              <MenuItem value="">
+                <Typography sx={{ color: "#94A3B8", fontSize: "13px" }}>
+                  Select...
+                </Typography>
+              </MenuItem>
               {categories.map((category) => (
                 <MenuItem key={category.Id} value={category.Id}>
                   {category.Title}
                 </MenuItem>
               ))}
             </Select>
-          </FormControl>
+          </Box>
 
-          <FormControl fullWidth>
-            <InputLabel>Classification</InputLabel>
+          {/* Classification */}
+          <Box>
+            <FieldLabel>Classification</FieldLabel>
             <Select
-              label="Classification"
               value={data.classification}
+              displayEmpty
+              fullWidth
               disabled={isDocumentLocked}
               onChange={(e) => onChange("classification", e.target.value)}
+              sx={selectSx}
             >
+              <MenuItem value="">
+                <Typography sx={{ color: "#94A3B8", fontSize: "13px" }}>
+                  Select...
+                </Typography>
+              </MenuItem>
               <MenuItem value="Public">Public</MenuItem>
               <MenuItem value="Internal">Internal</MenuItem>
               <MenuItem value="Confidential">Confidential</MenuItem>
               <MenuItem value="Restricted">Restricted</MenuItem>
             </Select>
-          </FormControl>
+          </Box>
 
-          <FormControl fullWidth>
-            <InputLabel>Audience</InputLabel>
+          {/* Audience */}
+          <Box>
+            <FieldLabel>Audience</FieldLabel>
             <Select
-              label="Audience"
               value={data.audienceId ?? ""}
+              displayEmpty
+              fullWidth
               disabled={isDocumentLocked}
-              onChange={(e) => onChange("audienceId", Number(e.target.value))}
+              onChange={(e) =>
+                onChange("audienceId", Number(e.target.value) || undefined)
+              }
+              sx={selectSx}
             >
+              <MenuItem value="">
+                <Typography sx={{ color: "#94A3B8", fontSize: "13px" }}>
+                  Select...
+                </Typography>
+              </MenuItem>
               {audienceGroups.map((audience) => (
                 <MenuItem key={String(audience.Id)} value={audience.Id}>
                   {audience.Title}
                 </MenuItem>
               ))}
             </Select>
-          </FormControl>
+          </Box>
 
-          <FormControl fullWidth>
-            <InputLabel>Business Function</InputLabel>
+          {/* Business Function */}
+          <Box>
+            <FieldLabel>Business function</FieldLabel>
             <Select
-              label="Business Function"
               value={data.businessFunctionIds[0] || ""}
+              displayEmpty
+              fullWidth
               disabled={isDocumentLocked}
               onChange={(e) =>
-                onChange("businessFunctionIds", [Number(e.target.value)])
+                onChange(
+                  "businessFunctionIds",
+                  e.target.value ? [Number(e.target.value)] : []
+                )
               }
+              sx={selectSx}
             >
+              <MenuItem value="">
+                <Typography sx={{ color: "#94A3B8", fontSize: "13px" }}>
+                  Select...
+                </Typography>
+              </MenuItem>
               {businessFunctions.map((func) => (
                 <MenuItem key={func.Id} value={func.Id}>
                   {func.Title}
                 </MenuItem>
               ))}
             </Select>
-          </FormControl>
+          </Box>
+
+          {/* Urgency */}
+          <Box>
+            <FieldLabel>Urgency</FieldLabel>
+            <Select
+              value={data.urgency}
+              displayEmpty
+              fullWidth
+              onChange={(e) =>
+                onChange("urgency", e.target.value as "Standard" | "Urgent")
+              }
+              sx={selectSx}
+            >
+              <MenuItem value="Standard">Standard</MenuItem>
+              <MenuItem value="Urgent">Urgent</MenuItem>
+            </Select>
+          </Box>
         </Box>
       </Box>
-
-      <Divider sx={{ marginY: 4 }} />
 
       {/* Document Team Section */}
-      <Box sx={{ marginBottom: 4 }}>
-        <Typography
-          variant="h3"
+      <Box sx={{ marginBottom: "24px" }}>
+        <SectionHeader>Document team</SectionHeader>
+
+        <Box
           sx={{
-            marginBottom: 3,
-            paddingBottom: 1,
-            borderBottom: "2px solid",
-            borderColor: "primary.main",
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "14px",
           }}
         >
-          Document Team
-        </Typography>
+          {/* Release Authority */}
+          <Box>
+            <FieldLabel>Release authority</FieldLabel>
+            <PeoplePicker
+              label=""
+              value={data.releaseAuthority}
+              onChange={(person) => onChange("releaseAuthority", person)}
+              disabled={isDocumentLocked}
+            />
+          </Box>
 
-        <Box display="flex" flexDirection="column">
-          <Box sx={{ mb: 2 }}>
-           <PeoplePicker
-  label="Release Authority"
-  value={data.releaseAuthority}
-  onChange={(person) => onChange("releaseAuthority", person)}
-  disabled={isDocumentLocked}
-/>
+          {/* Author */}
+          <Box>
+            <FieldLabel>Author</FieldLabel>
+            <PeoplePicker
+              label=""
+              value={data.author}
+              onChange={(person) => onChange("author", person)}
+              disabled={isDocumentLocked}
+            />
+          </Box>
 
-<PeoplePicker
-  label="Author"
-  value={data.author}
-  onChange={(person) => onChange("author", person)}
-  disabled={isDocumentLocked}
-/>
+          {/* Reviewers */}
+          <Box>
+            <FieldLabel>Reviewers</FieldLabel>
+            <MultiPeoplePicker
+              label=""
+              selectedIds={data.reviewerIds}
+              onChange={(ids) => onChange("reviewerIds", ids)}
+              excludeIds={data.contributorIds}
+            />
+          </Box>
 
-<MultiPeoplePicker
-  label="Reviewers"
-  selectedIds={data.reviewerIds}
-  onChange={(ids) => onChange("reviewerIds", ids)}
-  excludeIds={data.contributorIds}  // ← exclude contributors
-/>
-
-<MultiPeoplePicker
-  label="Contributors"
-  selectedIds={data.contributorIds}
-  onChange={(ids) => onChange("contributorIds", ids)}
-  excludeIds={data.reviewerIds}     // ← exclude reviewers
-/>
+          {/* Contributors */}
+          <Box>
+            <FieldLabel>Contributors</FieldLabel>
+            <MultiPeoplePicker
+              label=""
+              selectedIds={data.contributorIds}
+              onChange={(ids) => onChange("contributorIds", ids)}
+              excludeIds={data.reviewerIds}
+            />
+          </Box>
         </Box>
       </Box>
 
-      <Divider sx={{ marginY: 4 }} />
-
       {/* Document Settings Section */}
-      <Box sx={{ marginBottom: 4 }}>
-        <Typography
-          variant="h3"
-          sx={{
-            marginBottom: 3,
-            paddingBottom: 1,
-            borderBottom: "2px solid",
-            borderColor: "primary.main",
-          }}
-        >
-          Document Settings
-        </Typography>
+      <Box>
+        <SectionHeader>Document settings</SectionHeader>
 
-        <TextField
-          label="Draft Document Name"
-          value={data.draftDocumentName}
-          disabled={isDocumentLocked}
-          onChange={(e) => onChange("draftDocumentName", e.target.value)}
-          helperText="Optional: Specify a name for the draft document"
-          placeholder="e.g., Safety_Policy_v2_Draft"
-        />
+        <Box>
+          <FieldLabel>Draft document name</FieldLabel>
+          <TextField
+            placeholder="e.g., Safety_Policy_v2_Draft"
+            fullWidth
+            value={data.draftDocumentName}
+            disabled={isDocumentLocked}
+            onChange={(e) => onChange("draftDocumentName", e.target.value)}
+            sx={inputSx}
+          />
+          <Typography
+            sx={{
+              fontSize: "11px",
+              color: "#94A3B8",
+              marginTop: "6px",
+            }}
+          >
+            Optional: Specify a name for the draft document
+          </Typography>
+        </Box>
       </Box>
-    </Box>
     </Box>
   );
 };

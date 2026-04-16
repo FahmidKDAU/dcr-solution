@@ -1,39 +1,40 @@
+// src/webparts/submitChangeRequest/components/ChangeRequestForm.tsx
 import React, { useEffect, useState } from "react";
-import Box from "@mui/material/Box";
-import Tabs from "@mui/material/Tabs";
-import Tab from "@mui/material/Tab";
-import Button from "@mui/material/Button";
-import Alert from "@mui/material/Alert";
-import Typography from "@mui/material/Typography";
+import {
+  Box,
+  Button,
+  Typography,
+  Collapse,
+  Alert,
+} from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import { SharePointPerson } from "../../../shared/types/SharePointPerson";
 import { useDocuments } from "../../../shared/hooks/useDocuments";
-import { InitialForm } from "./InitialForm";
-import { AdditionalForm } from "./AdditionalForm";
 import { useDepartments } from "../../../shared/hooks/useDepartments";
 import SharePointService from "../../../shared/services/SharePointService";
-
-interface DcrFormProps {
-  context?: unknown;
-}
+import { InitialForm } from "./InitialForm";
+import { AdditionalForm } from "./AdditionalForm";
+import { BRANDING } from "../../../shared/theme/theme";
 
 export interface ChangeRequestFormData {
-  // Tab 1: General Information
+  // Required fields
   title: string;
+  scopeOfChange: string;
   newDocument: boolean;
   externalDocument: boolean;
-  scopeOfChange: string;
   departmentId: number | undefined;
   changeAuthority: SharePointPerson | undefined;
   documentId: number | undefined;
   attachments: File[];
 
-  // Tab 2: Additional Details
+  // Optional fields (Additional Details)
   documentTypeId: number | undefined;
   documentCategoryIds: number[];
   classification: "Public" | "Internal" | "Confidential" | "Restricted" | "";
   audienceId: number | undefined;
   businessFunctionIds: number[];
-  urgency: "Standard" | "Urgent" | "Minor" | "";
+  urgency: "Standard" | "Urgent" | "";
   releaseAuthority: SharePointPerson | undefined;
   author: SharePointPerson | undefined;
   reviewerIds: number[];
@@ -41,27 +42,10 @@ export interface ChangeRequestFormData {
   draftDocumentName: string;
 }
 
-// TabPanel Component
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
-
-const TabPanel = ({
-  children,
-  value,
-  index,
-}: TabPanelProps): React.ReactElement => {
-  return (
-    <div role="tabpanel" hidden={value !== index}>
-      <Box>{children}</Box>
-    </div>
-  );
-};
-
-const ChangeRequestForm = (props: DcrFormProps): React.ReactElement => {
-  const [tabValue, setTabValue] = useState(0);
+const ChangeRequestForm: React.FC = () => {
+  const [additionalDetailsOpen, setAdditionalDetailsOpen] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const documentTypeOptions = [
     { Id: 1, Title: "Policy" },
@@ -71,21 +55,17 @@ const ChangeRequestForm = (props: DcrFormProps): React.ReactElement => {
   ];
 
   const mapDocumentTypeToId = (
-    documentType?: string | null,
+    documentType?: string | null
   ): number | undefined => {
-    if (!documentType) {
-      return undefined;
-    }
-
+    if (!documentType) return undefined;
     const match = documentTypeOptions.find(
-      (type) => type.Title.toLowerCase() === documentType.toLowerCase(),
+      (type) => type.Title.toLowerCase() === documentType.toLowerCase()
     );
-
     return match?.Id ?? undefined;
   };
 
   const [formData, setFormData] = useState<ChangeRequestFormData>({
-    // Tab 1: Basic Request (Required)
+    // Required fields
     title: "",
     scopeOfChange: "",
     departmentId: undefined,
@@ -95,7 +75,7 @@ const ChangeRequestForm = (props: DcrFormProps): React.ReactElement => {
     documentId: undefined,
     attachments: [],
 
-    // Tab 2: Additional Details (Optional)
+    // Optional fields
     documentTypeId: undefined,
     documentCategoryIds: [],
     classification: "",
@@ -112,36 +92,21 @@ const ChangeRequestForm = (props: DcrFormProps): React.ReactElement => {
   const isExistingDocumentSelected =
     !formData.newDocument && !!formData.documentId;
 
-  const isPart2Unlocked = formData.newDocument || !!formData.documentId;
-
   const { documents } = useDocuments();
-
   const { departments } = useDepartments();
 
-  // Auto-populate Part 2 when existing document is selected
+  // Auto-populate from existing document
   useEffect(() => {
     const autoPopulateFromDocument = async (): Promise<void> => {
-      // Only auto-populate if NOT a new document AND a document is selected
-      if (formData.newDocument || !formData.documentId) {
-        return;
-      }
+      if (formData.newDocument || !formData.documentId) return;
 
       try {
-        console.log(`Auto-populating from document ID: ${formData.documentId}`);
-
-        // Fetch full document details with metadata
         const selectedDoc = await SharePointService.getDocumentById(
-          formData.documentId,
+          formData.documentId
         );
 
-        if (!selectedDoc) {
-          console.warn("Selected document not found.");
-          return;
-        }
+        if (!selectedDoc) return;
 
-        console.log("Selected document metadata:", selectedDoc);
-
-        // Auto-populate Part 2 fields from document metadata
         setFormData((prev) => ({
           ...prev,
           departmentId: selectedDoc.CoreFunctionality?.Id,
@@ -156,24 +121,17 @@ const ChangeRequestForm = (props: DcrFormProps): React.ReactElement => {
           author: selectedDoc.Author0 ?? undefined,
           draftDocumentName: selectedDoc.DocumentTitle || "",
         }));
-
-        console.log("Part 2 auto-populated from existing document");
-      } catch (error: unknown) {
+      } catch (error) {
         console.error("Error auto-populating from document:", error);
-        // Fail silently - don't interrupt user experience
       }
     };
 
-    autoPopulateFromDocument().catch((error: unknown) => {
-      console.error("Error auto-populating from document:", error);
-    });
+    autoPopulateFromDocument().catch(console.error);
   }, [formData.documentId, formData.newDocument]);
 
-  // Reset auto-populated fields when switching to New Document
+  // Reset fields when switching to New Document
   useEffect(() => {
-    if (!formData.newDocument) {
-      return;
-    }
+    if (!formData.newDocument) return;
 
     setFormData((prev) => ({
       ...prev,
@@ -192,74 +150,58 @@ const ChangeRequestForm = (props: DcrFormProps): React.ReactElement => {
     }));
   }, [formData.newDocument]);
 
-  const handleTabChange = (
-    event: React.SyntheticEvent,
-    newValue: number,
-  ): void => {
-    setTabValue(newValue);
-  };
-
   const handleFieldChange = (
     field: keyof ChangeRequestFormData,
-    value: ChangeRequestFormData[keyof ChangeRequestFormData],
+    value: ChangeRequestFormData[keyof ChangeRequestFormData]
   ): void => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
-
-    console.log(`Setting ${field} to:`, value);
   };
 
-  // Validation for Part 1
-  const isPart1Valid = (): boolean => {
+  const isFormValid = (): boolean => {
     return !!(
       formData.title &&
       formData.scopeOfChange &&
       formData.departmentId &&
-      formData.urgency && // add this
       (formData.newDocument || formData.documentId)
     );
   };
+
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
+    setSubmitError(null);
+
+    if (!isFormValid()) {
+      setSubmitError("Please fill in all required fields before submitting.");
+      return;
+    }
+
+    setIsSubmitting(true);
 
     try {
-      // Validate Part 1 (mandatory)
-      if (!isPart1Valid()) {
-        alert("Please fill in all required fields before submitting.");
-        setTabValue(0); // Navigate back to Part 1
-        return;
-      }
-
       const payload = {
-        // Part 1 - Mandatory fields
         Title: formData.title,
         ScopeofChange: formData.scopeOfChange,
         NewDocument: formData.newDocument,
         ExternalDocument: formData.externalDocument,
-
         CoreFunctionalityId: formData.departmentId,
         ChangeAuthorityId: formData.changeAuthority?.Id,
         Urgency: formData.urgency || "Standard",
         Status: "Submitted",
         TargetDocumentId: formData.documentId || undefined,
-        // Part 2 - Optional fields
         Classification: formData.classification || undefined,
         AudienceId: formData.audienceId || undefined,
         DraftDocumentName: formData.draftDocumentName || undefined,
         ReleaseAuthorityId: formData.releaseAuthority?.Id || undefined,
         Author0Id: formData.author?.Id || undefined,
-
-        // Multi-person fields
         ReviewersId:
           formData.reviewerIds.length > 0 ? formData.reviewerIds : undefined,
         ContributorsId:
           formData.contributorIds.length > 0
             ? formData.contributorIds
             : undefined,
-
-        // Multi-lookup fields
         BusinessFunctionId:
           formData.businessFunctionIds.length > 0
             ? formData.businessFunctionIds
@@ -268,32 +210,12 @@ const ChangeRequestForm = (props: DcrFormProps): React.ReactElement => {
           formData.documentCategoryIds.length > 0
             ? formData.documentCategoryIds
             : undefined,
-
-        // True only when all team members are specified
-        isCrComplete: !!(
-          formData.releaseAuthority &&
-          formData.author 
-        ),
+        isCrComplete: !!(formData.releaseAuthority && formData.author),
       };
 
-      console.log("Submitting payload:", payload);
-      console.log("Payload being sent:", JSON.stringify(payload, null, 2));
-      console.log(
-        "isCrComplete:",
-        !!(
-          formData.releaseAuthority &&
-          formData.author &&
-          formData.reviewerIds.length > 0 &&
-          formData.contributorIds.length > 0
-        ),
-      );
-      // Create the change request
       await SharePointService.createChangeRequest(payload);
 
-      // Get the created item
       const changeRequests = await SharePointService.getChangeRequests();
-      console.log("create result:", changeRequests);
-
       const latestItem = changeRequests[changeRequests.length - 1];
       const itemId = latestItem?.Id;
 
@@ -301,7 +223,6 @@ const ChangeRequestForm = (props: DcrFormProps): React.ReactElement => {
         throw new Error("Unable to resolve the created Change Request ID.");
       }
 
-      console.log("Change Request created with ID:", itemId);
       // Create participant rows
       if (
         formData.reviewerIds.length > 0 ||
@@ -310,31 +231,28 @@ const ChangeRequestForm = (props: DcrFormProps): React.ReactElement => {
         await SharePointService.createParticipant(
           itemId,
           formData.contributorIds,
-          formData.reviewerIds,
+          formData.reviewerIds
         );
       }
-      // Upload attachments if any
-      if (formData.attachments.length > 0) {
-        console.log(`Uploading ${formData.attachments.length} file(s)...`);
 
+      // Upload attachments
+      if (formData.attachments.length > 0) {
         await SharePointService.uploadAttachments(
           itemId,
           formData.attachments,
           (current, total, fileName) => {
             console.log(`Uploading file ${current} of ${total}: ${fileName}`);
-          },
+          }
         );
-
-        console.log("All files uploaded successfully!");
       }
 
       alert(
-        `Success! Change Request created.\n\n` +
-          `CR Number: ${latestItem.ChangeRequestNumber || itemId}\n` +
-          `ID: ${itemId}`,
+        `Success! Change Request created.\n\nCR Number: ${
+          latestItem.ChangeRequestNumber || itemId
+        }\nID: ${itemId}`
       );
 
-      // Reset form to initial state
+      // Reset form
       setFormData({
         title: "",
         scopeOfChange: "",
@@ -356,119 +274,181 @@ const ChangeRequestForm = (props: DcrFormProps): React.ReactElement => {
         draftDocumentName: "",
         externalDocument: false,
       });
-      setTabValue(0); // Reset to first tab
-    } catch (error: unknown) {
+      setAdditionalDetailsOpen(false);
+    } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      console.error("ERROR:", error);
-      console.error("Error message:", message);
-      alert(`Error: ${message}`);
+      console.error("Error:", error);
+      setSubmitError(message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom sx={{ p: 4, pb: 2 }}>
-        Document Change Request
-      </Typography>
-
-      <Tabs
-        value={tabValue}
-        onChange={handleTabChange}
-        aria-label="Change Request Form Tabs"
-        sx={{ borderBottom: 1, borderColor: "divider" }}
+    <Box
+      sx={{
+        minHeight: "100%",
+        backgroundColor: "white",
+      }}
+    >
+      {/* Header */}
+      <Box
+        sx={{
+          backgroundColor: BRANDING.primary,
+          padding: "20px 24px",
+        }}
       >
-        <Tab
-          label="Part 1: Basic Information *"
-          sx={{ fontWeight: tabValue === 0 ? "bold" : "normal" }}
+        <Typography
+          sx={{
+            fontSize: "18px",
+            fontWeight: 500,
+            color: "white",
+            marginBottom: "4px",
+          }}
+        >
+          Submit Change Request
+        </Typography>
+        <Typography
+          sx={{
+            fontSize: "12px",
+            color: "rgba(255,255,255,0.75)",
+          }}
+        >
+          Request a new or updated document
+        </Typography>
+      </Box>
+
+      {/* Form */}
+      <Box
+        component="form"
+        onSubmit={handleSubmit}
+        sx={{ padding: "24px" }}
+      >
+        {/* Error Alert */}
+        {submitError && (
+          <Alert severity="error" sx={{ mb: 3 }} onClose={() => setSubmitError(null)}>
+            {submitError}
+          </Alert>
+        )}
+
+        {/* Required Fields */}
+        <InitialForm
+          data={formData}
+          onChange={handleFieldChange}
+          documents={documents}
+          departments={departments}
+          isExistingDocumentSelected={isExistingDocumentSelected}
         />
-        <Tab
-          label="Part 2: Additional Details (Optional)"
-          sx={{ fontStyle: "italic" }}
-          disabled={!isPart2Unlocked}
-        />
-      </Tabs>
 
-      <form onSubmit={handleSubmit}>
-        <TabPanel value={tabValue} index={0}>
-          <Box padding={4}>
-            {!isPart1Valid() && (
-              <Alert severity="warning" sx={{ mb: 2 }}>
-                Please complete all required fields before submitting
-              </Alert>
-            )}
-
-            <InitialForm
-              data={formData}
-              onChange={handleFieldChange}
-              documents={documents}
-              departments={departments}
-              isExistingDocumentSelected={isExistingDocumentSelected}
-            />
-          </Box>
-        </TabPanel>
-
-        <TabPanel value={tabValue} index={1}>
-          <Box padding={4}>
-            {!formData.newDocument && formData.documentId && (
-              <Alert severity="info" sx={{ mb: 2 }}>
-                Part 2 has been auto-populated from the selected document. You
-                can modify these values if needed.
-              </Alert>
-            )}
-
-            <AdditionalForm
-              data={formData}
-              onChange={handleFieldChange}
-              documents={documents}
-              isExistingDocumentSelected={isExistingDocumentSelected}
-            />
-          </Box>
-        </TabPanel>
-
-        {/* Navigation and Submit */}
-        <Box padding={4} display="flex" flexDirection="column" gap={2}>
-          {/* Tab Navigation Buttons */}
-          <Box display="flex" gap={2} justifyContent="space-between">
-            {tabValue > 0 && (
-              <Button
-                variant="outlined"
-                onClick={() => setTabValue(tabValue - 1)}
-              >
-                ← Previous
-              </Button>
-            )}
-
-            {tabValue < 1 && (
-              <Button
-                variant="outlined"
-                onClick={() => setTabValue(tabValue + 1)}
-                sx={{ ml: "auto" }}
-                disabled={!isPart2Unlocked}
-              >
-                Next (Optional Details) →
-              </Button>
-            )}
-          </Box>
-
-          {/* Submit Button */}
-          <Button
-            type="submit"
-            variant="contained"
-            size="large"
-            fullWidth
-            disabled={!isPart1Valid()}
+        {/* Additional Details (Expandable) */}
+        <Box
+          sx={{
+            border: "1px solid #E2E8F0",
+            borderRadius: "8px",
+            marginBottom: "24px",
+            overflow: "hidden",
+          }}
+        >
+          {/* Header */}
+          <Box
+            onClick={() => setAdditionalDetailsOpen(!additionalDetailsOpen)}
+            sx={{
+              padding: "14px 20px",
+              backgroundColor: additionalDetailsOpen ? "#F8FAFC" : "#F8FAFC",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              cursor: "pointer",
+              borderBottom: additionalDetailsOpen
+                ? "1px solid #E2E8F0"
+                : "none",
+              "&:hover": {
+                backgroundColor: "#F1F5F9",
+              },
+            }}
           >
-            Submit Change Request
-          </Button>
+            <Box sx={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <Typography
+                sx={{
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: additionalDetailsOpen ? BRANDING.primary : "#475569",
+                }}
+              >
+                Additional details
+              </Typography>
+              <Box
+                component="span"
+                sx={{
+                  fontSize: "11px",
+                  padding: "3px 8px",
+                  backgroundColor: additionalDetailsOpen
+                    ? "#E6F1FB"
+                    : "#E2E8F0",
+                  color: additionalDetailsOpen ? BRANDING.primary : "#64748B",
+                  borderRadius: "4px",
+                }}
+              >
+                Optional
+              </Box>
+            </Box>
+            <Box sx={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              {!additionalDetailsOpen && (
+                <Typography
+                  sx={{
+                    fontSize: "12px",
+                    color: "#94A3B8",
+                  }}
+                >
+                  Classification, team, settings
+                </Typography>
+              )}
+              {additionalDetailsOpen ? (
+                <ExpandLessIcon sx={{ color: BRANDING.primary, fontSize: 20 }} />
+              ) : (
+                <ExpandMoreIcon sx={{ color: BRANDING.primary, fontSize: 20 }} />
+              )}
+            </Box>
+          </Box>
 
-          {/* Validation Message */}
-          {!isPart1Valid() && (
-            <Typography variant="caption" color="error" align="center">
-              * Please complete all required fields before submitting
-            </Typography>
-          )}
+          {/* Content */}
+          <Collapse in={additionalDetailsOpen}>
+            <Box sx={{ padding: "20px" }}>
+              <AdditionalForm
+                data={formData}
+                onChange={handleFieldChange}
+                documents={documents}
+                isExistingDocumentSelected={isExistingDocumentSelected}
+              />
+            </Box>
+          </Collapse>
         </Box>
-      </form>
+
+        {/* Submit Button */}
+        <Button
+          type="submit"
+          variant="contained"
+          fullWidth
+          disabled={!isFormValid() || isSubmitting}
+          sx={{
+            padding: "14px",
+            fontSize: "14px",
+            fontWeight: 500,
+            backgroundColor: BRANDING.primary,
+            borderRadius: "6px",
+            textTransform: "none",
+            "&:hover": {
+              backgroundColor: BRANDING.primaryDark,
+            },
+            "&.Mui-disabled": {
+              backgroundColor: "#CBD5E1",
+              color: "white",
+            },
+          }}
+        >
+          {isSubmitting ? "Submitting..." : "Submit Change Request"}
+        </Button>
+      </Box>
     </Box>
   );
 };

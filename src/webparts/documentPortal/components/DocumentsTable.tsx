@@ -15,8 +15,7 @@ import {
 } from "@mui/material";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import { Document } from "../../../shared/types/Document";
-import { BRANDING, getDocTypeColor } from "../../../shared/theme";
-
+import { BRANDING, getDocTypeColors } from "../../../shared/theme/theme";
 interface DocumentsTableProps {
   documents: Document[];
   onRowClick: (doc: Document) => void;
@@ -27,10 +26,17 @@ type SortKey = "DocumentTitle" | "DocumentType" | "PublishedDate";
 const formatDate = (date?: string | Date): string => {
   if (!date) return "—";
   const d = typeof date === "string" ? new Date(date) : date;
-  return d.toLocaleDateString("en-AU", { day: "2-digit", month: "short", year: "numeric" });
+  return d.toLocaleDateString("en-AU", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 };
 
-const DocumentsTable = ({ documents, onRowClick }: DocumentsTableProps): React.ReactElement => {
+const DocumentsTable: React.FC<DocumentsTableProps> = ({
+  documents,
+  onRowClick,
+}) => {
   const [orderBy, setOrderBy] = useState<SortKey>("DocumentTitle");
   const [order, setOrder] = useState<"asc" | "desc">("asc");
 
@@ -71,11 +77,11 @@ const DocumentsTable = ({ documents, onRowClick }: DocumentsTableProps): React.R
     backgroundColor: "#F8FAFC",
     color: BRANDING.primary,
     fontWeight: 600,
-    fontSize: "11px",
+    fontSize: "10px",
     textTransform: "uppercase" as const,
     letterSpacing: "0.5px",
-    padding: "12px 16px",
-    borderBottom: `2px solid rgba(15, 76, 129, 0.15)`,
+    padding: "10px 20px",
+    borderBottom: "2px solid rgba(15, 76, 129, 0.12)",
     whiteSpace: "nowrap" as const,
   };
 
@@ -116,7 +122,7 @@ const DocumentsTable = ({ documents, onRowClick }: DocumentsTableProps): React.R
       <Table stickyHeader>
         <TableHead>
           <TableRow>
-            <TableCell sx={{ ...headerCellSx, width: "35%", paddingLeft: "24px" }}>
+            <TableCell sx={{ ...headerCellSx, width: "35%" }}>
               <TableSortLabel
                 active={orderBy === "DocumentTitle"}
                 direction={orderBy === "DocumentTitle" ? order : "asc"}
@@ -126,7 +132,7 @@ const DocumentsTable = ({ documents, onRowClick }: DocumentsTableProps): React.R
                 Document name
               </TableSortLabel>
             </TableCell>
-            <TableCell sx={{ ...headerCellSx, width: "10%" }}>
+            <TableCell sx={{ ...headerCellSx, width: "90px" }}>
               <TableSortLabel
                 active={orderBy === "DocumentType"}
                 direction={orderBy === "DocumentType" ? order : "asc"}
@@ -136,9 +142,9 @@ const DocumentsTable = ({ documents, onRowClick }: DocumentsTableProps): React.R
                 Type
               </TableSortLabel>
             </TableCell>
-            <TableCell sx={{ ...headerCellSx, width: "22%" }}>Function</TableCell>
+            <TableCell sx={{ ...headerCellSx, width: "20%" }}>Function</TableCell>
             <TableCell sx={{ ...headerCellSx, width: "18%" }}>Category</TableCell>
-            <TableCell sx={{ ...headerCellSx, width: "10%" }}>
+            <TableCell sx={{ ...headerCellSx, width: "100px" }}>
               <TableSortLabel
                 active={orderBy === "PublishedDate"}
                 direction={orderBy === "PublishedDate" ? order : "asc"}
@@ -148,15 +154,17 @@ const DocumentsTable = ({ documents, onRowClick }: DocumentsTableProps): React.R
                 Released
               </TableSortLabel>
             </TableCell>
-            <TableCell sx={{ ...headerCellSx, width: "5%", textAlign: "center" }} />
+            <TableCell sx={{ ...headerCellSx, width: "50px", textAlign: "center" }} />
           </TableRow>
         </TableHead>
 
         <TableBody>
           {sortedDocuments.map((doc) => {
-            const typeColor = getDocTypeColor(doc.DocumentType?.Title);
-            const functions = doc.BusinessFunction?.map((f) => f.Title).join(", ") || "—";
-            const categories = doc.Category?.map((c) => c.Title).join(", ") || "—";
+            const typeColors = getDocTypeColors(doc.DocumentType?.Title);
+            const functions =
+              doc.BusinessFunction?.map((f) => f.Title).join(", ") || "—";
+            const categories =
+              doc.Category?.map((c) => c.Title).join(", ") || "—";
 
             return (
               <TableRow
@@ -173,8 +181,7 @@ const DocumentsTable = ({ documents, onRowClick }: DocumentsTableProps): React.R
                 {/* Document Name */}
                 <TableCell
                   sx={{
-                    padding: "14px 16px",
-                    paddingLeft: "24px",
+                    padding: "14px 20px",
                     color: "#1E293B",
                     fontWeight: 500,
                     fontSize: "13px",
@@ -183,28 +190,35 @@ const DocumentsTable = ({ documents, onRowClick }: DocumentsTableProps): React.R
                   {doc.DocumentTitle}
                 </TableCell>
 
-                {/* Type Badge */}
-                <TableCell sx={{ padding: "14px 16px" }}>
-                  <Box
-                    component="span"
-                    sx={{
-                      display: "inline-block",
-                      fontSize: "11px",
-                      fontWeight: 500,
-                      padding: "4px 10px",
-                      borderRadius: "4px",
-                      backgroundColor: typeColor,
-                      color: "white",
-                    }}
-                  >
-                    {doc.DocumentType?.Title ?? "—"}
-                  </Box>
+                {/* Type Badge - Muted colors */}
+                <TableCell sx={{ padding: "14px 20px" }}>
+                  {doc.DocumentType?.Title ? (
+                    <Box
+                      component="span"
+                      sx={{
+                        display: "inline-block",
+                        fontSize: "11px",
+                        fontWeight: 500,
+                        padding: "4px 10px",
+                        borderRadius: "4px",
+                        backgroundColor: typeColors.bg,
+                        color: typeColors.text,
+                        textAlign: "center",
+                      }}
+                    >
+                      {doc.DocumentType.Title}
+                    </Box>
+                  ) : (
+                    <Typography sx={{ fontSize: "12px", color: "#94A3B8" }}>
+                      —
+                    </Typography>
+                  )}
                 </TableCell>
 
                 {/* Function */}
                 <TableCell
                   sx={{
-                    padding: "14px 16px",
+                    padding: "14px 20px",
                     color: "#64748B",
                     fontSize: "12px",
                   }}
@@ -215,7 +229,7 @@ const DocumentsTable = ({ documents, onRowClick }: DocumentsTableProps): React.R
                 {/* Category */}
                 <TableCell
                   sx={{
-                    padding: "14px 16px",
+                    padding: "14px 20px",
                     color: "#64748B",
                     fontSize: "12px",
                   }}
@@ -226,7 +240,7 @@ const DocumentsTable = ({ documents, onRowClick }: DocumentsTableProps): React.R
                 {/* Release Date */}
                 <TableCell
                   sx={{
-                    padding: "14px 16px",
+                    padding: "14px 20px",
                     color: "#64748B",
                     fontSize: "12px",
                   }}
@@ -235,14 +249,17 @@ const DocumentsTable = ({ documents, onRowClick }: DocumentsTableProps): React.R
                 </TableCell>
 
                 {/* Action */}
-                <TableCell sx={{ padding: "14px 16px", textAlign: "center" }}>
+                <TableCell sx={{ padding: "14px 20px", textAlign: "center" }}>
                   {doc.FileRef && (
                     <Tooltip title="Open in new tab" arrow>
                       <IconButton
                         size="small"
                         onClick={(e) => {
                           e.stopPropagation();
-                          window.open(`${window.location.origin}${doc.FileRef}`, "_blank");
+                          window.open(
+                            `${window.location.origin}${doc.FileRef}`,
+                            "_blank"
+                          );
                         }}
                         sx={{
                           color: "#94A3B8",

@@ -27,7 +27,6 @@ export default class DcrFormWebPart extends BaseClientSideWebPart<IDcrFormWebPar
       { theme },
       React.createElement(CssBaseline),
       React.createElement(DcrForm, {
-        context: this.context
       })
     );
 

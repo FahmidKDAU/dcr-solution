@@ -10,7 +10,6 @@ import { IReadonlyTheme } from '@microsoft/sp-component-base';
 
 import * as strings from 'DocumentPortalWebPartStrings';
 import DocumentPortal from './components/DocumentPortal';
-import { IDocumentPortalProps } from './components/IDocumentPortalProps';
 import { PnPSetup } from '../../shared/services/PnPSetup';
 import { WebPartProvider } from '../../shared/contexts/WebPartContext';
 
@@ -21,19 +20,10 @@ export interface IDocumentPortalWebPartProps {
 export default class DocumentPortalWebPart extends BaseClientSideWebPart<IDocumentPortalWebPartProps> {
 
   private _isDarkTheme: boolean = false;
-  private _environmentMessage: string = '';
 
   public render(): void {
-    const element: React.ReactElement<IDocumentPortalProps> = React.createElement(
-      DocumentPortal,
-      {
-        description: this.properties.description,
-        isDarkTheme: this._isDarkTheme,
-        environmentMessage: this._environmentMessage,
-        hasTeamsContext: !!this.context.sdks.microsoftTeams,
-        userDisplayName: this.context.pageContext.user.displayName
-      }
-    );
+    // DocumentPortal doesn't need props - it uses hooks internally
+    const element = React.createElement(DocumentPortal);
 
     const wrappedElement = React.createElement(
       WebPartProvider,
@@ -44,38 +34,10 @@ export default class DocumentPortalWebPart extends BaseClientSideWebPart<IDocume
     ReactDom.render(wrappedElement, this.domElement);
   }
 
-protected async onInit(): Promise<void> {
-  await super.onInit();
-  PnPSetup.initialize(this.context);
-  return Promise.resolve();
-}
-
-
-  private _getEnvironmentMessage(): Promise<string> {
-    if (!!this.context.sdks.microsoftTeams) { // running in Teams, office.com or Outlook
-      return this.context.sdks.microsoftTeams.teamsJs.app.getContext()
-        .then(context => {
-          let environmentMessage: string = '';
-          switch (context.app.host.name) {
-            case 'Office': // running in Office
-              environmentMessage = this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentOffice : strings.AppOfficeEnvironment;
-              break;
-            case 'Outlook': // running in Outlook
-              environmentMessage = this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentOutlook : strings.AppOutlookEnvironment;
-              break;
-            case 'Teams': // running in Teams
-            case 'TeamsModern':
-              environmentMessage = this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentTeams : strings.AppTeamsTabEnvironment;
-              break;
-            default:
-              environmentMessage = strings.UnknownEnvironment;
-          }
-
-          return environmentMessage;
-        });
-    }
-
-    return Promise.resolve(this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentSharePoint : strings.AppSharePointEnvironment);
+  protected async onInit(): Promise<void> {
+    await super.onInit();
+    PnPSetup.initialize(this.context);
+    return Promise.resolve();
   }
 
   protected onThemeChanged(currentTheme: IReadonlyTheme | undefined): void {
@@ -84,16 +46,13 @@ protected async onInit(): Promise<void> {
     }
 
     this._isDarkTheme = !!currentTheme.isInverted;
-    const {
-      semanticColors
-    } = currentTheme;
+    const { semanticColors } = currentTheme;
 
     if (semanticColors) {
       this.domElement.style.setProperty('--bodyText', semanticColors.bodyText || null);
       this.domElement.style.setProperty('--link', semanticColors.link || null);
       this.domElement.style.setProperty('--linkHovered', semanticColors.linkHovered || null);
     }
-
   }
 
   protected onDispose(): void {

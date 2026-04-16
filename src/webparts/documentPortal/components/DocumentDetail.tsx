@@ -11,34 +11,44 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import DownloadIcon from "@mui/icons-material/Download";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import { Document } from "../../../shared/types/Document";
-import { BRANDING, getDocTypeColor, getClassificationColor } from "../../../shared/theme";
+import { BRANDING, getDocTypeColors, getClassificationColors } from "../../../shared/theme/theme";
 
 interface DocumentDetailProps {
   document: Document;
   onBack: () => void;
 }
 
-const DocumentDetail = ({ document, onBack }: DocumentDetailProps): React.ReactElement => {
+const DocumentDetail: React.FC<DocumentDetailProps> = ({
+  document,
+  onBack,
+}) => {
   const [pdfLoading, setPdfLoading] = useState(true);
 
   const documentUrl = document.FileRef
     ? `${window.location.origin}${document.FileRef}`
     : null;
 
-  const typeColor = getDocTypeColor(document.DocumentType?.Title);
-  const classificationColor = getClassificationColor(document.Classification);
+  const typeColors = getDocTypeColors(document.DocumentType?.Title);
+  const classificationColors = getClassificationColors(document.Classification);
 
   const formatDate = (date?: Date | string): string => {
     if (!date) return "—";
     const d = typeof date === "string" ? new Date(date) : date;
-    return d.toLocaleDateString("en-AU", { day: "2-digit", month: "long", year: "numeric" });
+    return d.toLocaleDateString("en-AU", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
   };
 
   const handleDownload = (): void => {
     if (documentUrl) {
       const link = window.document.createElement("a");
       link.href = documentUrl;
-      link.setAttribute("download", document.FileLeafRef || document.DocumentTitle || "document");
+      link.setAttribute(
+        "download",
+        document.FileLeafRef || document.DocumentTitle || "document"
+      );
       link.setAttribute("target", "_blank");
       window.document.body.appendChild(link);
       link.click();
@@ -69,15 +79,19 @@ const DocumentDetail = ({ document, onBack }: DocumentDetailProps): React.ReactE
   };
 
   return (
-    <Box sx={{ height: "100%", display: "flex", flexDirection: "column", backgroundColor: "white" }}>
-      {/* ══════════════════════════════════════════════════════════════════════
-          Blue Header with Breadcrumb & Actions
-          ══════════════════════════════════════════════════════════════════════ */}
+    <Box
+      sx={{
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        backgroundColor: "white",
+      }}
+    >
+      {/* Flat Blue Header with Breadcrumb & Actions */}
       <Box
         sx={{
-          background: `linear-gradient(135deg, ${BRANDING.primary} 0%, ${BRANDING.primaryLight} 100%)`,
+          backgroundColor: BRANDING.primary,
           padding: "12px 24px",
-          color: "white",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -102,27 +116,61 @@ const DocumentDetail = ({ document, onBack }: DocumentDetailProps): React.ReactE
             Back
           </Button>
 
-          <Box sx={{ width: "1px", height: "20px", backgroundColor: "rgba(255,255,255,0.3)" }} />
+          <Box
+            sx={{
+              width: "1px",
+              height: "20px",
+              backgroundColor: "rgba(255,255,255,0.3)",
+            }}
+          />
 
           {/* Breadcrumb */}
-          <Box display="flex" alignItems="center" gap={0.75} sx={{ fontSize: "12px", opacity: 0.9 }}>
-            <Typography component="span" sx={{ fontSize: "12px", color: "white" }}>
+          <Box
+            display="flex"
+            alignItems="center"
+            gap={0.75}
+            sx={{ fontSize: "12px" }}
+          >
+            <Typography
+              component="span"
+              sx={{ fontSize: "12px", color: "rgba(255,255,255,0.8)" }}
+            >
               Documents
             </Typography>
-            <Typography component="span" sx={{ fontSize: "12px", color: "white", opacity: 0.5 }}>
+            <Typography
+              component="span"
+              sx={{ fontSize: "12px", color: "rgba(255,255,255,0.5)" }}
+            >
               /
             </Typography>
             {document.DocumentType?.Title && (
               <>
-                <Typography component="span" sx={{ fontSize: "12px", color: "white" }}>
+                <Typography
+                  component="span"
+                  sx={{ fontSize: "12px", color: "rgba(255,255,255,0.8)" }}
+                >
                   {document.DocumentType.Title}
                 </Typography>
-                <Typography component="span" sx={{ fontSize: "12px", color: "white", opacity: 0.5 }}>
+                <Typography
+                  component="span"
+                  sx={{ fontSize: "12px", color: "rgba(255,255,255,0.5)" }}
+                >
                   /
                 </Typography>
               </>
             )}
-            <Typography component="span" sx={{ fontSize: "12px", color: "white", fontWeight: 500 }}>
+            <Typography
+              component="span"
+              sx={{
+                fontSize: "12px",
+                color: "white",
+                fontWeight: 500,
+                maxWidth: "300px",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
               {document.DocumentTitle}
             </Typography>
           </Box>
@@ -165,11 +213,9 @@ const DocumentDetail = ({ document, onBack }: DocumentDetailProps): React.ReactE
         </Box>
       </Box>
 
-      {/* ══════════════════════════════════════════════════════════════════════
-          Content: Info Panel + PDF Viewer
-          ══════════════════════════════════════════════════════════════════════ */}
+      {/* Content: Info Panel + PDF Viewer */}
       <Box sx={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        {/* ── Info Panel ── */}
+        {/* Info Panel */}
         <Box
           sx={{
             width: 300,
@@ -181,21 +227,23 @@ const DocumentDetail = ({ document, onBack }: DocumentDetailProps): React.ReactE
         >
           {/* Document Title */}
           <Box sx={{ marginBottom: "24px" }}>
-            <Box
-              component="span"
-              sx={{
-                display: "inline-block",
-                fontSize: "11px",
-                fontWeight: 500,
-                padding: "4px 10px",
-                borderRadius: "4px",
-                backgroundColor: typeColor,
-                color: "white",
-                marginBottom: "12px",
-              }}
-            >
-              {document.DocumentType?.Title ?? "Document"}
-            </Box>
+            {document.DocumentType?.Title && (
+              <Box
+                component="span"
+                sx={{
+                  display: "inline-block",
+                  fontSize: "11px",
+                  fontWeight: 500,
+                  padding: "4px 10px",
+                  borderRadius: "4px",
+                  backgroundColor: typeColors.bg,
+                  color: typeColors.text,
+                  marginBottom: "12px",
+                }}
+              >
+                {document.DocumentType.Title}
+              </Box>
+            )}
             <Typography
               sx={{
                 fontSize: "16px",
@@ -255,15 +303,8 @@ const DocumentDetail = ({ document, onBack }: DocumentDetailProps): React.ReactE
                     fontSize: "12px",
                     height: "26px",
                     fontWeight: 500,
-                    backgroundColor:
-                      document.Classification === "Internal"
-                        ? "#FEF3E2"
-                        : document.Classification === "Confidential"
-                        ? "#FEE2E2"
-                        : document.Classification === "Restricted"
-                        ? "#FEE2E2"
-                        : "#E6F7F2",
-                    color: classificationColor,
+                    backgroundColor: classificationColors.bg,
+                    color: classificationColors.text,
                   }}
                 />
               </Box>
@@ -273,7 +314,9 @@ const DocumentDetail = ({ document, onBack }: DocumentDetailProps): React.ReactE
             {document.PublishedDate && (
               <Box>
                 <Typography sx={labelSx}>Released</Typography>
-                <Typography sx={valueSx}>{formatDate(document.PublishedDate)}</Typography>
+                <Typography sx={valueSx}>
+                  {formatDate(document.PublishedDate)}
+                </Typography>
               </Box>
             )}
 
@@ -281,7 +324,13 @@ const DocumentDetail = ({ document, onBack }: DocumentDetailProps): React.ReactE
             {document.FileLeafRef && (
               <Box>
                 <Typography sx={labelSx}>File</Typography>
-                <Typography sx={{ fontSize: "12px", color: "#64748B", wordBreak: "break-all" }}>
+                <Typography
+                  sx={{
+                    fontSize: "12px",
+                    color: "#64748B",
+                    wordBreak: "break-all",
+                  }}
+                >
                   {document.FileLeafRef}
                 </Typography>
               </Box>
@@ -289,7 +338,7 @@ const DocumentDetail = ({ document, onBack }: DocumentDetailProps): React.ReactE
           </Box>
         </Box>
 
-        {/* ── PDF Viewer ── */}
+        {/* PDF Viewer */}
         <Box
           sx={{
             flex: 1,
@@ -352,7 +401,9 @@ const DocumentDetail = ({ document, onBack }: DocumentDetailProps): React.ReactE
                   boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
                 }}
               >
-                <Typography sx={{ fontSize: "28px", color: "#CBD5E1" }}>☰</Typography>
+                <Typography sx={{ fontSize: "28px", color: "#CBD5E1" }}>
+                  ☰
+                </Typography>
               </Box>
               <Typography sx={{ fontSize: "13px", color: "#64748B" }}>
                 Document preview not available
