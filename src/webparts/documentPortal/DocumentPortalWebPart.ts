@@ -12,6 +12,7 @@ import * as strings from 'DocumentPortalWebPartStrings';
 import DocumentPortal from './components/DocumentPortal';
 import { IDocumentPortalProps } from './components/IDocumentPortalProps';
 import { PnPSetup } from '../../shared/services/PnPSetup';
+import { WebPartProvider } from '../../shared/contexts/WebPartContext';
 
 export interface IDocumentPortalWebPartProps {
   description: string;
@@ -34,7 +35,13 @@ export default class DocumentPortalWebPart extends BaseClientSideWebPart<IDocume
       }
     );
 
-    ReactDom.render(element, this.domElement);
+    const wrappedElement = React.createElement(
+      WebPartProvider,
+      { value: { webAbsoluteUrl: this.context.pageContext.web.absoluteUrl } },
+      element
+    );
+
+    ReactDom.render(wrappedElement, this.domElement);
   }
 
 protected async onInit(): Promise<void> {

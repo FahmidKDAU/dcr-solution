@@ -1,526 +1,269 @@
 // src/webparts/documentPortal/components/DocumentsTable.tsx
 import React, { useState, useMemo } from "react";
-import Box from "@mui/material/Box";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
-import TableHead from "@mui/material/TableHead";
-import TableRow from "@mui/material/TableRow";
-import TableSortLabel from "@mui/material/TableSortLabel";
-import TextField from "@mui/material/TextField";
-import InputAdornment from "@mui/material/InputAdornment";
-import MenuItem from "@mui/material/MenuItem";
-import Select from "@mui/material/Select";
-import Chip from "@mui/material/Chip";
-import Typography from "@mui/material/Typography";
-import Tooltip from "@mui/material/Tooltip";
-import IconButton from "@mui/material/IconButton";
-import Button from "@mui/material/Button";
-import SearchIcon from "@mui/icons-material/Search";
-import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import {
+  Box,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TableSortLabel,
+  Typography,
+  IconButton,
+  Tooltip,
+} from "@mui/material";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
-import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
-import PolicyOutlinedIcon from "@mui/icons-material/PolicyOutlined";
-import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
-import ArticleOutlinedIcon from "@mui/icons-material/ArticleOutlined";
-import FilterListIcon from "@mui/icons-material/FilterList";
-import { alpha, useTheme } from "@mui/material/styles";
 import { Document } from "../../../shared/types/Document";
+import { BRANDING, getDocTypeColor } from "../../../shared/theme";
 
 interface DocumentsTableProps {
   documents: Document[];
   onRowClick: (doc: Document) => void;
 }
 
-// ── Type config — add your real document types here ──────────────────────────
-const TYPE_CONFIG: Record<string, { color: string; bg: string; icon: React.ReactElement }> = {
-  policy: {
-    color: "#1565C0",
-    bg: "#E3F2FD",
-    icon: <PolicyOutlinedIcon sx={{ fontSize: 16 }} />,
-  },
-  form: {
-    color: "#2E7D32",
-    bg: "#E8F5E9",
-    icon: <AssignmentOutlinedIcon sx={{ fontSize: 16 }} />,
-  },
-  procedure: {
-    color: "#E65100",
-    bg: "#FFF3E0",
-    icon: <ArticleOutlinedIcon sx={{ fontSize: 16 }} />,
-  },
-  "work instruction": {
-    color: "#6A1B9A",
-    bg: "#F3E5F5",
-    icon: <DescriptionOutlinedIcon sx={{ fontSize: 16 }} />,
-  },
-};
-
-const getTypeConfig = (type?: string) =>
-  TYPE_CONFIG[(type ?? "").toLowerCase()] ?? {
-    color: "#455A64",
-    bg: "#ECEFF1",
-    icon: <DescriptionOutlinedIcon sx={{ fontSize: 16 }} />,
-  };
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-const formatDate = (dateString?: string | Date): string => {
-  if (!dateString) return "—";
-  const date = typeof dateString === "string" ? new Date(dateString) : dateString;
-  return date.toLocaleDateString("en-AU", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-};
-
 type SortKey = "DocumentTitle" | "DocumentType" | "PublishedDate";
 
-const sortDocuments = (docs: Document[], orderBy: SortKey, order: "asc" | "desc"): Document[] =>
-  [...docs].sort((a, b) => {
-    const aVal = orderBy === "DocumentType" ? (a.DocumentType?.Title ?? "") : ((a[orderBy] ?? "") as string);
-    const bVal = orderBy === "DocumentType" ? (b.DocumentType?.Title ?? "") : ((b[orderBy] ?? "") as string);
-    return order === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
-  });
-
-// ─────────────────────────────────────────────────────────────────────────────
+const formatDate = (date?: string | Date): string => {
+  if (!date) return "—";
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toLocaleDateString("en-AU", { day: "2-digit", month: "short", year: "numeric" });
+};
 
 const DocumentsTable = ({ documents, onRowClick }: DocumentsTableProps): React.ReactElement => {
-  const theme = useTheme();
-  const PRIMARY = theme.palette.primary.main; // #0078D4
-
-  const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState("all");
   const [orderBy, setOrderBy] = useState<SortKey>("DocumentTitle");
   const [order, setOrder] = useState<"asc" | "desc">("asc");
 
-  const handleSort = (col: SortKey): void => {
-    setOrder(orderBy === col && order === "asc" ? "desc" : "asc");
-    setOrderBy(col);
+  const handleSort = (column: SortKey): void => {
+    if (orderBy === column) {
+      setOrder(order === "asc" ? "desc" : "asc");
+    } else {
+      setOrderBy(column);
+      setOrder("asc");
+    }
   };
 
-  // Unique type options for filter dropdown
-  const typeOptions = useMemo(() => {
-    const types = Array.from(new Set(documents.map((d) => d.DocumentType?.Title).filter(Boolean))) as string[];
-    return types.sort();
-  }, [documents]);
+  const sortedDocuments = useMemo(() => {
+    return [...documents].sort((a, b) => {
+      let aVal: string;
+      let bVal: string;
 
-  const filtered = useMemo(() => {
-    const term = search.toLowerCase();
-    return documents.filter((d) => {
-      const matchesSearch =
-        d.DocumentTitle?.toLowerCase().includes(term) ||
-        d.DocumentType?.Title?.toLowerCase().includes(term) ||
-        d.CoreFunctionality?.Title?.toLowerCase().includes(term) ||
-        d.Category?.some((c) => c.Title.toLowerCase().includes(term));
-      const matchesType = typeFilter === "all" || d.DocumentType?.Title === typeFilter;
-      return matchesSearch && matchesType;
+      switch (orderBy) {
+        case "DocumentType":
+          aVal = a.DocumentType?.Title ?? "";
+          bVal = b.DocumentType?.Title ?? "";
+          break;
+        case "PublishedDate":
+          aVal = a.PublishedDate ? new Date(a.PublishedDate).toISOString() : "";
+          bVal = b.PublishedDate ? new Date(b.PublishedDate).toISOString() : "";
+          break;
+        default:
+          aVal = a.DocumentTitle ?? "";
+          bVal = b.DocumentTitle ?? "";
+      }
+
+      return order === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
     });
-  }, [documents, search, typeFilter]);
+  }, [documents, orderBy, order]);
 
-  const sorted = useMemo(() => sortDocuments(filtered, orderBy, order), [filtered, orderBy, order]);
-
-  // ── Column header style ───────────────────────────────────────────────────
-  const th = {
-    backgroundColor: "#F8F9FA",
-    color: "#42526E",
+  // Header cell styles
+  const headerCellSx = {
+    backgroundColor: "#F8FAFC",
+    color: BRANDING.primary,
     fontWeight: 600,
-    fontSize: "0.75rem",
-    letterSpacing: "0.04em",
+    fontSize: "11px",
     textTransform: "uppercase" as const,
-    borderBottom: "2px solid #DFE1E6",
-    py: 1.25,
-    px: 2,
+    letterSpacing: "0.5px",
+    padding: "12px 16px",
+    borderBottom: `2px solid rgba(15, 76, 129, 0.15)`,
     whiteSpace: "nowrap" as const,
   };
 
   const sortLabelSx = {
-    color: "#42526E !important",
-    fontWeight: 600,
-    fontSize: "0.75rem",
-    "& .MuiTableSortLabel-icon": { color: "#42526E !important", fontSize: "1rem" },
+    color: `${BRANDING.primary} !important`,
     "&.Mui-active": {
-      color: `${PRIMARY} !important`,
-      "& .MuiTableSortLabel-icon": { color: `${PRIMARY} !important` },
+      color: `${BRANDING.primary} !important`,
     },
-    "&:hover": { color: `${PRIMARY} !important` },
+    "& .MuiTableSortLabel-icon": {
+      color: `${BRANDING.primary} !important`,
+      opacity: 0.5,
+    },
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
-  return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        flex: 1,
-        minHeight: 0,
-        backgroundColor: "white",
-        borderRadius: "8px",
-        border: "1px solid #DFE1E6",
-        overflow: "hidden",
-        boxShadow: "0 1px 3px rgba(9,30,66,0.08), 0 0 1px rgba(9,30,66,0.08)",
-      }}
-    >
-      {/* ── Toolbar ─────────────────────────────────────────────────────── */}
+  // Empty state
+  if (sortedDocuments.length === 0) {
+    return (
       <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: 1.5,
-          px: 2,
-          py: 1.5,
-          borderBottom: "1px solid #DFE1E6",
-          backgroundColor: "white",
-          flexWrap: "wrap",
-        }}
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="center"
+        py={8}
+        flex={1}
       >
-        {/* Search */}
-        <TextField
-          placeholder="Search documents..."
-          size="small"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          sx={{
-            width: 280,
-            "& .MuiOutlinedInput-root": {
-              height: 32,
-              fontSize: "0.875rem",
-              borderRadius: "4px",
-              backgroundColor: "#F4F5F7",
-              "& fieldset": { borderColor: "transparent" },
-              "&:hover fieldset": { borderColor: "#DFE1E6" },
-              "&.Mui-focused fieldset": { borderColor: PRIMARY, borderWidth: "2px" },
-              "&.Mui-focused": { backgroundColor: "white" },
-            },
-          }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon sx={{ fontSize: 16, color: "#7A869A" }} />
-              </InputAdornment>
-            ),
-          }}
-        />
-
-        {/* Type filter */}
-        <Box display="flex" alignItems="center" gap={0.75}>
-          <FilterListIcon sx={{ fontSize: 16, color: "#7A869A" }} />
-          <Select
-            size="small"
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            sx={{
-              height: 32,
-              fontSize: "0.8125rem",
-              color: typeFilter === "all" ? "#7A869A" : PRIMARY,
-              fontWeight: typeFilter === "all" ? 400 : 600,
-              "& .MuiOutlinedInput-notchedOutline": { borderColor: "#DFE1E6" },
-              "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#B3BAC5" },
-              "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: PRIMARY },
-              "& .MuiSelect-select": { py: 0.5, px: 1.5 },
-            }}
-          >
-            <MenuItem value="all">All types</MenuItem>
-            {typeOptions.map((t) => (
-              <MenuItem key={t} value={t} sx={{ fontSize: "0.8125rem" }}>{t}</MenuItem>
-            ))}
-          </Select>
-        </Box>
-
-        {/* Clear filters */}
-        {(search || typeFilter !== "all") && (
-          <Button
-            size="small"
-            onClick={() => { setSearch(""); setTypeFilter("all"); }}
-            sx={{
-              fontSize: "0.8125rem",
-              color: PRIMARY,
-              textTransform: "none",
-              fontWeight: 500,
-              height: 32,
-              px: 1,
-              minWidth: "unset",
-              "&:hover": { backgroundColor: alpha(PRIMARY, 0.06) },
-            }}
-          >
-            Clear
-          </Button>
-        )}
-
-        {/* Result count — pushed right */}
-        <Typography
-          sx={{ ml: "auto", color: "#7A869A", fontWeight: 500, fontSize: "0.8125rem" }}
-        >
-          {sorted.length} of {documents.length} documents
+        <Typography sx={{ color: "#64748B", fontSize: "14px", mb: 1 }}>
+          No documents found
+        </Typography>
+        <Typography sx={{ color: "#94A3B8", fontSize: "12px" }}>
+          Try adjusting your search or filters
         </Typography>
       </Box>
+    );
+  }
 
-      {/* ── Table ────────────────────────────────────────────────────────── */}
-      <TableContainer sx={{ flex: 1, overflow: "auto" }}>
-        <Table stickyHeader size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ ...th, width: "38%" }}>
-                <TableSortLabel
-                  active={orderBy === "DocumentTitle"}
-                  direction={orderBy === "DocumentTitle" ? order : "asc"}
-                  onClick={() => handleSort("DocumentTitle")}
-                  sx={sortLabelSx}
-                >
-                  Document Name
-                </TableSortLabel>
-              </TableCell>
-              <TableCell sx={th}>
-                <TableSortLabel
-                  active={orderBy === "DocumentType"}
-                  direction={orderBy === "DocumentType" ? order : "asc"}
-                  onClick={() => handleSort("DocumentType")}
-                  sx={sortLabelSx}
-                >
-                  Type
-                </TableSortLabel>
-              </TableCell>
-              <TableCell sx={th}>Function</TableCell>
-              <TableCell sx={th}>Category</TableCell>
-              <TableCell sx={th}>
-                <TableSortLabel
-                  active={orderBy === "PublishedDate"}
-                  direction={orderBy === "PublishedDate" ? order : "asc"}
-                  onClick={() => handleSort("PublishedDate")}
-                  sx={sortLabelSx}
-                >
-                  Published
-                </TableSortLabel>
-              </TableCell>
-              <TableCell sx={{ ...th, textAlign: "center", width: 48 }} />
-            </TableRow>
-          </TableHead>
+  return (
+    <TableContainer sx={{ flex: 1, overflow: "auto" }}>
+      <Table stickyHeader>
+        <TableHead>
+          <TableRow>
+            <TableCell sx={{ ...headerCellSx, width: "35%", paddingLeft: "24px" }}>
+              <TableSortLabel
+                active={orderBy === "DocumentTitle"}
+                direction={orderBy === "DocumentTitle" ? order : "asc"}
+                onClick={() => handleSort("DocumentTitle")}
+                sx={sortLabelSx}
+              >
+                Document name
+              </TableSortLabel>
+            </TableCell>
+            <TableCell sx={{ ...headerCellSx, width: "10%" }}>
+              <TableSortLabel
+                active={orderBy === "DocumentType"}
+                direction={orderBy === "DocumentType" ? order : "asc"}
+                onClick={() => handleSort("DocumentType")}
+                sx={sortLabelSx}
+              >
+                Type
+              </TableSortLabel>
+            </TableCell>
+            <TableCell sx={{ ...headerCellSx, width: "22%" }}>Function</TableCell>
+            <TableCell sx={{ ...headerCellSx, width: "18%" }}>Category</TableCell>
+            <TableCell sx={{ ...headerCellSx, width: "10%" }}>
+              <TableSortLabel
+                active={orderBy === "PublishedDate"}
+                direction={orderBy === "PublishedDate" ? order : "asc"}
+                onClick={() => handleSort("PublishedDate")}
+                sx={sortLabelSx}
+              >
+                Released
+              </TableSortLabel>
+            </TableCell>
+            <TableCell sx={{ ...headerCellSx, width: "5%", textAlign: "center" }} />
+          </TableRow>
+        </TableHead>
 
-          <TableBody>
-            {sorted.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} sx={{ border: "none" }}>
-                  <Box display="flex" flexDirection="column" alignItems="center" py={8} gap={1}>
-                    <DescriptionOutlinedIcon sx={{ fontSize: 40, color: "#DFE1E6" }} />
-                    <Typography sx={{ color: "#7A869A", fontSize: "0.875rem", fontWeight: 500 }}>
-                      No documents found
-                    </Typography>
-                    <Typography sx={{ color: "#B3BAC5", fontSize: "0.8125rem" }}>
-                      Try adjusting your search or filter
-                    </Typography>
-                  </Box>
+        <TableBody>
+          {sortedDocuments.map((doc) => {
+            const typeColor = getDocTypeColor(doc.DocumentType?.Title);
+            const functions = doc.BusinessFunction?.map((f) => f.Title).join(", ") || "—";
+            const categories = doc.Category?.map((c) => c.Title).join(", ") || "—";
+
+            return (
+              <TableRow
+                key={doc.Id}
+                onClick={() => onRowClick(doc)}
+                sx={{
+                  cursor: "pointer",
+                  backgroundColor: "white",
+                  "&:hover": {
+                    backgroundColor: "#F8FAFC",
+                  },
+                }}
+              >
+                {/* Document Name */}
+                <TableCell
+                  sx={{
+                    padding: "14px 16px",
+                    paddingLeft: "24px",
+                    color: "#1E293B",
+                    fontWeight: 500,
+                    fontSize: "13px",
+                  }}
+                >
+                  {doc.DocumentTitle}
                 </TableCell>
-              </TableRow>
-            ) : (
-              sorted.map((doc) => {
-                const cfg = getTypeConfig(doc.DocumentType?.Title);
-                const functions = doc.BusinessFunction ?? [];
-                const categories = doc.Category ?? [];
 
-                return (
-                  <TableRow
-                    key={doc.Id}
-                    onClick={() => onRowClick(doc)}
+                {/* Type Badge */}
+                <TableCell sx={{ padding: "14px 16px" }}>
+                  <Box
+                    component="span"
                     sx={{
-                      cursor: "pointer",
-                      borderBottom: "1px solid #F4F5F7",
-                      transition: "background-color 0.1s ease",
-                      "&:hover": {
-                        backgroundColor: "#F4F5F7",
-                        "& .doc-title": { color: PRIMARY },
-                        "& .row-action": { opacity: 1 },
-                      },
-                      "&:last-child td": { borderBottom: "none" },
+                      display: "inline-block",
+                      fontSize: "11px",
+                      fontWeight: 500,
+                      padding: "4px 10px",
+                      borderRadius: "4px",
+                      backgroundColor: typeColor,
+                      color: "white",
                     }}
                   >
-                    {/* Document Name */}
-                    <TableCell sx={{ py: 1.25, px: 2 }}>
-                      <Box display="flex" alignItems="center" gap={1.5}>
-                        {/* Icon */}
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            width: 28,
-                            height: 28,
-                            borderRadius: "6px",
-                            backgroundColor: cfg.bg,
-                            color: cfg.color,
-                            flexShrink: 0,
-                          }}
-                        >
-                          {cfg.icon}
-                        </Box>
-                        <Box>
-                          <Typography
-                            className="doc-title"
-                            sx={{
-                              fontSize: "0.875rem",
-                              fontWeight: 500,
-                              color: "#172B4D",
-                              lineHeight: 1.4,
-                              transition: "color 0.1s ease",
-                            }}
-                          >
-                            {doc.DocumentTitle}
-                          </Typography>
-                          {/* Core Functionality as subtitle */}
-                          {doc.CoreFunctionality?.Title && (
-                            <Typography sx={{ fontSize: "0.75rem", color: "#7A869A", lineHeight: 1.3 }}>
-                              {doc.CoreFunctionality.Title}
-                            </Typography>
-                          )}
-                        </Box>
-                      </Box>
-                    </TableCell>
+                    {doc.DocumentType?.Title ?? "—"}
+                  </Box>
+                </TableCell>
 
-                    {/* Type */}
-                    <TableCell sx={{ py: 1.25, px: 2 }}>
-                      <Chip
-                        label={doc.DocumentType?.Title ?? "?"}
+                {/* Function */}
+                <TableCell
+                  sx={{
+                    padding: "14px 16px",
+                    color: "#64748B",
+                    fontSize: "12px",
+                  }}
+                >
+                  {functions}
+                </TableCell>
+
+                {/* Category */}
+                <TableCell
+                  sx={{
+                    padding: "14px 16px",
+                    color: "#64748B",
+                    fontSize: "12px",
+                  }}
+                >
+                  {categories}
+                </TableCell>
+
+                {/* Release Date */}
+                <TableCell
+                  sx={{
+                    padding: "14px 16px",
+                    color: "#64748B",
+                    fontSize: "12px",
+                  }}
+                >
+                  {formatDate(doc.PublishedDate)}
+                </TableCell>
+
+                {/* Action */}
+                <TableCell sx={{ padding: "14px 16px", textAlign: "center" }}>
+                  {doc.FileRef && (
+                    <Tooltip title="Open in new tab" arrow>
+                      <IconButton
                         size="small"
-                        sx={{
-                          backgroundColor: cfg.bg,
-                          color: cfg.color,
-                          fontWeight: 600,
-                          fontSize: "0.75rem",
-                          height: 22,
-                          borderRadius: "4px",
-                          "& .MuiChip-label": { px: 1 },
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(`${window.location.origin}${doc.FileRef}`, "_blank");
                         }}
-                      />
-                    </TableCell>
-
-                    {/* Function */}
-                    <TableCell sx={{ py: 1.25, px: 2 }}>
-                      <Box display="flex" flexWrap="wrap" gap={0.5}>
-                        {functions.slice(0, 2).map((fn) => (
-                          <Chip
-                            key={fn.Id}
-                            label={fn.Title}
-                            size="small"
-                            sx={{
-                              backgroundColor: "#F4F5F7",
-                              color: "#42526E",
-                              fontSize: "0.75rem",
-                              height: 22,
-                              borderRadius: "4px",
-                              fontWeight: 500,
-                              "& .MuiChip-label": { px: 1 },
-                            }}
-                          />
-                        ))}
-                        {functions.length > 2 && (
-                          <Tooltip title={functions.slice(2).map((f) => f.Title).join(", ")} arrow placement="top">
-                            <Chip
-                              label={`+${functions.length - 2}`}
-                              size="small"
-                              sx={{
-                                backgroundColor: "#EBECF0",
-                                color: "#7A869A",
-                                fontSize: "0.75rem",
-                                height: 22,
-                                borderRadius: "4px",
-                                fontWeight: 600,
-                                "& .MuiChip-label": { px: 1 },
-                              }}
-                            />
-                          </Tooltip>
-                        )}
-                        {functions.length === 0 && (
-                          <Typography sx={{ fontSize: "0.8125rem", color: "#B3BAC5" }}>—</Typography>
-                        )}
-                      </Box>
-                    </TableCell>
-
-                    {/* Category */}
-                    <TableCell sx={{ py: 1.25, px: 2 }}>
-                      <Box display="flex" flexWrap="wrap" gap={0.5}>
-                        {categories.slice(0, 2).map((cat) => (
-                          <Chip
-                            key={cat.Id}
-                            label={cat.Title}
-                            size="small"
-                            sx={{
-                              backgroundColor: alpha(PRIMARY, 0.08),
-                              color: PRIMARY,
-                              fontSize: "0.75rem",
-                              height: 22,
-                              borderRadius: "4px",
-                              fontWeight: 500,
-                              "& .MuiChip-label": { px: 1 },
-                            }}
-                          />
-                        ))}
-                        {categories.length > 2 && (
-                          <Tooltip title={categories.slice(2).map((c) => c.Title).join(", ")} arrow placement="top">
-                            <Chip
-                              label={`+${categories.length - 2}`}
-                              size="small"
-                              sx={{
-                                backgroundColor: alpha(PRIMARY, 0.06),
-                                color: alpha(PRIMARY, 0.7),
-                                fontSize: "0.75rem",
-                                height: 22,
-                                borderRadius: "4px",
-                                fontWeight: 600,
-                                "& .MuiChip-label": { px: 1 },
-                              }}
-                            />
-                          </Tooltip>
-                        )}
-                        {categories.length === 0 && (
-                          <Typography sx={{ fontSize: "0.8125rem", color: "#B3BAC5" }}>—</Typography>
-                        )}
-                      </Box>
-                    </TableCell>
-
-                    {/* Published Date */}
-                    <TableCell sx={{ py: 1.25, px: 2 }}>
-                      <Box display="flex" alignItems="center" gap={0.75}>
-                        <CalendarTodayIcon sx={{ fontSize: "0.8rem", color: "#B3BAC5" }} />
-                        <Typography sx={{ fontSize: "0.8125rem", color: "#42526E", fontWeight: 500 }}>
-                          {formatDate(doc.PublishedDate)}
-                        </Typography>
-                      </Box>
-                    </TableCell>
-
-                    {/* Open PDF — hidden until row hover */}
-                    <TableCell sx={{ py: 1.25, px: 1, textAlign: "center" }}>
-                      {doc.DocumentUrl && (
-                        <Tooltip title="Open PDF" arrow>
-                          <IconButton
-                            className="row-action"
-                            size="small"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              window.open(doc.DocumentUrl as unknown as string, "_blank");
-                            }}
-                            sx={{
-                              opacity: 0,
-                              color: PRIMARY,
-                              width: 28,
-                              height: 28,
-                              transition: "opacity 0.15s ease",
-                              "&:hover": { backgroundColor: alpha(PRIMARY, 0.1) },
-                            }}
-                          >
-                            <OpenInNewIcon sx={{ fontSize: 16 }} />
-                          </IconButton>
-                        </Tooltip>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Box>
+                        sx={{
+                          color: "#94A3B8",
+                          padding: "4px",
+                          "&:hover": {
+                            color: BRANDING.primary,
+                            backgroundColor: "rgba(15, 76, 129, 0.08)",
+                          },
+                        }}
+                      >
+                        <OpenInNewIcon sx={{ fontSize: 18 }} />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </TableContainer>
   );
 };
 
