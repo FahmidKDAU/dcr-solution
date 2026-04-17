@@ -313,6 +313,7 @@ const getTasks = async (userId: number): Promise<Task[]> => {
         "ChangeRequestId",
         "ChangeRequest/Id",
         "ChangeRequest/Title",
+        "ChangeRequest/ChangeRequestNumber",
         "AssignedTo/Id",
         "AssignedTo/Title",
         "AssignedTo/EMail",
@@ -348,6 +349,7 @@ const getTaskById = async (id: number): Promise<Task | null> => {
         "ChangeRequestId",
         "ChangeRequest/Id",
         "ChangeRequest/Title",
+        "ChangeRequest/ChangeRequestNumber",
         "AssignedTo/Id",
         "AssignedTo/Title",
         "AssignedTo/EMail",
@@ -357,7 +359,7 @@ const getTaskById = async (id: number): Promise<Task | null> => {
         "Requestor/Title",
         "Requestor/EMail",
       )
-      .expand("AssignedTo", "Author", "Requestor")
+      .expand("AssignedTo", "Author", "Requestor", "ChangeRequest")
       .filter(`Id eq ${id}`)();
     return task.length > 0 ? (task[0] as Task) : null;
   } catch (error) {

@@ -1,399 +1,381 @@
-import React, { useState } from "react";
-import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-import InputBase from "@mui/material/InputBase";
+// src/webparts/taskHub/components/TaskList.tsx
+import React, { useState, useMemo } from "react";
+import {
+  Box,
+  Typography,
+  TextField,
+  InputAdornment,
+  Button,
+  CircularProgress,
+} from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
-import TaskCard from "./TaskCard";
+import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import ArrowDropUpIcon from "@mui/icons-material/ArrowDropUp";
 import { Task } from "../../../shared/types/Task";
-import RefreshButton from "../../components/RefreshButton";
+import { BRANDING } from "../../../shared/theme/theme";
+import TaskCard from "./TaskCard";
 
 interface TaskListProps {
   tasks: Task[];
   selectedTask: Task | null;
   onTaskSelect: (task: Task) => void;
-  onRefresh: () => void;
+  loading?: boolean;
 }
 
-// ─── Config ───────────────────────────────────────────────────────────────────
+// ─── Task Type Config (for filter buttons) ────────────────────────────────────
 
-const STATUS_TABS = [
-  { label: "Pending", value: "Pending" },
-  { label: "Approved", value: "Approved" },
-  { label: "Rejected", value: "Rejected" },
-  { label: "Complete", value: "Complete" },
-  { label: "All", value: "All" },
-];
-
-const TASK_TYPE_COLORS: Record<string, string> = {
-  "Change Authority Approval": "#0078D4",
-  "Change Authority Review": "#5C2D91",
-  "Document Review": "#107C10",
-  "Document Controller Review": "#D83B01",
-  "CR Completion": "#835B00",
-  "CR Info Required": "#008575",
+const TASK_TYPE_CONFIG: Record<string, { label: string }> = {
+  // Review tasks
+  "Change Authority Review": { label: "Review" },
+  "CA Review": { label: "Review" },
+  "Compliance Authority Review": { label: "Review" },
+  "Document Review": { label: "Review" },
+  "Document Controller Review": { label: "Review" },
+  "Author Review": { label: "Review" },
+  "Publishing Review": { label: "Review" },
+  
+  // Approval tasks
+  "Change Authority Approval": { label: "Approval" },
+  "Final Approval": { label: "Approval" },
+  
+  // Document editing tasks
+  "Document Change Process": { label: "Edit" },
+  
+  // Participant tasks
+  "Participant Task": { label: "Contribute" },
+  
+  // Action tasks
+  "CR Completion": { label: "Action" },
+  "CR Info Required": { label: "Action" },
 };
 
-// ─── Type Filter Pill ─────────────────────────────────────────────────────────
+const getTaskLabel = (taskType: string): string => {
+  return TASK_TYPE_CONFIG[taskType]?.label || taskType;
+};
 
-const TypePill = ({
-  label,
-  color,
-  active,
-  count,
-  onClick,
-}: {
-  label: string;
-  color: string;
-  active: boolean;
-  count: number;
-  onClick: () => void;
-}) => (
-  <Box
-    component="button"
-    onClick={onClick}
-    sx={{
-      display: "inline-flex",
-      alignItems: "center",
-      gap: 0.75,
-      px: 1.25,
-      py: 0.4,
-      borderRadius: "20px",
-      border: "1.5px solid",
-      borderColor: active ? color : "transparent",
-      backgroundColor: active ? `${color}15` : "#F3F2F1",
-      color: active ? color : "#605E5C",
-      fontSize: 12,
-      fontWeight: active ? 700 : 500,
-      cursor: "pointer",
-      flexShrink: 0,
-      transition: "all 0.15s",
-      "&:hover": {
-        borderColor: color,
-        backgroundColor: `${color}10`,
-        color: color,
-      },
-    }}
-  >
-    {label}
-    <Box
-      component="span"
-      sx={{
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: active ? color : "#C8C6C4",
-        color: "#fff",
-        fontSize: 10,
-        fontWeight: 700,
-        minWidth: 16,
-        height: 16,
-        borderRadius: "10px",
-        px: 0.5,
-      }}
-    >
-      {count}
-    </Box>
-  </Box>
-);
+// Get unique simplified categories for filter buttons
+const getFilterCategories = (
+  tasks: Task[]
+): { label: string; count: number }[] => {
+  const categoryMap = new Map<string, number>();
+
+  tasks.forEach((task) => {
+    const label = getTaskLabel(task.TaskType);
+    categoryMap.set(label, (categoryMap.get(label) || 0) + 1);
+  });
+
+  return Array.from(categoryMap.entries()).map(([label, count]) => ({
+    label,
+    count,
+  }));
+};
+
+// ─── Sort Types ───────────────────────────────────────────────────────────────
+
+type SortField = "Created" | "DueDate";
+type SortDirection = "asc" | "desc";
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-const TaskList = ({
+const TaskList: React.FC<TaskListProps> = ({
   tasks,
   selectedTask,
   onTaskSelect,
-  onRefresh,
-}: TaskListProps) => {
-  const [activeStatus, setActiveStatus] = useState("Pending");
-  const [activeType, setActiveType] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
-  const [sortBy, setSortBy] = useState<"Created" | "DueDate">("Created");
-  // Get unique task types present in the list
-  const taskTypes = Array.from(new Set(tasks.map((t) => t.TaskType)));
+  loading = false,
+}) => {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [sortField, setSortField] = useState<SortField>("Created");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
-  // Filtered tasks
-  const filtered = tasks
-    .filter((t) => activeStatus === "All" || t.Status === activeStatus)
-    .filter((t) => !activeType || t.TaskType === activeType)
-    .filter(
-      (t) => !search || t.Title.toLowerCase().includes(search.toLowerCase()),
-    )
-    .sort((a, b) => {
-      const dateA = new Date(a[sortBy] ?? 0).getTime();
-      const dateB = new Date(b[sortBy] ?? 0).getTime();
-      return dateB - dateA; // newest first
+  // Filter to pending tasks only
+  const pendingTasks = useMemo(() => {
+    return tasks.filter(
+      (task) => task.Status === "Pending" || task.Status === "In Progress"
+    );
+  }, [tasks]);
+
+  // Apply search and category filter
+  const filteredTasks = useMemo(() => {
+    return pendingTasks.filter((task) => {
+      const matchesSearch =
+        !searchQuery ||
+        task.Title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        task.ChangeRequest?.ChangeRequestNumber
+          ?.toLowerCase()
+          .includes(searchQuery.toLowerCase());
+
+      const label = getTaskLabel(task.TaskType);
+      const matchesFilter = !activeFilter || label === activeFilter;
+
+      return matchesSearch && matchesFilter;
     });
-  // Count per status tab (ignoring type filter for accurate counts)
-  const countByStatus = (status: string) =>
-    status === "All"
-      ? tasks.length
-      : tasks.filter((t) => t.Status === status).length;
+  }, [pendingTasks, searchQuery, activeFilter]);
 
-  // Count per type (respecting status filter)
-  const countByType = (type: string) =>
-    tasks
-      .filter((t) => activeStatus === "All" || t.Status === activeStatus)
-      .filter((t) => t.TaskType === type).length;
+  // Sort tasks
+  const sortedTasks = useMemo(() => {
+    return [...filteredTasks].sort((a, b) => {
+      let aValue: Date | null = null;
+      let bValue: Date | null = null;
+
+      if (sortField === "Created") {
+        aValue = a.Created ? new Date(a.Created) : null;
+        bValue = b.Created ? new Date(b.Created) : null;
+      } else if (sortField === "DueDate") {
+        aValue = a.DueDate ? new Date(a.DueDate) : null;
+        bValue = b.DueDate ? new Date(b.DueDate) : null;
+      }
+
+      // Nulls always go to the end
+      if (!aValue && !bValue) return 0;
+      if (!aValue) return 1;
+      if (!bValue) return -1;
+
+      const diff = aValue.getTime() - bValue.getTime();
+      return sortDirection === "asc" ? diff : -diff;
+    });
+  }, [filteredTasks, sortField, sortDirection]);
+
+  const filterCategories = useMemo(
+    () => getFilterCategories(pendingTasks),
+    [pendingTasks]
+  );
+
+  const handleSort = (field: SortField): void => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("desc");
+    }
+  };
+
+  const SortIcon: React.FC<{ field: SortField }> = ({ field }) => {
+    const isActive = sortField === field;
+    const Icon = sortDirection === "asc" ? ArrowDropUpIcon : ArrowDropDownIcon;
+
+    return (
+      <Icon
+        sx={{
+          fontSize: 16,
+          color: isActive ? BRANDING.primary : "#CBD5E1",
+          ml: 0.25,
+        }}
+      />
+    );
+  };
 
   return (
     <Box
-      display="flex"
-      flexDirection="column"
-      height="100%"
-      sx={{ backgroundColor: "#fff" }}
+      sx={{
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        backgroundColor: "white",
+      }}
     >
-      {/* ── Header ── */}
-      <Box sx={{ px: 2.5, pt: 2.5, pb: 1.5 }}>
-        <Typography
-          sx={{ fontSize: 16, fontWeight: 700, color: "#323130", mb: 0.25 }}
-        >
-          My Tasks
-        </Typography>
-        <Typography sx={{ fontSize: 12, color: "#A19F9D" }}>
-          {tasks.filter((t) => t.Status === "Pending").length} pending
-          {" · "}
-          {tasks.length} total
-        </Typography>
+      {/* Header */}
+      <Box
+        sx={{
+          backgroundColor: BRANDING.primary,
+          padding: "16px 20px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <Box>
+          <Typography
+            sx={{
+              fontSize: "16px",
+              fontWeight: 500,
+              color: "white",
+            }}
+          >
+            My Tasks
+          </Typography>
+          <Typography
+            sx={{
+              fontSize: "11px",
+              color: "rgba(255,255,255,0.7)",
+              marginTop: "2px",
+            }}
+          >
+            {sortedTasks.length} pending
+          </Typography>
+        </Box>
+
+        {/* Search */}
+        <TextField
+          placeholder="Search..."
+          size="small"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          sx={{
+            width: 160,
+            "& .MuiOutlinedInput-root": {
+              backgroundColor: "rgba(255,255,255,0.95)",
+              borderRadius: "4px",
+              fontSize: "12px",
+              height: 32,
+              "& fieldset": { border: "none" },
+            },
+          }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon sx={{ fontSize: 16, color: "#94A3B8" }} />
+              </InputAdornment>
+            ),
+          }}
+        />
       </Box>
 
-      {/* ── Search ── */}
-      <Box sx={{ px: 2.5, pb: 1.5 }}>
-        <Box
+      {/* Filter Bar */}
+      <Box
+        sx={{
+          padding: "10px 20px",
+          backgroundColor: "#F8FAFC",
+          borderBottom: "1px solid #E2E8F0",
+          display: "flex",
+          alignItems: "center",
+          gap: "6px",
+        }}
+      >
+        {/* All tasks button */}
+        <Button
+          onClick={() => setActiveFilter(null)}
           sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 1,
-            backgroundColor: "#F3F2F1",
-            borderRadius: "6px",
-            px: 1.5,
-            py: 0.75,
-            border: "1.5px solid transparent",
-            transition: "border-color 0.15s, background 0.15s",
-            "&:focus-within": {
-              backgroundColor: "#fff",
-              borderColor: "#0078D4",
+            padding: "4px 10px",
+            fontSize: "11px",
+            backgroundColor: activeFilter === null ? BRANDING.primary : "white",
+            color: activeFilter === null ? "white" : "#64748B",
+            border: activeFilter === null ? "none" : "1px solid #E2E8F0",
+            borderRadius: "4px",
+            textTransform: "none",
+            minWidth: "auto",
+            lineHeight: 1.4,
+            "&:hover": {
+              backgroundColor:
+                activeFilter === null ? BRANDING.primaryDark : "#F8FAFC",
             },
           }}
         >
-          <SearchIcon sx={{ fontSize: 16, color: "#A19F9D", flexShrink: 0 }} />
-          <InputBase
-            placeholder="Search tasks..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+          All {pendingTasks.length}
+        </Button>
+
+        {/* Category filter buttons */}
+        {filterCategories.map((category) => (
+          <Button
+            key={category.label}
+            onClick={() =>
+              setActiveFilter(
+                activeFilter === category.label ? null : category.label
+              )
+            }
             sx={{
-              flex: 1,
-              fontSize: 13,
-              "& input": {
-                padding: 0,
-                color: "#323130",
-                "&::placeholder": { color: "#A19F9D", opacity: 1 },
+              padding: "4px 10px",
+              fontSize: "11px",
+              backgroundColor:
+                activeFilter === category.label ? BRANDING.primary : "white",
+              color: activeFilter === category.label ? "white" : "#64748B",
+              border:
+                activeFilter === category.label
+                  ? "none"
+                  : "1px solid #E2E8F0",
+              borderRadius: "4px",
+              textTransform: "none",
+              minWidth: "auto",
+              lineHeight: 1.4,
+              "&:hover": {
+                backgroundColor:
+                  activeFilter === category.label
+                    ? BRANDING.primaryDark
+                    : "#F8FAFC",
               },
             }}
-          />
-          {search && (
-            <Box
-              component="button"
-              onClick={() => setSearch("")}
-              sx={{
-                border: "none",
-                background: "none",
-                cursor: "pointer",
-                color: "#A19F9D",
-                fontSize: 16,
-                lineHeight: 1,
-                p: 0,
-                display: "flex",
-                alignItems: "center",
-                "&:hover": { color: "#323130" },
-              }}
-            >
-              ×
-            </Box>
-          )}
-        </Box>
+          >
+            {category.label} {category.count}
+          </Button>
+        ))}
       </Box>
 
-      {/* ── Status Tabs ── */}
+      {/* Column Headers */}
       <Box
         sx={{
-          display: "flex",
-          borderBottom: "1px solid #EDEBE9",
-          px: 2.5,
-          gap: 0,
+          display: "grid",
+          gridTemplateColumns: "4px 70px 75px 1fr 100px 70px 70px",
+          backgroundColor: "#FAFBFC",
+          padding: "8px 20px",
+          borderBottom: "1px solid #E2E8F0",
+          fontSize: "10px",
+          color: "#64748B",
+          textTransform: "uppercase",
+          letterSpacing: "0.5px",
+          fontWeight: 500,
         }}
       >
-        {STATUS_TABS.map((tab) => {
-          const count = countByStatus(tab.value);
-          const active = activeStatus === tab.value;
-          return (
-            <Box
-              key={tab.value}
-              component="button"
-              onClick={() => setActiveStatus(tab.value)}
-              sx={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                px: 1.25,
-                py: 1,
-                fontSize: 12,
-                fontWeight: active ? 700 : 400,
-                color: active ? "#0078D4" : "#605E5C",
-                borderBottom: "2px solid",
-                borderColor: active ? "#0078D4" : "transparent",
-                transition: "all 0.15s",
-                display: "flex",
-                alignItems: "center",
-                gap: 0.6,
-                "&:hover": { color: "#323130" },
-                mb: "-1px",
-              }}
-            >
-              {tab.label}
-              {count > 0 && (
-                <Box
-                  component="span"
-                  sx={{
-                    backgroundColor: active ? "#0078D4" : "#EDEBE9",
-                    color: active ? "#fff" : "#605E5C",
-                    fontSize: 10,
-                    fontWeight: 700,
-                    minWidth: 16,
-                    height: 16,
-                    borderRadius: "10px",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    px: 0.5,
-                  }}
-                >
-                  {count}
-                </Box>
-              )}
-            </Box>
-          );
-        })}
-      </Box>
-
-      {/* ── Type Filter Pills ── */}
-      {taskTypes.length > 1 && (
+        <span></span>
+        <span>Type</span>
+        <span>CR #</span>
+        <span>Task</span>
+        <span>Requester</span>
         <Box
+          onClick={() => handleSort("Created")}
           sx={{
-            px: 2.5,
-            py: 1.25,
+            cursor: "pointer",
             display: "flex",
-            gap: 0.75,
-            flexWrap: "wrap",
-            borderBottom: "1px solid #EDEBE9",
+            alignItems: "center",
+            color: sortField === "Created" ? BRANDING.primary : "#64748B",
+            userSelect: "none",
           }}
         >
-          {taskTypes.map((type) => (
-            <TypePill
-              key={type}
-              label={type}
-              color={TASK_TYPE_COLORS[type] ?? "#605E5C"}
-              active={activeType === type}
-              count={countByType(type)}
-              onClick={() => setActiveType(activeType === type ? null : type)}
-            />
-          ))}
+          Created
+          <SortIcon field="Created" />
         </Box>
-      )}
-      {/* ── Sort Bar ── */}
-      <Box
-        sx={{
-          px: 2.5,
-          py: 0.75,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          borderBottom: "1px solid #EDEBE9",
-          backgroundColor: "#FAFAFA",
-        }}
-      >
-        <Box display="flex" alignItems="center" gap={1}>
-          <Typography sx={{ fontSize: 11, color: "#A19F9D" }}>
-            {filtered.length} {filtered.length === 1 ? "task" : "tasks"}
-          </Typography>
-          <RefreshButton onRefresh={async () => onRefresh()} />
-        </Box>
-        <Box display="flex" alignItems="center" gap={0.5}>
-          <Typography sx={{ fontSize: 11, color: "#A19F9D", mr: 0.25 }}>
-            Sort by
-          </Typography>
-          {(["Created", "DueDate"] as const).map((opt) => (
-            <Box
-              key={opt}
-              component="button"
-              onClick={() => setSortBy(opt)}
-              sx={{
-                border: "none",
-                borderBottom: "2px solid",
-                borderBottomColor: sortBy === opt ? "#0078D4" : "transparent",
-                backgroundColor: "transparent",
-                color: sortBy === opt ? "#0078D4" : "#605E5C",
-                fontSize: 11,
-                fontWeight: sortBy === opt ? 700 : 400,
-                px: 0.75,
-                py: 0.4,
-                cursor: "pointer",
-                transition: "all 0.15s",
-                "&:hover": { color: "#0078D4" },
-              }}
-            >
-              {opt === "Created" ? "Date Created" : "Due Date"}
-            </Box>
-          ))}
+        <Box
+          onClick={() => handleSort("DueDate")}
+          sx={{
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            color: sortField === "DueDate" ? BRANDING.primary : "#64748B",
+            userSelect: "none",
+          }}
+        >
+          Due
+          <SortIcon field="DueDate" />
         </Box>
       </Box>
 
-      {/* ── Task Cards ── */}
-      <Box overflow="auto" flex={1}>
-        {filtered.length === 0 ? (
+      {/* Task List */}
+      <Box sx={{ flex: 1, overflow: "auto" }}>
+        {loading && sortedTasks.length === 0 ? (
           <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              height: "60%",
-              gap: 1,
-            }}
+            display="flex"
+            justifyContent="center"
+            alignItems="center"
+            height="200px"
           >
-            <Typography sx={{ fontSize: 32 }}>📋</Typography>
-            <Typography
-              sx={{ fontSize: 14, color: "#605E5C", fontWeight: 500 }}
-            >
-              No tasks found
+            <CircularProgress size={24} sx={{ color: BRANDING.primary }} />
+          </Box>
+        ) : sortedTasks.length === 0 ? (
+          <Box
+            display="flex"
+            flexDirection="column"
+            alignItems="center"
+            justifyContent="center"
+            py={6}
+          >
+            <Typography sx={{ fontSize: "14px", color: "#64748B", mb: 0.5 }}>
+              No pending tasks
             </Typography>
-            <Typography sx={{ fontSize: 12, color: "#A19F9D" }}>
-              {search ? `No results for "${search}"` : "Nothing here yet"}
+            <Typography sx={{ fontSize: "12px", color: "#94A3B8" }}>
+              You're all caught up!
             </Typography>
-            {(search || activeType) && (
-              <Box
-                component="button"
-                onClick={() => {
-                  setSearch("");
-                  setActiveType(null);
-                }}
-                sx={{
-                  mt: 0.5,
-                  border: "none",
-                  background: "none",
-                  color: "#0078D4",
-                  fontSize: 12,
-                  cursor: "pointer",
-                  fontWeight: 600,
-                  p: 0,
-                  "&:hover": { textDecoration: "underline" },
-                }}
-              >
-                Clear filters
-              </Box>
-            )}
           </Box>
         ) : (
-          filtered.map((task) => (
+          sortedTasks.map((task) => (
             <TaskCard
               key={task.Id}
               task={task}
