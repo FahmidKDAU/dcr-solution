@@ -30,7 +30,7 @@ const ParticipantTask = ({
 }: ParticipantTaskProps): React.ReactElement => {
   const [participantNotes, setParticipantNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
- 
+
   const [docLoading, setDocLoading] = useState(false);
   const [participant, setParticipant] = useState<{
     Id: number;
@@ -43,6 +43,8 @@ const ParticipantTask = ({
   const authorSuggestions = (task.Comments ?? "").trim();
   const draftUrl = cr?.DraftDocumentUrl ?? null;
   useEffect(() => {
+    if (!task.AssignedTo?.Id) return; // ← Add this guard
+
     SharePointService.getParticipantByTaskContext(
       task.ChangeRequestId,
       task.AssignedTo.Id,
@@ -62,7 +64,7 @@ const ParticipantTask = ({
       .catch((err) => {
         console.error("Failed to fetch participant for task:", err);
       });
-  }, [task.ChangeRequestId, task.AssignedTo.Id]);
+  }, [task.ChangeRequestId, task.AssignedTo?.Id]);
 
   const handleAction = async (action: "positive" | "reject"): Promise<void> => {
     setSubmitting(true);

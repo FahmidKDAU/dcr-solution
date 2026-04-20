@@ -11,6 +11,7 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowDropUpIcon from "@mui/icons-material/ArrowDropUp";
+import StarIcon from "@mui/icons-material/Star";
 import { Task } from "../../../shared/types/Task";
 import { BRANDING } from "../../../shared/theme/theme";
 import TaskCard from "./TaskCard";
@@ -19,6 +20,7 @@ interface TaskListProps {
   tasks: Task[];
   selectedTask: Task | null;
   onTaskSelect: (task: Task) => void;
+  onTasksChange?: (tasks: Task[]) => void;
   loading?: boolean;
 }
 
@@ -75,12 +77,17 @@ const getFilterCategories = (
 type SortField = "Created" | "DueDate";
 type SortDirection = "asc" | "desc";
 
+// ─── Grid columns ─────────────────────────────────────────────────────────────
+
+const GRID_COLUMNS = "24px 4px 70px 75px 1fr 100px 70px 70px";
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const TaskList: React.FC<TaskListProps> = ({
   tasks,
   selectedTask,
   onTaskSelect,
+  onTasksChange,
   loading = false,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -112,9 +119,12 @@ const TaskList: React.FC<TaskListProps> = ({
     });
   }, [pendingTasks, searchQuery, activeFilter]);
 
-  // Sort tasks
-  const sortedTasks = useMemo(() => {
-    return [...filteredTasks].sort((a, b) => {
+  // Separate pinned and unpinned, then sort
+  const { pinnedTasks, unpinnedTasks } = useMemo(() => {
+    const pinned = filteredTasks.filter((t) => t.isPinned);
+    const unpinned = filteredTasks.filter((t) => !t.isPinned);
+
+    const sortFn = (a: Task, b: Task): number => {
       let aValue: Date | null = null;
       let bValue: Date | null = null;
 
@@ -126,14 +136,18 @@ const TaskList: React.FC<TaskListProps> = ({
         bValue = b.DueDate ? new Date(b.DueDate) : null;
       }
 
-      // Nulls always go to the end
       if (!aValue && !bValue) return 0;
       if (!aValue) return 1;
       if (!bValue) return -1;
 
       const diff = aValue.getTime() - bValue.getTime();
       return sortDirection === "asc" ? diff : -diff;
-    });
+    };
+
+    return {
+      pinnedTasks: [...pinned].sort(sortFn),
+      unpinnedTasks: [...unpinned].sort(sortFn),
+    };
   }, [filteredTasks, sortField, sortDirection]);
 
   const filterCategories = useMemo(
@@ -148,6 +162,13 @@ const TaskList: React.FC<TaskListProps> = ({
       setSortField(field);
       setSortDirection("desc");
     }
+  };
+
+  const handleTogglePin = (taskId: number, newPinned: boolean): void => {
+    const updatedTasks = tasks.map((t) =>
+      t.Id === taskId ? { ...t, isPinned: newPinned } : t
+    );
+    onTasksChange?.(updatedTasks);
   };
 
   const SortIcon: React.FC<{ field: SortField }> = ({ field }) => {
@@ -201,7 +222,7 @@ const TaskList: React.FC<TaskListProps> = ({
               marginTop: "2px",
             }}
           >
-            {sortedTasks.length} pending
+            {filteredTasks.length} pending
           </Typography>
         </Box>
 
@@ -300,57 +321,9 @@ const TaskList: React.FC<TaskListProps> = ({
         ))}
       </Box>
 
-      {/* Column Headers */}
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: "4px 70px 75px 1fr 100px 70px 70px",
-          backgroundColor: "#FAFBFC",
-          padding: "8px 20px",
-          borderBottom: "1px solid #E2E8F0",
-          fontSize: "10px",
-          color: "#64748B",
-          textTransform: "uppercase",
-          letterSpacing: "0.5px",
-          fontWeight: 500,
-        }}
-      >
-        <span></span>
-        <span>Type</span>
-        <span>CR #</span>
-        <span>Task</span>
-        <span>Requester</span>
-        <Box
-          onClick={() => handleSort("Created")}
-          sx={{
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            color: sortField === "Created" ? BRANDING.primary : "#64748B",
-            userSelect: "none",
-          }}
-        >
-          Created
-          <SortIcon field="Created" />
-        </Box>
-        <Box
-          onClick={() => handleSort("DueDate")}
-          sx={{
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            color: sortField === "DueDate" ? BRANDING.primary : "#64748B",
-            userSelect: "none",
-          }}
-        >
-          Due
-          <SortIcon field="DueDate" />
-        </Box>
-      </Box>
-
       {/* Task List */}
       <Box sx={{ flex: 1, overflow: "auto" }}>
-        {loading && sortedTasks.length === 0 ? (
+        {loading && filteredTasks.length === 0 ? (
           <Box
             display="flex"
             justifyContent="center"
@@ -359,7 +332,7 @@ const TaskList: React.FC<TaskListProps> = ({
           >
             <CircularProgress size={24} sx={{ color: BRANDING.primary }} />
           </Box>
-        ) : sortedTasks.length === 0 ? (
+        ) : filteredTasks.length === 0 ? (
           <Box
             display="flex"
             flexDirection="column"
@@ -375,14 +348,108 @@ const TaskList: React.FC<TaskListProps> = ({
             </Typography>
           </Box>
         ) : (
-          sortedTasks.map((task) => (
-            <TaskCard
-              key={task.Id}
-              task={task}
-              selected={selectedTask?.Id === task.Id}
-              onSelect={onTaskSelect}
-            />
-          ))
+          <>
+            {/* Pinned Section */}
+            {pinnedTasks.length > 0 && (
+              <>
+                <Box
+                  sx={{
+                    padding: "8px 20px",
+                    backgroundColor: "#FFFBEB",
+                    borderBottom: "1px solid #FEF3C7",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                  }}
+                >
+                  <StarIcon sx={{ fontSize: 14, color: "#B5850A" }} />
+                  <Typography
+                    sx={{
+                      fontSize: "11px",
+                      color: "#92650A",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Pinned
+                  </Typography>
+                  <Typography sx={{ fontSize: "11px", color: "#B5850A" }}>
+                    {pinnedTasks.length} task{pinnedTasks.length !== 1 ? "s" : ""}
+                  </Typography>
+                </Box>
+
+                {pinnedTasks.map((task) => (
+                  <TaskCard
+                    key={task.Id}
+                    task={task}
+                    selected={selectedTask?.Id === task.Id}
+                    onSelect={onTaskSelect}
+                    onTogglePin={handleTogglePin}
+                    isPinnedSection
+                  />
+                ))}
+              </>
+            )}
+
+            {/* Column Headers */}
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: GRID_COLUMNS,
+                backgroundColor: "#FAFBFC",
+                padding: "8px 20px",
+                borderBottom: "1px solid #E2E8F0",
+                fontSize: "10px",
+                color: "#64748B",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                fontWeight: 500,
+              }}
+            >
+              <span></span>
+              <span></span>
+              <span>Type</span>
+              <span>CR #</span>
+              <span>Task</span>
+              <span>Requester</span>
+              <Box
+                onClick={() => handleSort("Created")}
+                sx={{
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  color: sortField === "Created" ? BRANDING.primary : "#64748B",
+                  userSelect: "none",
+                }}
+              >
+                Created
+                <SortIcon field="Created" />
+              </Box>
+              <Box
+                onClick={() => handleSort("DueDate")}
+                sx={{
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  color: sortField === "DueDate" ? BRANDING.primary : "#64748B",
+                  userSelect: "none",
+                }}
+              >
+                Due
+                <SortIcon field="DueDate" />
+              </Box>
+            </Box>
+
+            {/* Unpinned Tasks */}
+            {unpinnedTasks.map((task) => (
+              <TaskCard
+                key={task.Id}
+                task={task}
+                selected={selectedTask?.Id === task.Id}
+                onSelect={onTaskSelect}
+                onTogglePin={handleTogglePin}
+              />
+            ))}
+          </>
         )}
       </Box>
     </Box>

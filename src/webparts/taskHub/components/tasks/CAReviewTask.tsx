@@ -91,7 +91,7 @@ const CAReviewTask = ({ task, cr, onTaskComplete }: CAReviewTaskProps) => {
     setSubmitting(true);
     try {
       await SharePointService.updateTask(task.Id, {
-        Status: "Marked for Documnt Obsoletion",
+        Status: "Marked for Document Obsoletion",
         Comments: comment || undefined,
       });
       handleClose();

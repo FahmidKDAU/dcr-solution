@@ -2,8 +2,11 @@
 import React from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
+import StarIcon from "@mui/icons-material/Star";
+import StarBorderIcon from "@mui/icons-material/StarBorder";
 import { Task } from "../../../shared/types/Task";
 import { BRANDING } from "../../../shared/theme/theme";
+import SharePointService from "../../../shared/services/SharePointService";
 
 // ─── Task Type Config ─────────────────────────────────────────────────────────
 
@@ -88,7 +91,7 @@ const TASK_TYPE_CONFIG: Record<
 };
 
 const getTaskTypeConfig = (
-  taskType: string
+  taskType: string,
 ): { label: string; color: string; bgColor: string } => {
   return (
     TASK_TYPE_CONFIG[taskType] || {
@@ -163,7 +166,7 @@ const formatDate = (date?: Date | string): string => {
 };
 
 const formatDueDate = (
-  date?: Date | string
+  date?: Date | string,
 ): { text: string; isUrgent: boolean } => {
   if (!date) return { text: "—", isUrgent: false };
 
@@ -174,7 +177,7 @@ const formatDueDate = (
   dueDate.setHours(0, 0, 0, 0);
 
   const diffDays = Math.ceil(
-    (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+    (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
   );
 
   if (diffDays < 0) return { text: "Overdue", isUrgent: true };
@@ -187,51 +190,96 @@ const formatDueDate = (
   };
 };
 
+// ─── Grid columns ─────────────────────────────────────────────────────────────
+
+const GRID_COLUMNS = "24px 4px 70px 75px 1fr 100px 70px 70px";
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 interface TaskCardProps {
   task: Task;
   selected: boolean;
   onSelect: (task: Task) => void;
+  onTogglePin?: (taskId: number, newPinned: boolean) => void;
+  isPinnedSection?: boolean;
 }
 
 const TaskCard = ({
   task,
   selected,
   onSelect,
+  onTogglePin,
+  isPinnedSection = false,
 }: TaskCardProps): React.ReactElement => {
   const config = getTaskTypeConfig(task.TaskType);
   const dueInfo = formatDueDate(task.DueDate);
   const crNumber = task.ChangeRequest?.ChangeRequestNumber || "—";
   const requesterName =
     task.Requestor?.Title ||
-    task.ChangeRequest?.Author?.Title ||
     task.AssignedTo?.Title ||
     "";
 
   const isOverdue = dueInfo.isUrgent && dueInfo.text === "Overdue";
+
+  const handleTogglePin = async (e: React.MouseEvent): Promise<void> => {
+    e.stopPropagation();
+    const newPinned = !task.isPinned;
+
+    try {
+      await SharePointService.updateTask(task.Id, { isPinned: newPinned });
+      onTogglePin?.(task.Id, newPinned);
+    } catch (error) {
+      console.error("Error updating pin status:", error);
+    }
+  };
 
   return (
     <Box
       onClick={() => onSelect(task)}
       sx={{
         display: "grid",
-        gridTemplateColumns: "4px 70px 75px 1fr 100px 70px 70px",
+        gridTemplateColumns: GRID_COLUMNS,
         padding: "10px 20px",
-        borderBottom: "1px solid #F1F5F9",
+        borderBottom: isPinnedSection
+          ? "1px solid #FEF3C7"
+          : "1px solid #F1F5F9",
         alignItems: "center",
         cursor: "pointer",
-        backgroundColor: isOverdue
-          ? "#FFFBFB"
-          : selected
-          ? "#F8FAFC"
-          : "white",
+        backgroundColor: isPinnedSection
+          ? "#FFFDF7"
+          : isOverdue
+            ? "#FFFBFB"
+            : selected
+              ? "#F8FAFC"
+              : "white",
         transition: "background-color 0.1s",
         "&:hover": {
-          backgroundColor: isOverdue ? "#FFF5F5" : "#F8FAFC",
+          backgroundColor: isPinnedSection
+            ? "#FFFBF0"
+            : isOverdue
+              ? "#FFF5F5"
+              : "#F8FAFC",
         },
       }}
     >
+      {/* Pin icon */}
+      <Box
+        onClick={handleTogglePin}
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          "&:hover": { opacity: 0.7 },
+        }}
+      >
+        {task.isPinned ? (
+          <StarIcon sx={{ fontSize: 16, color: "#B5850A" }} />
+        ) : (
+          <StarBorderIcon sx={{ fontSize: 16, color: "#CBD5E1" }} />
+        )}
+      </Box>
+
       {/* Color bar */}
       <Box
         sx={{

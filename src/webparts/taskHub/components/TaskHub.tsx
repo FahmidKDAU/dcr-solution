@@ -11,7 +11,7 @@ import { Allotment } from "allotment";
 import "allotment/dist/style.css";
 import { TaskDetail } from "./TaskDetail";
 import { IChangeRequest } from "../../../shared/types/ChangeRequest";
-import { WebPartProvider  } from "../../../shared/contexts/WebPartContext";
+import { WebPartProvider } from "../../../shared/contexts/WebPartContext";
 interface TaskHubProps {
   webAbsoluteUrl: string;
 }
@@ -59,47 +59,57 @@ const TaskHub = (props: TaskHubProps) => {
   };
 
   return (
-     <WebPartProvider value={{ webAbsoluteUrl: props.webAbsoluteUrl }}>
-<Box sx={{ height: "calc(100vh - 50px)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
-      {!selectedTask ? (
-        <TaskList
-          tasks={tasks}
-          selectedTask={selectedTask}
-          onTaskSelect={setSelectedTask}
-          onRefresh={async () => {
-            if (!currentUser) return;
-            await SharePointService.getTasks(currentUser.Id).then(setTasks);
-          }}
-        />
-      ) : (
-        <Allotment>
-          <Allotment.Pane minSize={250} maxSize={600} preferredSize="45%" snap>
-            <TaskPane
-              task={selectedTask}
-              cr={cr}
-              currentUser={currentUser}
-              onBack={() => {
-                setSelectedTask(null);
-                setCr(null);
-              }}
-              onTaskComplete={() => {
-                refreshTasks();
-                setSelectedTask(null);
-              }}
-              onRefetch={refreshCR}
-            />
-          </Allotment.Pane>
-          <Allotment.Pane minSize={400}>
-            <TaskDetail
-              cr={cr}
-              crLoading={crLoading}
-              onCRUpdate={refreshCR}
-              currentUser={currentUser ?? undefined}
-            />
-          </Allotment.Pane>
-        </Allotment>
-      )}
-    </Box>
+    <WebPartProvider value={{ webAbsoluteUrl: props.webAbsoluteUrl }}>
+      <Box
+        sx={{
+          height: "calc(100vh - 50px)",
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        {!selectedTask ? (
+          <TaskList
+            tasks={tasks}
+            selectedTask={selectedTask}
+            onTaskSelect={setSelectedTask}
+            onTasksChange={setTasks}
+            loading={tasksLoading}
+          />
+        ) : (
+          <Allotment>
+            <Allotment.Pane
+              minSize={250}
+              maxSize={600}
+              preferredSize="45%"
+              snap
+            >
+              <TaskPane
+                task={selectedTask}
+                cr={cr}
+                currentUser={currentUser}
+                onBack={() => {
+                  setSelectedTask(null);
+                  setCr(null);
+                }}
+                onTaskComplete={() => {
+                  refreshTasks();
+                  setSelectedTask(null);
+                }}
+                onRefetch={refreshCR}
+              />
+            </Allotment.Pane>
+            <Allotment.Pane minSize={400}>
+              <TaskDetail
+                cr={cr}
+                crLoading={crLoading}
+                onCRUpdate={refreshCR}
+                currentUser={currentUser ?? undefined}
+              />
+            </Allotment.Pane>
+          </Allotment>
+        )}
+      </Box>
     </WebPartProvider>
   );
 };

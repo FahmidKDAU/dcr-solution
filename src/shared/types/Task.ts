@@ -43,4 +43,5 @@ export interface Task {
   DueDate?: Date;
   Requestor?: SharePointPerson;
   Comments?: string;
+  isPinned?: boolean;
 }
