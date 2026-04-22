@@ -1,12 +1,14 @@
+// src/webparts/dcrForm/components/PeoplePicker.tsx
 import React, { useState, useRef, useEffect } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
 import Paper from "@mui/material/Paper";
-import InputBase from "@mui/material/InputBase";
 import Portal from "@mui/material/Portal";
 import SharePointService from "../../../shared/services/SharePointService";
 import { SharePointPerson } from "../../../shared/types/SharePointPerson";
+import { getAvatarColor, getAvatarInitials } from "../../../shared/utils/avatarUtils";
+import { BRANDING } from "../../../shared/theme/theme";
 
 interface PeoplePickerProps {
   label: string;
@@ -17,21 +19,35 @@ interface PeoplePickerProps {
   excludeIds?: number[];
 }
 
-// ─── Avatar ───────────────────────────────────────────────────────────────────
-
-const AVATAR_COLORS = ["#0078D4", "#107C10", "#5C2D91", "#D83B01", "#008575", "#C239B3"];
-const getColor = (name: string) => AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
-const getInitials = (name: string) => name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
-
-const Avatar = ({ name, size = 24 }: { name: string; size?: number }) => (
-  <Box sx={{ width: size, height: size, borderRadius: "50%", backgroundColor: getColor(name), display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.36, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
-    {getInitials(name)}
+const Avatar = ({ name, size = 22 }: { name: string; size?: number }) => (
+  <Box
+    sx={{
+      width: size,
+      height: size,
+      borderRadius: "50%",
+      backgroundColor: getAvatarColor(name),
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: size * 0.36,
+      fontWeight: 600,
+      color: "#fff",
+      flexShrink: 0,
+      letterSpacing: "0.3px",
+    }}
+  >
+    {getAvatarInitials(name)}
   </Box>
 );
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-
-export const PeoplePicker = ({ label, value, onChange, required = false, disabled = false, excludeIds = [] }: PeoplePickerProps) => {
+export const PeoplePicker = ({
+  label,
+  value,
+  onChange,
+  required = false,
+  disabled = false,
+  excludeIds = [],
+}: PeoplePickerProps) => {
   const [open, setOpen] = useState(false);
   const [options, setOptions] = useState<SharePointPerson[]>([]);
   const [loading, setLoading] = useState(false);
@@ -40,11 +56,10 @@ export const PeoplePicker = ({ label, value, onChange, required = false, disable
   const [isFocused, setIsFocused] = useState(false);
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
 
-  const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Recalculate dropdown position whenever it opens
   useEffect(() => {
     if (open && containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
@@ -56,14 +71,13 @@ export const PeoplePicker = ({ label, value, onChange, required = false, disable
     }
   }, [open]);
 
-  // Close on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as Node;
-      const clickedInsideContainer = containerRef.current?.contains(target) ?? false;
-      const clickedInsideDropdown = dropdownRef.current?.contains(target) ?? false;
-
-      if (!clickedInsideContainer && !clickedInsideDropdown) {
+      if (
+        !containerRef.current?.contains(target) &&
+        !dropdownRef.current?.contains(target)
+      ) {
         setOpen(false);
       }
     };
@@ -71,16 +85,14 @@ export const PeoplePicker = ({ label, value, onChange, required = false, disable
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleSearch = async (searchText: string): Promise<void> => {
-    if (searchText.length < 2) { setOptions([]); return; }
+  const handleSearch = async (text: string): Promise<void> => {
+    if (text.length < 2) { setOptions([]); return; }
     setLoading(true);
     try {
-      const results = await SharePointService.searchUsers(searchText);
-      const filteredResults = results.filter((person) => !excludeIds.includes(person.Id));
-      setOptions(filteredResults);
+      const results = await SharePointService.searchUsers(text);
+      setOptions(results.filter((p) => !excludeIds.includes(p.Id)));
       setHighlightedIndex(0);
-    } catch (error) {
-      console.error("Error searching users:", error);
+    } catch {
       setOptions([]);
     } finally {
       setLoading(false);
@@ -89,9 +101,17 @@ export const PeoplePicker = ({ label, value, onChange, required = false, disable
 
   const handleSelect = (person: SharePointPerson) => {
     onChange(person);
-    setInputValue(person.Title);
+    setInputValue("");
     setOpen(false);
     setOptions([]);
+  };
+
+  const handleClear = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onChange(undefined);
+    setInputValue("");
+    setOptions([]);
+    inputRef.current?.focus();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -99,36 +119,76 @@ export const PeoplePicker = ({ label, value, onChange, required = false, disable
     if (e.key === "ArrowDown") { e.preventDefault(); setHighlightedIndex((i) => Math.min(i + 1, options.length - 1)); }
     if (e.key === "ArrowUp") { e.preventDefault(); setHighlightedIndex((i) => Math.max(i - 1, 0)); }
     if (e.key === "Enter" && options[highlightedIndex]) handleSelect(options[highlightedIndex]);
-    if (e.key === "Escape") { setOpen(false); onChange(undefined); }
+    if (e.key === "Escape") setOpen(false);
   };
 
   return (
-    <Box ref={containerRef} sx={{ position: "relative", width: "100%", my: 0.75 }}>
-      {label && (
-        <Typography
-          sx={{
-            fontSize: 12,
-            fontWeight: 600,
-            color: "#323130",
-            mb: 0.5,
-            px: 0.25,
-          }}
-        >
-          {label}
-          {required && (
-            <Box component="span" sx={{ color: "#D13438", ml: 0.5 }}>
-              *
-            </Box>
-          )}
-        </Typography>
-      )}
-      {/* Input */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1, border: isFocused ? "2px solid #0078D4" : "1px solid #8A8886", borderRadius: "4px", backgroundColor: "#fff", px: 1, py: 0.5, minHeight: 32, opacity: disabled ? 0.5 : 1 }}>
-        {value && <Avatar name={value.Title} size={20} />}
-        <InputBase
-          inputRef={inputRef}
+    <Box ref={containerRef} sx={{ position: "relative", width: "100%" }}>
+      {/* Input box — matches form field style */}
+      <Box
+        onClick={() => !disabled && inputRef.current?.focus()}
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          border: isFocused ? `1px solid ${BRANDING.primary}` : "1px solid #E2E8F0",
+          borderRadius: "6px",
+          backgroundColor: disabled ? "#F8FAFC" : "#fff",
+          px: "12px",
+          py: "9px",
+          minHeight: "38px",
+          cursor: disabled ? "not-allowed" : "text",
+          transition: "border-color 0.15s",
+          "&:hover": !disabled ? { borderColor: "#CBD5E1" } : {},
+        }}
+      >
+        {/* Selected person chip */}
+        {value && (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              backgroundColor: "#F1F5F9",
+              borderRadius: "4px",
+              pl: "6px",
+              pr: "2px",
+              py: "2px",
+              flexShrink: 0,
+            }}
+          >
+            <Avatar name={value.Title} size={18} />
+            <Typography sx={{ fontSize: "12px", color: "#475569", fontWeight: 500, whiteSpace: "nowrap" }}>
+              {value.Title}
+            </Typography>
+            {!disabled && (
+              <Box
+                onMouseDown={handleClear}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 18,
+                  height: 18,
+                  borderRadius: "2px",
+                  cursor: "pointer",
+                  color: "#94A3B8",
+                  "&:hover": { color: "#475569", backgroundColor: "#E2E8F0" },
+                }}
+              >
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <path d="M2 2L8 8M8 2L2 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+              </Box>
+            )}
+          </Box>
+        )}
+
+        {/* Text input */}
+        <input
+          ref={inputRef}
           value={inputValue}
-          placeholder={value ? value.Title : `Search ${label || "people"}...`}
+          placeholder={value ? "" : "Search people..."}
           disabled={disabled}
           onChange={(e) => {
             setInputValue(e.target.value);
@@ -138,44 +198,54 @@ export const PeoplePicker = ({ label, value, onChange, required = false, disable
           onKeyDown={handleKeyDown}
           onFocus={() => { setOpen(true); setIsFocused(true); }}
           onBlur={() => setIsFocused(false)}
-          sx={{ flex: 1, fontSize: 13, "& input": { padding: 0, color: "#323130", "&::placeholder": { color: "#A19F9D", opacity: 1 } } }}
+          style={{
+            flex: 1,
+            border: "none",
+            outline: "none",
+            fontSize: "13px",
+            color: "#1E293B",
+            backgroundColor: "transparent",
+            fontFamily: "inherit",
+            minWidth: "80px",
+          }}
         />
-        {loading && <CircularProgress size={14} sx={{ color: "#0078D4", flexShrink: 0 }} />}
+
+        {loading && <CircularProgress size={14} sx={{ color: BRANDING.primary, flexShrink: 0 }} />}
       </Box>
 
-      {/* Dropdown — rendered in a Portal to escape Dialog overflow clipping */}
+      {/* Dropdown */}
       {open && (
         <Portal>
           <Paper
             ref={dropdownRef}
-            elevation={8}
+            elevation={0}
             sx={{
               position: "fixed",
               top: dropdownPos.top,
               left: dropdownPos.left,
               width: dropdownPos.width,
               zIndex: 9999,
-              borderRadius: "4px",
-              border: "1px solid #EDEBE9",
-              boxShadow: "0 4px 16px rgba(0,0,0,0.16)",
+              borderRadius: "6px",
+              border: "1px solid #E2E8F0",
+              boxShadow: "0 4px 16px rgba(0,0,0,0.10)",
               maxHeight: 240,
               overflowY: "auto",
             }}
           >
             {loading && (
               <Box sx={{ px: 2, py: 1.5, display: "flex", alignItems: "center", gap: 1 }}>
-                <CircularProgress size={14} sx={{ color: "#0078D4" }} />
-                <Typography sx={{ fontSize: 13, color: "#605E5C" }}>Searching...</Typography>
-              </Box>
-            )}
-            {!loading && inputValue.length >= 2 && options.length === 0 && (
-              <Box sx={{ px: 2, py: 1.5 }}>
-                <Typography sx={{ fontSize: 13, color: "#A19F9D" }}>No results found</Typography>
+                <CircularProgress size={13} sx={{ color: BRANDING.primary }} />
+                <Typography sx={{ fontSize: "13px", color: "#94A3B8" }}>Searching...</Typography>
               </Box>
             )}
             {!loading && inputValue.length < 2 && (
               <Box sx={{ px: 2, py: 1.5 }}>
-                <Typography sx={{ fontSize: 13, color: "#A19F9D" }}>Type at least 2 characters to search</Typography>
+                <Typography sx={{ fontSize: "13px", color: "#94A3B8" }}>Type at least 2 characters</Typography>
+              </Box>
+            )}
+            {!loading && inputValue.length >= 2 && options.length === 0 && (
+              <Box sx={{ px: 2, py: 1.5 }}>
+                <Typography sx={{ fontSize: "13px", color: "#94A3B8" }}>No results found</Typography>
               </Box>
             )}
             {!loading && options.map((person, index) => (
@@ -183,12 +253,28 @@ export const PeoplePicker = ({ label, value, onChange, required = false, disable
                 key={person.Id}
                 onMouseDown={(e) => { e.preventDefault(); handleSelect(person); }}
                 onMouseEnter={() => setHighlightedIndex(index)}
-                sx={{ display: "flex", alignItems: "center", gap: 1.5, px: 2, py: 1, cursor: "pointer", backgroundColor: index === highlightedIndex ? "#F3F2F1" : "#fff", transition: "background 0.1s", "&:hover": { backgroundColor: "#F3F2F1" } }}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  px: 2,
+                  py: "10px",
+                  cursor: "pointer",
+                  backgroundColor: index === highlightedIndex ? "#F8FAFC" : "#fff",
+                  "&:hover": { backgroundColor: "#F8FAFC" },
+                  borderBottom: index < options.length - 1 ? "1px solid #F1F5F9" : "none",
+                }}
               >
                 <Avatar name={person.Title} size={28} />
                 <Box>
-                  <Typography sx={{ fontSize: 13, fontWeight: 500, color: "#323130", lineHeight: 1.3 }}>{person.Title}</Typography>
-                  {person.EMail && <Typography sx={{ fontSize: 11, color: "#A19F9D", lineHeight: 1.3 }}>{person.EMail}</Typography>}
+                  <Typography sx={{ fontSize: "13px", fontWeight: 500, color: "#1E293B", lineHeight: 1.3 }}>
+                    {person.Title}
+                  </Typography>
+                  {person.EMail && (
+                    <Typography sx={{ fontSize: "11px", color: "#94A3B8", lineHeight: 1.3 }}>
+                      {person.EMail}
+                    </Typography>
+                  )}
                 </Box>
               </Box>
             ))}

@@ -69,7 +69,7 @@ const ChangeRequestForm: React.FC = () => {
     title: "",
     scopeOfChange: "",
     departmentId: undefined,
-    newDocument: false,
+    newDocument: true,
     externalDocument: false,
     changeAuthority: undefined,
     documentId: undefined,

@@ -216,7 +216,8 @@ const DocumentChangeProcessTask = ({
     if (!draftFolderPath) return;
     setDraftFilesLoading(true);
     try {
-      const files = await SharePointService.getDraftFolderFiles(draftFolderPath);
+      const files =
+        await SharePointService.getDraftFolderFiles(draftFolderPath);
       setDraftFiles(files);
     } catch (err) {
       console.error("Failed to fetch draft files:", err);
@@ -255,8 +256,14 @@ const DocumentChangeProcessTask = ({
   ): Promise<void> => {
     setSettingActive(true);
     try {
+      // Extract filename from the server relative URL
+      const fileName = serverRelativeUrl.split("/").pop() ?? "";
+      // Strip extension for a clean document name
+      const documentName = fileName.replace(/\.[^/.]+$/, "");
+
       await SharePointService.updateChangeRequest(cr.ID, {
         DraftDocumentUrl: toAbsoluteSharePointUrl(serverRelativeUrl),
+        DraftDocumentName: documentName,
       });
       onCRUpdate?.();
     } catch (err) {
@@ -265,7 +272,7 @@ const DocumentChangeProcessTask = ({
       setSettingActive(false);
     }
   };
-
+  
   useEffect(() => {
     if (!isExistingDocument || !cr.TargetDocumentId) return;
     setMinorChangesLoading(true);
@@ -343,13 +350,15 @@ const DocumentChangeProcessTask = ({
 
   // ── Build blocking reasons for the single warning ──
   const blockingReasons: string[] = [];
-  if (!allParticipantsComplete) blockingReasons.push("participants to complete");
-  if (!allMinorChangesActioned) blockingReasons.push("minor changes to be actioned");
-  if (!hasActiveDocument) blockingReasons.push("an active document to be selected");
+  if (!allParticipantsComplete)
+    blockingReasons.push("participants to complete");
+  if (!allMinorChangesActioned)
+    blockingReasons.push("minor changes to be actioned");
+  if (!hasActiveDocument)
+    blockingReasons.push("an active document to be selected");
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2, p: 2.5 }}>
-
       {/* ── Draft Documents Card ── */}
       <Box
         sx={{
@@ -359,184 +368,179 @@ const DocumentChangeProcessTask = ({
           overflow: "hidden",
         }}
       >
-          {/* Header */}
-          <Box
-            sx={{
-              px: 2,
-              py: 1.25,
-              borderBottom: "1px solid #EDEBE9",
-              backgroundColor: "#FAFAFA",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <FolderOpenIcon sx={{ fontSize: 15, color: "#605E5C" }} />
-              <Typography
-                sx={{ fontSize: 12, fontWeight: 600, color: "#323130" }}
-              >
-                Draft Documents
-              </Typography>
-            </Box>
-            {draftFolderPath && (
-              <Box
-                component="a"
-                href={toFolderAllItemsUrl(draftFolderPath)}
-                target="_blank"
-                rel="noopener noreferrer"
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 0.5,
-                  color: "#0078D4",
-                  fontSize: 12,
-                  fontWeight: 500,
-                  textDecoration: "none",
-                  "&:hover": { textDecoration: "underline" },
-                }}
-              >
-                <OpenInNewIcon sx={{ fontSize: 14 }} />
-                Open folder
-              </Box>
-            )}
+        {/* Header */}
+        <Box
+          sx={{
+            px: 2,
+            py: 1.25,
+            borderBottom: "1px solid #EDEBE9",
+            backgroundColor: "#FAFAFA",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <FolderOpenIcon sx={{ fontSize: 15, color: "#605E5C" }} />
+            <Typography
+              sx={{ fontSize: 12, fontWeight: 600, color: "#323130" }}
+            >
+              Draft Documents
+            </Typography>
           </Box>
-
-          {/* File list */}
-          <Box sx={{ py: 0.5 }}>
-            {draftFilesLoading ? (
-              <Box display="flex" justifyContent="center" py={2}>
-                <CircularProgress size={20} />
-              </Box>
-            ) : draftFiles.length === 0 ? (
-              <Typography
-                sx={{
-                  fontSize: 12,
-                  color: "#A19F9D",
-                  fontStyle: "italic",
-                  px: 2,
-                  py: 1.5,
-                }}
-              >
-                No files uploaded yet
-              </Typography>
-            ) : (
-              draftFiles.map((file) => {
-                const fileUrl = toAbsoluteSharePointUrl(file.ServerRelativeUrl);
-                const isActive =
-                  cr.DraftDocumentUrl ===  fileUrl ||
-                  cr.DraftDocumentUrl === file.ServerRelativeUrl;
-
-                return (
-                  <Box
-                    key={file.ServerRelativeUrl}
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1,
-                      px: 2,
-                      py: 0.75,
-                      borderBottom: "1px solid #F3F2F1",
-                      "&:last-child": { borderBottom: "none" },
-                      "&:hover": { backgroundColor: "#F9F9F9" },
-                    }}
-                  >
-                    <Radio
-                      checked={isActive}
-                      disabled={settingActive}
-                      onChange={() =>
-                        handleSetActiveDocument(file.ServerRelativeUrl)
-                      }
-                      size="small"
-                      sx={{
-                        p: 0,
-                        color: "#C8C6C4",
-                        "&.Mui-checked": { color: "#0078D4" },
-                      }}
-                    />
-                    <InsertDriveFileOutlinedIcon
-                      sx={{ fontSize: 16, color: getExtColor(file.Name) }}
-                    />
-                    <Box
-                      component="a"
-                      href={`${fileUrl}?web=1`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      sx={{
-                        flex: 1,
-                        fontSize: 13,
-                        color: "#323130",
-                        textDecoration: "none",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                        "&:hover": {
-                          color: "#0078D4",
-                          textDecoration: "underline",
-                        },
-                      }}
-                    >
-                      {file.Name}
-                    </Box>
-                    {isActive && (
-                      <Typography
-                        sx={{
-                          fontSize: 10,
-                          fontWeight: 600,
-                          color: "#107C10",
-                          backgroundColor: "#DFF6DD",
-                          px: 0.75,
-                          py: 0.15,
-                          borderRadius: "10px",
-                          flexShrink: 0,
-                        }}
-                      >
-                        Active
-                      </Typography>
-                    )}
-                  </Box>
-                );
-              })
-            )}
-          </Box>
-
-          {/* Upload button */}
-          <Box sx={{ px: 2, py: 1.5, borderTop: "1px solid #EDEBE9" }}>
-            <Button
-              component="label"
-              variant="outlined"
-              size="small"
-              disabled={uploading || !draftFolderPath}
-              startIcon={
-                uploading ? (
-                  <CircularProgress size={14} color="inherit" />
-                ) : (
-                  <UploadFileIcon sx={{ fontSize: 16 }} />
-                )
-              }
+          {draftFolderPath && (
+            <Box
+              component="a"
+              href={toFolderAllItemsUrl(draftFolderPath)}
+              target="_blank"
+              rel="noopener noreferrer"
               sx={{
-                textTransform: "none",
+                display: "flex",
+                alignItems: "center",
+                gap: 0.5,
+                color: "#0078D4",
                 fontSize: 12,
                 fontWeight: 500,
-                borderRadius: "6px",
-                borderColor: "#EDEBE9",
-                color: "#323130",
-                "&:hover": {
-                  borderColor: "#0078D4",
-                  backgroundColor: "#F3F2F1",
-                },
+                textDecoration: "none",
+                "&:hover": { textDecoration: "underline" },
               }}
             >
-              {uploading ? "Uploading..." : "Upload files"}
-              <input
-                type="file"
-                hidden
-                multiple
-                onChange={handleUpload}
-              />
-            </Button>
-          </Box>
+              <OpenInNewIcon sx={{ fontSize: 14 }} />
+              Open folder
+            </Box>
+          )}
         </Box>
+
+        {/* File list */}
+        <Box sx={{ py: 0.5 }}>
+          {draftFilesLoading ? (
+            <Box display="flex" justifyContent="center" py={2}>
+              <CircularProgress size={20} />
+            </Box>
+          ) : draftFiles.length === 0 ? (
+            <Typography
+              sx={{
+                fontSize: 12,
+                color: "#A19F9D",
+                fontStyle: "italic",
+                px: 2,
+                py: 1.5,
+              }}
+            >
+              No files uploaded yet
+            </Typography>
+          ) : (
+            draftFiles.map((file) => {
+              const fileUrl = toAbsoluteSharePointUrl(file.ServerRelativeUrl);
+              const isActive =
+                cr.DraftDocumentUrl === fileUrl ||
+                cr.DraftDocumentUrl === file.ServerRelativeUrl;
+
+              return (
+                <Box
+                  key={file.ServerRelativeUrl}
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    px: 2,
+                    py: 0.75,
+                    borderBottom: "1px solid #F3F2F1",
+                    "&:last-child": { borderBottom: "none" },
+                    "&:hover": { backgroundColor: "#F9F9F9" },
+                  }}
+                >
+                  <Radio
+                    checked={isActive}
+                    disabled={settingActive}
+                    onChange={() =>
+                      handleSetActiveDocument(file.ServerRelativeUrl)
+                    }
+                    size="small"
+                    sx={{
+                      p: 0,
+                      color: "#C8C6C4",
+                      "&.Mui-checked": { color: "#0078D4" },
+                    }}
+                  />
+                  <InsertDriveFileOutlinedIcon
+                    sx={{ fontSize: 16, color: getExtColor(file.Name) }}
+                  />
+                  <Box
+                    component="a"
+                    href={`${fileUrl}?web=1`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{
+                      flex: 1,
+                      fontSize: 13,
+                      color: "#323130",
+                      textDecoration: "none",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      "&:hover": {
+                        color: "#0078D4",
+                        textDecoration: "underline",
+                      },
+                    }}
+                  >
+                    {file.Name}
+                  </Box>
+                  {isActive && (
+                    <Typography
+                      sx={{
+                        fontSize: 10,
+                        fontWeight: 600,
+                        color: "#107C10",
+                        backgroundColor: "#DFF6DD",
+                        px: 0.75,
+                        py: 0.15,
+                        borderRadius: "10px",
+                        flexShrink: 0,
+                      }}
+                    >
+                      Active
+                    </Typography>
+                  )}
+                </Box>
+              );
+            })
+          )}
+        </Box>
+
+        {/* Upload button */}
+        <Box sx={{ px: 2, py: 1.5, borderTop: "1px solid #EDEBE9" }}>
+          <Button
+            component="label"
+            variant="outlined"
+            size="small"
+            disabled={uploading || !draftFolderPath}
+            startIcon={
+              uploading ? (
+                <CircularProgress size={14} color="inherit" />
+              ) : (
+                <UploadFileIcon sx={{ fontSize: 16 }} />
+              )
+            }
+            sx={{
+              textTransform: "none",
+              fontSize: 12,
+              fontWeight: 500,
+              borderRadius: "6px",
+              borderColor: "#EDEBE9",
+              color: "#323130",
+              "&:hover": {
+                borderColor: "#0078D4",
+                backgroundColor: "#F3F2F1",
+              },
+            }}
+          >
+            {uploading ? "Uploading..." : "Upload files"}
+            <input type="file" hidden multiple onChange={handleUpload} />
+          </Button>
+        </Box>
+      </Box>
 
       {/* ── Participants Card (with manage button inside) ── */}
       <Box
@@ -834,32 +838,29 @@ const DocumentChangeProcessTask = ({
                             fontSize: 13,
                             fontWeight: 500,
                             color: isChecked ? "#A19F9D" : "#323130",
-                            textDecoration: isChecked
-                              ? "line-through"
-                              : "none",
+                            textDecoration: isChecked ? "line-through" : "none",
                             lineHeight: 1.4,
                           }}
                         >
                           {mc.Title}
                         </Typography>
-                        {mc.ScopeOfChange &&
-                          mc.ScopeOfChange !== mc.Title && (
-                            <Typography
-                              sx={{
-                                fontSize: 12,
-                                color: isChecked ? "#C8C6C4" : "#605E5C",
-                                lineHeight: 1.4,
-                                mt: 0.25,
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                display: "-webkit-box",
-                                WebkitLineClamp: 2,
-                                WebkitBoxOrient: "vertical",
-                              }}
-                            >
-                              {mc.ScopeOfChange}
-                            </Typography>
-                          )}
+                        {mc.ScopeOfChange && mc.ScopeOfChange !== mc.Title && (
+                          <Typography
+                            sx={{
+                              fontSize: 12,
+                              color: isChecked ? "#C8C6C4" : "#605E5C",
+                              lineHeight: 1.4,
+                              mt: 0.25,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              display: "-webkit-box",
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: "vertical",
+                            }}
+                          >
+                            {mc.ScopeOfChange}
+                          </Typography>
+                        )}
                       </Box>
 
                       <Box
@@ -917,15 +918,11 @@ const DocumentChangeProcessTask = ({
           }}
         >
           <CheckCircleOutlineIcon sx={{ fontSize: 15, color: "#605E5C" }} />
-          <Typography
-            sx={{ fontSize: 12, fontWeight: 600, color: "#323130" }}
-          >
+          <Typography sx={{ fontSize: 12, fontWeight: 600, color: "#323130" }}>
             Release candidate
           </Typography>
         </Box>
-        <Box
-          sx={{ p: 2, display: "flex", flexDirection: "column", gap: 1.5 }}
-        >
+        <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 1.5 }}>
           {/* CA identity (only when CA is viewing) */}
           {isCa && (
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -1004,7 +1001,7 @@ const DocumentChangeProcessTask = ({
               <Typography
                 sx={{ fontSize: 12, color: "#107C10", fontWeight: 600 }}
               >
-                 Completed
+                Completed
               </Typography>
             </Box>
           )}
@@ -1082,9 +1079,7 @@ const DocumentChangeProcessTask = ({
                     gap: 2,
                   }}
                 >
-                  <Box
-                    sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
-                  >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
                     <EditNoteIcon sx={{ fontSize: 20, color: "#835B00" }} />
                     <Box>
                       <Typography
@@ -1219,9 +1214,7 @@ const DocumentChangeProcessTask = ({
                     variant="contained"
                     disableElevation
                     disabled={isSaving}
-                    onClick={() =>
-                      handleToggleMinorChange(selectedMinorChange)
-                    }
+                    onClick={() => handleToggleMinorChange(selectedMinorChange)}
                     startIcon={
                       isSaving ? (
                         <CircularProgress size={14} color="inherit" />

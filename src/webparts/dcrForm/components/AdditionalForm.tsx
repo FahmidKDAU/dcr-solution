@@ -6,6 +6,10 @@ import {
   Select,
   MenuItem,
   Typography,
+  Chip,
+  OutlinedInput,
+  Checkbox,
+  ListItemText,
 } from "@mui/material";
 import { ChangeRequestFormData } from "./ChangeRequestForm";
 import { Document } from "../../../shared/types/Document";
@@ -18,7 +22,7 @@ interface AdditionalFormProps {
   data: ChangeRequestFormData;
   onChange: (
     field: keyof ChangeRequestFormData,
-    value: ChangeRequestFormData[keyof ChangeRequestFormData]
+    value: ChangeRequestFormData[keyof ChangeRequestFormData],
   ) => void;
   documents: Document[];
   isExistingDocumentSelected?: boolean;
@@ -147,31 +151,70 @@ export const AdditionalForm: React.FC<AdditionalFormProps> = ({
               ))}
             </Select>
           </Box>
-
           {/* Category */}
           <Box>
             <FieldLabel>Category</FieldLabel>
             <Select
-              value={data.documentCategoryIds[0] || ""}
+              multiple
+              value={data.documentCategoryIds}
               displayEmpty
               fullWidth
               disabled={isDocumentLocked}
-              onChange={(e) =>
+              input={<OutlinedInput />}
+              onChange={(e) => {
+                const val = e.target.value;
                 onChange(
                   "documentCategoryIds",
-                  e.target.value ? [Number(e.target.value)] : []
-                )
-              }
-              sx={selectSx}
+                  typeof val === "string" ? [] : (val as number[]),
+                );
+              }}
+              renderValue={(selected) => {
+                if ((selected as number[]).length === 0) {
+                  return (
+                    <Typography sx={{ color: "#94A3B8", fontSize: "13px" }}>
+                      Select...
+                    </Typography>
+                  );
+                }
+                return (
+                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                    {(selected as number[]).map((id) => {
+                      const cat = categories.find((c) => c.Id === id);
+                      return (
+                        <Chip
+                          key={id}
+                          label={cat?.Title ?? id}
+                          size="small"
+                          sx={{ fontSize: "12px", height: "22px" }}
+                        />
+                      );
+                    })}
+                  </Box>
+                );
+              }}
+              sx={{
+                ...selectSx,
+                "& .MuiSelect-select": {
+                  padding: "8px 12px",
+                  minHeight: "38px",
+                },
+              }}
             >
-              <MenuItem value="">
-                <Typography sx={{ color: "#94A3B8", fontSize: "13px" }}>
-                  Select...
-                </Typography>
-              </MenuItem>
               {categories.map((category) => (
                 <MenuItem key={category.Id} value={category.Id}>
-                  {category.Title}
+                  <Checkbox
+                    checked={data.documentCategoryIds.includes(category.Id)}
+                    size="small"
+                    sx={{
+                      padding: "2px 8px 2px 0",
+                      color: "#CBD5E1",
+                      "&.Mui-checked": { color: BRANDING.primary },
+                    }}
+                  />
+                  <ListItemText
+                    primary={category.Title}
+                    primaryTypographyProps={{ fontSize: "13px" }}
+                  />
                 </MenuItem>
               ))}
             </Select>
@@ -230,31 +273,70 @@ export const AdditionalForm: React.FC<AdditionalFormProps> = ({
           <Box>
             <FieldLabel>Business function</FieldLabel>
             <Select
-              value={data.businessFunctionIds[0] || ""}
+              multiple
+              value={data.businessFunctionIds}
               displayEmpty
               fullWidth
               disabled={isDocumentLocked}
-              onChange={(e) =>
+              input={<OutlinedInput />}
+              onChange={(e) => {
+                const val = e.target.value;
                 onChange(
                   "businessFunctionIds",
-                  e.target.value ? [Number(e.target.value)] : []
-                )
-              }
-              sx={selectSx}
+                  typeof val === "string" ? [] : (val as number[]),
+                );
+              }}
+              renderValue={(selected) => {
+                if ((selected as number[]).length === 0) {
+                  return (
+                    <Typography sx={{ color: "#94A3B8", fontSize: "13px" }}>
+                      Select...
+                    </Typography>
+                  );
+                }
+                return (
+                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                    {(selected as number[]).map((id) => {
+                      const func = businessFunctions.find((f) => f.Id === id);
+                      return (
+                        <Chip
+                          key={id}
+                          label={func?.Title ?? id}
+                          size="small"
+                          sx={{ fontSize: "12px", height: "22px" }}
+                        />
+                      );
+                    })}
+                  </Box>
+                );
+              }}
+              sx={{
+                ...selectSx,
+                "& .MuiSelect-select": {
+                  padding: "8px 12px",
+                  minHeight: "38px",
+                },
+              }}
             >
-              <MenuItem value="">
-                <Typography sx={{ color: "#94A3B8", fontSize: "13px" }}>
-                  Select...
-                </Typography>
-              </MenuItem>
               {businessFunctions.map((func) => (
                 <MenuItem key={func.Id} value={func.Id}>
-                  {func.Title}
+                  <Checkbox
+                    checked={data.businessFunctionIds.includes(func.Id)}
+                    size="small"
+                    sx={{
+                      padding: "2px 8px 2px 0",
+                      color: "#CBD5E1",
+                      "&.Mui-checked": { color: BRANDING.primary },
+                    }}
+                  />
+                  <ListItemText
+                    primary={func.Title}
+                    primaryTypographyProps={{ fontSize: "13px" }}
+                  />
                 </MenuItem>
               ))}
             </Select>
           </Box>
-
           {/* Urgency */}
           <Box>
             <FieldLabel>Urgency</FieldLabel>
