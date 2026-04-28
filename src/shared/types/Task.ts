@@ -22,9 +22,11 @@ export interface Task {
     | "Document Controller Review"
     | "Compliance Authority Review"
     | "Publishing Review"
+    | "Release Authority Approval"
     | "Author Review"
     | "Document Change Process"
-    | "Participant Task";
+    | "Participant Task"
+    | "Publishing Rejection Review";
   AssignedTo?: SharePointPerson;
   Status:
     | "Pending"

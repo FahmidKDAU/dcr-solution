@@ -14,6 +14,9 @@
     "solutionShortDescription": "dcr-solution description",
     "skipFeatureDeployment": true,
     "isDomainIsolated": false,
-    "componentType": "webpart"
+    "componentType": "webpart",
+    "template": "react",
+    "componentName": "AdminDashboard",
+    "componentDescription": "Admin dashboard web part"
   }
 }

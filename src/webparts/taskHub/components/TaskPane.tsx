@@ -11,6 +11,7 @@ import CAReviewTask from "./tasks/CAReviewTask";
 import DocumentChangeProcessTask from "./tasks/DocumentChangeProcessTask";
 import ParticipantTask from "./tasks/ParticipantTask";
 import VerifyReviewTask from "./tasks/VerifyReviewTask";
+import PublishingRejectionReviewTask from "./tasks/PublishingRejectionReviewTask";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -33,7 +34,9 @@ const TASK_TYPE_STYLES: Record<string, { bg: string; color: string }> = {
   "Document Controller Review": { bg: "#FDE7E9", color: "#A4262C" },
   "Compliance Authority Review": { bg: "#E8F5E9", color: "#2E7D32" },
   "Publishing Review": { bg: "#E8F0F8", color: "#004578" },
+  "Release Authority Approval": { bg: "#E8F0F8", color: "#004578" },
   "Document Change Process": { bg: "#EFF6FC", color: "#0078D4" },
+  "Publishing Rejection Review": { bg: "#FDE7E9", color: "#A4262C" },
 };
 
 const TaskTypeBadge = ({ taskType }: { taskType: string }) => {
@@ -191,9 +194,17 @@ const renderTaskContent = (
       );
     case "Compliance Authority Review":
     case "Document Controller Review":
-    case "Publishing Review":
+    case "Release Authority Approval":
       return (
         <VerifyReviewTask task={task} cr={cr} onTaskComplete={onTaskComplete} />
+      );
+    case "Publishing Rejection Review":
+      return (
+        <PublishingRejectionReviewTask
+          task={task}
+          cr={cr}
+          onTaskComplete={onTaskComplete}
+        />
       );
     default:
       return (
@@ -248,10 +259,10 @@ const TaskPane = ({
       display="flex"
       flexDirection="column"
       height="100%"
-      sx={{ backgroundColor: "#fff" }}
+      sx={{ backgroundColor: "#fff", overflow: "hidden", minHeight: 0 }}
     >
       {/* ── Back Button ── */}
-      <Box px={2} pt={1.5} pb={0.5}>
+      <Box px={2} pt={1.5} pb={0.5} sx={{ flexShrink: 0 }}>
         <Button
           startIcon={<ArrowBackIcon sx={{ fontSize: 16 }} />}
           size="small"
@@ -270,7 +281,15 @@ const TaskPane = ({
       </Box>
 
       {/* ── Task Header ── */}
-      <Box sx={{ px: 3, pt: 1, pb: 2, borderBottom: "1px solid #EDEBE9" }}>
+      <Box
+        sx={{
+          px: 3,
+          pt: 1,
+          pb: 2,
+          borderBottom: "1px solid #EDEBE9",
+          flexShrink: 0,
+        }}
+      >
         <Box
           display="flex"
           alignItems="center"
@@ -306,7 +325,7 @@ const TaskPane = ({
       </Box>
 
       {/* ── Task Content (scrollable) ── */}
-      <Box flex={1} overflow="auto" sx={{ px: 3, py: 2.5 }}>
+      <Box flex={1} overflow="auto" sx={{ px: 3, py: 2.5, minHeight: 0 }}>
         {renderTaskContent(task, cr, onTaskComplete, currentUser, onRefetch)}
       </Box>
 
@@ -319,6 +338,9 @@ const TaskPane = ({
           display: "flex",
           alignItems: "center",
           gap: 1.5,
+          flexShrink: 0,
+          backgroundColor: "#fff",
+          minHeight: 56,
         }}
       >
         {task.Requestor?.Title && (

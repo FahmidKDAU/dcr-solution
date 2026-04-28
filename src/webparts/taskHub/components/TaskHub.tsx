@@ -188,10 +188,11 @@ const TaskHub = (props: TaskHubProps) => {
     <WebPartProvider value={{ webAbsoluteUrl: props.webAbsoluteUrl }}>
       <Box
         sx={{
-          height: "calc(100vh - 50px)",
+          height: "calc(100vh - var(--sp-applicationPageHeaderHeight, 120px))",
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",
+          minHeight: 0,
         }}
       >
         {/* ── Success toast — shown for all task completions ── */}

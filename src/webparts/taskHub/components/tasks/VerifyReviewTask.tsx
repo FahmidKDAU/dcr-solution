@@ -12,6 +12,8 @@ import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import PublishIcon from "@mui/icons-material/Publish";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { Task } from "../../../../shared/types/Task";
 import { IChangeRequest } from "../../../../shared/types/ChangeRequest";
 import SharePointService from "../../../../shared/services/SharePointService";
@@ -73,7 +75,6 @@ const VerifyReviewTask = ({ task, cr, onTaskComplete }: VerifyReviewTaskProps) =
     { Name: string; ServerRelativeUrl: string; TimeLastModified: string }[]
   >([]);
 
-  // Load draft folder files when CR is available
   useEffect(() => {
     if (!cr?.DraftFolderUrl) return;
     SharePointService.getDraftFolderFiles(cr.DraftFolderUrl)
@@ -81,7 +82,53 @@ const VerifyReviewTask = ({ task, cr, onTaskComplete }: VerifyReviewTaskProps) =
       .catch(console.error);
   }, [cr?.DraftFolderUrl]);
 
-  const handleClose = () => {
+  // ── Role detection ────────────────────────────────────────────────────────
+
+  // FIX: corrected from "Release Authority Approval" → "Publishing Review"
+  const isPublishingReview = task.TaskType === "Publishing Review";
+  const isDocumentController = task.TaskType === "Document Controller Review";
+  const isCoaTask = task.TaskType === "Compliance Authority Review";
+
+  // When CA = RA, Power Automate skips creating a separate Publishing Review
+  // task. The COA task absorbs the RA publish action instead.
+  const caIsRa =
+    !!cr?.ChangeAuthority?.Id &&
+    !!cr?.ReleaseAuthority?.Id &&
+    cr.ChangeAuthority.Id === cr.ReleaseAuthority.Id;
+
+  const coaActsAsRa = isCoaTask && caIsRa;
+
+  // Whether this action results in a publish signal
+  const willPublish = isPublishingReview || coaActsAsRa;
+
+  // ── Derived labels ────────────────────────────────────────────────────────
+
+  const roleLabel = isPublishingReview
+    ? "Release Authority"
+    : isDocumentController
+    ? "Document Controller"
+    : "Compliance Authority";
+
+  const infoText = isPublishingReview
+    ? "the document meets all requirements and is ready for publishing"
+    : isDocumentController
+    ? "document control requirements are met"
+    : "compliance requirements are met";
+
+  const verifyButtonLabel = willPublish ? "Approve for Publishing" : "Confirm Verification";
+  const verifyModalTitle  = willPublish ? "Approve for Publishing" : `Confirm ${roleLabel} Verification`;
+  const verifyModalBody   = willPublish
+    ? "You are approving this document for publishing. Once confirmed, the document will be published to the Document Portal."
+    : `You are confirming this ${roleLabel.toLowerCase()} verification:`;
+  const verifyButtonIcon  = willPublish
+    ? <PublishIcon sx={{ fontSize: 16 }} />
+    : <CheckIcon sx={{ fontSize: 16 }} />;
+  const submittingLabel   = willPublish ? "Approving..." : "Verifying...";
+  const confirmLabel      = willPublish ? "Approve for Publishing" : "Confirm Verification";
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
+  const handleClose = (): void => {
     setOpenModal(null);
     setComment("");
     setRejectionReason("");
@@ -94,6 +141,15 @@ const VerifyReviewTask = ({ task, cr, onTaskComplete }: VerifyReviewTaskProps) =
         Status: "Approved",
         Comments: comment || undefined,
       });
+
+      // Both the RA approving their own task AND the COA approving when CA = RA
+      // set the CR to "Ready for Publishing" — the single trigger for the publish flow
+      if (willPublish && cr) {
+        await SharePointService.updateChangeRequest(cr.ID, {
+          Status: "Ready for Publishing",
+        });
+      }
+
       handleClose();
       onTaskComplete?.();
     } catch (error) {
@@ -120,42 +176,50 @@ const VerifyReviewTask = ({ task, cr, onTaskComplete }: VerifyReviewTaskProps) =
     }
   };
 
-  // Derive a label based on task type
-  const isDocumentController = task.TaskType === "Document Controller Review";
-  const isCombined = task.TaskType === "Publishing Review";
-  const roleLabel = isCombined
-    ? "Publishing Review"
-    : isDocumentController
-      ? "Document Controller"
-      : "Compliance Authority";
-
-  const infoText = isCombined
-    ? "compliance and document control"
-    : isDocumentController
-      ? "document control"
-      : "compliance";
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <>
       <Box display="flex" flexDirection="column" gap={2}>
+
         {/* ── Info box ── */}
         <Box
           sx={{
-            backgroundColor: "#F9F9F9",
+            backgroundColor: willPublish ? "#F0FDF4" : "#F9F9F9",
             borderRadius: "6px",
-            border: "1px solid #EDEBE9",
+            border: `1px solid ${willPublish ? "#BBF7D0" : "#EDEBE9"}`,
             px: 1.5, py: 1.25,
             display: "flex", gap: 1, alignItems: "flex-start",
           }}
         >
           <Typography sx={{ fontSize: 12, color: "#605E5C", lineHeight: 1.5 }}>
-            Review the draft document and change request details. Verify that all{" "}
-            {infoText} requirements are met
-            before approving.
+            {isPublishingReview
+              ? "As Release Authority, review the final draft document and confirm it is ready to be published to the Document Portal."
+              : `Review the draft document and change request details. Verify that all ${infoText} before approving.`}
           </Typography>
         </Box>
 
-        {/* ── Draft Document Link ── */}
+        {/* ── CA = RA notice — only on COA task when applicable ── */}
+        {coaActsAsRa && (
+          <Box
+            sx={{
+              backgroundColor: "#EFF6FC",
+              border: "1px solid #C7E0F4",
+              borderRadius: "6px",
+              px: 1.5, py: 1.25,
+              display: "flex", gap: 1, alignItems: "flex-start",
+            }}
+          >
+            <InfoOutlinedIcon sx={{ fontSize: 15, color: "#0078D4", mt: 0.2, flexShrink: 0 }} />
+            <Typography sx={{ fontSize: 12, color: "#0078D4", lineHeight: 1.5 }}>
+              <strong>{cr?.ChangeAuthority?.Title}</strong> is both the Change
+              Authority and Release Authority for this CR. Approving will send the
+              document directly to publishing — no separate RA review is required.
+            </Typography>
+          </Box>
+        )}
+
+        {/* ── Draft document link ── */}
         {draftFiles.length > 0 && (
           <Box>
             <Typography
@@ -165,7 +229,7 @@ const VerifyReviewTask = ({ task, cr, onTaskComplete }: VerifyReviewTaskProps) =
                 mb: 0.75, px: 0.25,
               }}
             >
-              Draft Document
+              {willPublish ? "Document for Publishing" : "Draft Document"}
             </Typography>
             <Box display="flex" flexDirection="column" gap={0.5}>
               {draftFiles.map((file) => (
@@ -219,42 +283,60 @@ const VerifyReviewTask = ({ task, cr, onTaskComplete }: VerifyReviewTaskProps) =
             }}
           >
             <DescriptionOutlinedIcon sx={{ fontSize: 16 }} />
-            View Draft Document
+            {willPublish ? "Open Document for Review" : "View Draft Document"}
             <OpenInNewIcon sx={{ fontSize: 14, color: "#A19F9D", ml: "auto" }} />
           </Box>
         )}
 
         {/* ── Actions ── */}
         <ActionButton
-          label="Verify"
-          icon={<CheckIcon sx={{ fontSize: 16 }} />}
+          label={verifyButtonLabel}
+          icon={verifyButtonIcon}
           onClick={() => setOpenModal("verify")}
           variant="verify"
         />
-
         <ActionButton
           label="Reject"
           icon={<CloseIcon sx={{ fontSize: 16 }} />}
           onClick={() => setOpenModal("reject")}
           variant="reject"
         />
+
       </Box>
 
-      {/* ── Verify Modal ── */}
+      {/* ── Verify / Approve Modal ── */}
       <Dialog open={openModal === "verify"} onClose={handleClose} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontSize: 15, fontWeight: 700, pb: 1 }}>
-          Confirm {roleLabel} Verification
+          {verifyModalTitle}
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" mb={2}>
-            You are verifying: <strong>{task.Title}</strong>
+            {verifyModalBody}{" "}
+            {!willPublish && <strong>{task.Title}</strong>}
           </Typography>
+          {willPublish && (
+            <Box
+              sx={{
+                mb: 2, p: 1.5,
+                backgroundColor: "#F0FDF4",
+                borderRadius: "6px",
+                border: "1px solid #BBF7D0",
+              }}
+            >
+              <Typography sx={{ fontSize: 12, fontWeight: 600, color: "#16A34A", mb: 0.25 }}>
+                Document
+              </Typography>
+              <Typography sx={{ fontSize: 13, color: "#323130" }}>
+                {cr?.DraftDocumentName ?? task.Title}
+              </Typography>
+            </Box>
+          )}
           <TextField
             label="Comments (optional)"
             multiline rows={4} fullWidth
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            placeholder="Add any comments..."
+            placeholder={willPublish ? "Add any publishing notes..." : "Add any comments..."}
           />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
@@ -264,11 +346,12 @@ const VerifyReviewTask = ({ task, cr, onTaskComplete }: VerifyReviewTaskProps) =
           <Button
             onClick={handleVerify}
             variant="contained"
+            disableElevation
             disabled={submitting}
-            startIcon={submitting ? <CircularProgress size={14} color="inherit" /> : <CheckIcon />}
+            startIcon={submitting ? <CircularProgress size={14} color="inherit" /> : verifyButtonIcon}
             sx={{ backgroundColor: "#107C10", "&:hover": { backgroundColor: "#0B6A0B" } }}
           >
-            {submitting ? "Verifying..." : "Confirm Verification"}
+            {submitting ? submittingLabel : confirmLabel}
           </Button>
         </DialogActions>
       </Dialog>
@@ -276,18 +359,25 @@ const VerifyReviewTask = ({ task, cr, onTaskComplete }: VerifyReviewTaskProps) =
       {/* ── Reject Modal ── */}
       <Dialog open={openModal === "reject"} onClose={handleClose} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontSize: 15, fontWeight: 700, pb: 1 }}>
-          Reject — {roleLabel} Review
+          {willPublish ? "Reject for Publishing" : `Reject — ${roleLabel} Review`}
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" mb={2}>
-            You are rejecting: <strong>{task.Title}</strong>
+            {willPublish
+              ? "The document will be sent back for revision. Please provide a clear rejection reason for the Change Authority."
+              : `You are rejecting: `}
+            {!willPublish && <strong>{task.Title}</strong>}
           </Typography>
           <TextField
             label="Rejection Reason *"
             multiline rows={4} fullWidth required
             value={rejectionReason}
             onChange={(e) => setRejectionReason(e.target.value)}
-            placeholder="Explain what doesn't meet requirements..."
+            placeholder={
+              willPublish
+                ? "Explain why the document is not ready for publishing..."
+                : "Explain what doesn't meet requirements..."
+            }
           />
           <TextField
             label="Additional Comments (optional)"
@@ -306,6 +396,7 @@ const VerifyReviewTask = ({ task, cr, onTaskComplete }: VerifyReviewTaskProps) =
             onClick={handleReject}
             variant="contained"
             color="error"
+            disableElevation
             disabled={!rejectionReason.trim() || submitting}
             startIcon={submitting ? <CircularProgress size={14} color="inherit" /> : <CloseIcon />}
           >

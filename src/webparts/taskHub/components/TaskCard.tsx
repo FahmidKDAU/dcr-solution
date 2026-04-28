@@ -88,6 +88,11 @@ const TASK_TYPE_CONFIG: Record<
     color: "#64748B",
     bgColor: "#F1F5F9",
   },
+  "Publishing Rejection Review": {
+    label: "Decision",
+    color: "#A4262C",
+    bgColor: "#FDE7E9",
+  },
 };
 
 const getTaskTypeConfig = (
@@ -214,10 +219,7 @@ const TaskCard = ({
   const config = getTaskTypeConfig(task.TaskType);
   const dueInfo = formatDueDate(task.DueDate);
   const crNumber = task.ChangeRequest?.ChangeRequestNumber || "—";
-  const requesterName =
-    task.Requestor?.Title ||
-    task.AssignedTo?.Title ||
-    "";
+  const requesterName = task.Requestor?.Title || task.AssignedTo?.Title || "";
 
   const isOverdue = dueInfo.isUrgent && dueInfo.text === "Overdue";
 
