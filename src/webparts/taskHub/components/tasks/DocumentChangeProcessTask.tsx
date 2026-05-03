@@ -316,20 +316,20 @@ const DocumentChangeProcessTask = ({
     }
   };
 
-  const handleSubmitToPublishing = async (): Promise<void> => {
-    setSubmitting(true);
-    try {
-      await SharePointService.updateTask(task.Id, { Status: "Complete" });
-      await SharePointService.updateChangeRequest(cr.ID, {
-        Status: "Publishing Approval",
-      });
-      onTaskComplete();
-    } catch (err) {
-      console.error("Failed to submit to publishing:", err);
-    } finally {
-      setSubmitting(false);
-    }
-  };
+const handleSubmitToPublishing = async (): Promise<void> => {
+  setSubmitting(true);
+  try {
+    await SharePointService.updateTask(task.Id, { Status: "Complete" });
+    await SharePointService.updateChangeRequest(cr.ID, {
+      Status: "Document Review",  // ← was "Publishing Approval", Power Automate takes over from here
+    });
+    onTaskComplete();
+  } catch (err) {
+    console.error("Failed to submit to publishing:", err);
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   const handleReject = async (): Promise<void> => {
     setSubmitting(true);

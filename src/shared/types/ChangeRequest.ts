@@ -17,7 +17,8 @@ export interface IChangeRequest {
     | "Document Creation"
     | "Document Review"
     | "Published"
-    | "Rejected";
+    | "Rejected"
+    | "Ready for Publishing" ;
   Author: SharePointPerson;
   ChangeAuthority: SharePointPerson;
   Author0: SharePointPerson;

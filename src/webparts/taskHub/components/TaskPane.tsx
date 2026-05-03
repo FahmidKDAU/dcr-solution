@@ -37,6 +37,7 @@ const TASK_TYPE_STYLES: Record<string, { bg: string; color: string }> = {
   "Release Authority Approval": { bg: "#E8F0F8", color: "#004578" },
   "Document Change Process": { bg: "#EFF6FC", color: "#0078D4" },
   "Publishing Rejection Review": { bg: "#FDE7E9", color: "#A4262C" },
+  "Publish Document": { bg: "#E8F0F8", color: "#004578" },
 };
 
 const TaskTypeBadge = ({ taskType }: { taskType: string }) => {
@@ -194,7 +195,7 @@ const renderTaskContent = (
       );
     case "Compliance Authority Review":
     case "Document Controller Review":
-    case "Release Authority Approval":
+case "Publish Document": 
       return (
         <VerifyReviewTask task={task} cr={cr} onTaskComplete={onTaskComplete} />
       );

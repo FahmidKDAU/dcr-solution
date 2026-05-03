@@ -22,7 +22,7 @@ export interface Task {
     | "Document Controller Review"
     | "Compliance Authority Review"
     | "Publishing Review"
-    | "Release Authority Approval"
+    | "Publish Document"
     | "Author Review"
     | "Document Change Process"
     | "Participant Task"

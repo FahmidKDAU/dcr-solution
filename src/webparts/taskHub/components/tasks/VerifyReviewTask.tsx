@@ -85,7 +85,8 @@ const VerifyReviewTask = ({ task, cr, onTaskComplete }: VerifyReviewTaskProps) =
   // ── Role detection ────────────────────────────────────────────────────────
 
   // FIX: corrected from "Release Authority Approval" → "Publishing Review"
-  const isPublishingReview = task.TaskType === "Publishing Review";
+  const isPublishingReview =   task.TaskType === "Publishing Review" ||
+  task.TaskType === "Publish Document"; 
   const isDocumentController = task.TaskType === "Document Controller Review";
   const isCoaTask = task.TaskType === "Compliance Authority Review";
 
