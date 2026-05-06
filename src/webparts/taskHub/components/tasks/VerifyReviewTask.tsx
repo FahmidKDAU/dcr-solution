@@ -39,7 +39,12 @@ interface ActionButtonProps {
 
 const ACTION_STYLES = {
   verify: { bg: "#107C10", hover: "#0B6A0B", color: "#fff", border: "none" },
-  reject: { bg: "#fff", hover: "#FDE7E9", color: "#A4262C", border: "1px solid #D13438" },
+  reject: {
+    bg: "#fff",
+    hover: "#FDE7E9",
+    color: "#A4262C",
+    border: "1px solid #D13438",
+  },
 };
 
 const ActionButton = ({ label, icon, onClick, variant }: ActionButtonProps) => {
@@ -49,11 +54,20 @@ const ActionButton = ({ label, icon, onClick, variant }: ActionButtonProps) => {
       component="button"
       onClick={onClick}
       sx={{
-        display: "flex", alignItems: "center", justifyContent: "center", gap: 1,
-        width: "100%", py: 1.25, px: 2, borderRadius: "6px",
-        border: s.border, backgroundColor: s.bg,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 1,
+        width: "100%",
+        py: 1.25,
+        px: 2,
+        borderRadius: "6px",
+        border: s.border,
+        backgroundColor: s.bg,
         color: s.color,
-        fontSize: 13, fontWeight: 600, cursor: "pointer",
+        fontSize: 13,
+        fontWeight: 600,
+        cursor: "pointer",
         transition: "background 0.15s",
         "&:hover": { backgroundColor: s.hover },
       }}
@@ -66,7 +80,11 @@ const ActionButton = ({ label, icon, onClick, variant }: ActionButtonProps) => {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-const VerifyReviewTask = ({ task, cr, onTaskComplete }: VerifyReviewTaskProps) => {
+const VerifyReviewTask = ({
+  task,
+  cr,
+  onTaskComplete,
+}: VerifyReviewTaskProps) => {
   const [openModal, setOpenModal] = useState<ModalType>(null);
   const [comment, setComment] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
@@ -84,9 +102,7 @@ const VerifyReviewTask = ({ task, cr, onTaskComplete }: VerifyReviewTaskProps) =
 
   // ── Role detection ────────────────────────────────────────────────────────
 
-  // FIX: corrected from "Release Authority Approval" → "Publishing Review"
-  const isPublishingReview =   task.TaskType === "Publishing Review" ||
-  task.TaskType === "Publish Document"; 
+  const isPublishingReview = task.TaskType === "Publish Document";
   const isDocumentController = task.TaskType === "Document Controller Review";
   const isCoaTask = task.TaskType === "Compliance Authority Review";
 
@@ -107,25 +123,33 @@ const VerifyReviewTask = ({ task, cr, onTaskComplete }: VerifyReviewTaskProps) =
   const roleLabel = isPublishingReview
     ? "Release Authority"
     : isDocumentController
-    ? "Document Controller"
-    : "Compliance Authority";
+      ? "Document Controller"
+      : "Compliance Authority";
 
   const infoText = isPublishingReview
     ? "the document meets all requirements and is ready for publishing"
     : isDocumentController
-    ? "document control requirements are met"
-    : "compliance requirements are met";
+      ? "document control requirements are met"
+      : "compliance requirements are met";
 
-  const verifyButtonLabel = willPublish ? "Approve for Publishing" : "Confirm Verification";
-  const verifyModalTitle  = willPublish ? "Approve for Publishing" : `Confirm ${roleLabel} Verification`;
-  const verifyModalBody   = willPublish
+  const verifyButtonLabel = willPublish
+    ? "Approve for Publishing"
+    : "Confirm Verification";
+  const verifyModalTitle = willPublish
+    ? "Approve for Publishing"
+    : `Confirm ${roleLabel} Verification`;
+  const verifyModalBody = willPublish
     ? "You are approving this document for publishing. Once confirmed, the document will be published to the Document Portal."
     : `You are confirming this ${roleLabel.toLowerCase()} verification:`;
-  const verifyButtonIcon  = willPublish
-    ? <PublishIcon sx={{ fontSize: 16 }} />
-    : <CheckIcon sx={{ fontSize: 16 }} />;
-  const submittingLabel   = willPublish ? "Approving..." : "Verifying...";
-  const confirmLabel      = willPublish ? "Approve for Publishing" : "Confirm Verification";
+  const verifyButtonIcon = willPublish ? (
+    <PublishIcon sx={{ fontSize: 16 }} />
+  ) : (
+    <CheckIcon sx={{ fontSize: 16 }} />
+  );
+  const submittingLabel = willPublish ? "Approving..." : "Verifying...";
+  const confirmLabel = willPublish
+    ? "Approve for Publishing"
+    : "Confirm Verification";
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -182,15 +206,17 @@ const VerifyReviewTask = ({ task, cr, onTaskComplete }: VerifyReviewTaskProps) =
   return (
     <>
       <Box display="flex" flexDirection="column" gap={2}>
-
         {/* ── Info box ── */}
         <Box
           sx={{
             backgroundColor: willPublish ? "#F0FDF4" : "#F9F9F9",
             borderRadius: "6px",
             border: `1px solid ${willPublish ? "#BBF7D0" : "#EDEBE9"}`,
-            px: 1.5, py: 1.25,
-            display: "flex", gap: 1, alignItems: "flex-start",
+            px: 1.5,
+            py: 1.25,
+            display: "flex",
+            gap: 1,
+            alignItems: "flex-start",
           }}
         >
           <Typography sx={{ fontSize: 12, color: "#605E5C", lineHeight: 1.5 }}>
@@ -207,15 +233,23 @@ const VerifyReviewTask = ({ task, cr, onTaskComplete }: VerifyReviewTaskProps) =
               backgroundColor: "#EFF6FC",
               border: "1px solid #C7E0F4",
               borderRadius: "6px",
-              px: 1.5, py: 1.25,
-              display: "flex", gap: 1, alignItems: "flex-start",
+              px: 1.5,
+              py: 1.25,
+              display: "flex",
+              gap: 1,
+              alignItems: "flex-start",
             }}
           >
-            <InfoOutlinedIcon sx={{ fontSize: 15, color: "#0078D4", mt: 0.2, flexShrink: 0 }} />
-            <Typography sx={{ fontSize: 12, color: "#0078D4", lineHeight: 1.5 }}>
+            <InfoOutlinedIcon
+              sx={{ fontSize: 15, color: "#0078D4", mt: 0.2, flexShrink: 0 }}
+            />
+            <Typography
+              sx={{ fontSize: 12, color: "#0078D4", lineHeight: 1.5 }}
+            >
               <strong>{cr?.ChangeAuthority?.Title}</strong> is both the Change
-              Authority and Release Authority for this CR. Approving will send the
-              document directly to publishing — no separate RA review is required.
+              Authority and Release Authority for this CR. Approving will send
+              the document directly to publishing — no separate RA review is
+              required.
             </Typography>
           </Box>
         )}
@@ -225,9 +259,13 @@ const VerifyReviewTask = ({ task, cr, onTaskComplete }: VerifyReviewTaskProps) =
           <Box>
             <Typography
               sx={{
-                fontSize: 11, fontWeight: 600, color: "#A19F9D",
-                textTransform: "uppercase", letterSpacing: 0.5,
-                mb: 0.75, px: 0.25,
+                fontSize: 11,
+                fontWeight: 600,
+                color: "#A19F9D",
+                textTransform: "uppercase",
+                letterSpacing: 0.5,
+                mb: 0.75,
+                px: 0.25,
               }}
             >
               {willPublish ? "Document for Publishing" : "Draft Document"}
@@ -241,20 +279,34 @@ const VerifyReviewTask = ({ task, cr, onTaskComplete }: VerifyReviewTaskProps) =
                   target="_blank"
                   rel="noopener noreferrer"
                   sx={{
-                    display: "flex", alignItems: "center", gap: 1,
-                    px: 1.5, py: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    px: 1.5,
+                    py: 1,
                     borderRadius: "6px",
                     border: "1px solid #E1DFDD",
                     backgroundColor: "#fff",
                     color: "#0078D4",
-                    fontSize: 13, fontWeight: 500,
+                    fontSize: 13,
+                    fontWeight: 500,
                     textDecoration: "none",
                     transition: "all 0.15s",
-                    "&:hover": { backgroundColor: "#EFF6FC", borderColor: "#0078D4" },
+                    "&:hover": {
+                      backgroundColor: "#EFF6FC",
+                      borderColor: "#0078D4",
+                    },
                   }}
                 >
                   <DescriptionOutlinedIcon sx={{ fontSize: 16 }} />
-                  <Box flex={1} sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <Box
+                    flex={1}
+                    sx={{
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
                     {file.Name}
                   </Box>
                   <OpenInNewIcon sx={{ fontSize: 14, color: "#A19F9D" }} />
@@ -271,13 +323,17 @@ const VerifyReviewTask = ({ task, cr, onTaskComplete }: VerifyReviewTaskProps) =
             target="_blank"
             rel="noopener noreferrer"
             sx={{
-              display: "flex", alignItems: "center", gap: 1,
-              px: 1.5, py: 1,
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              px: 1.5,
+              py: 1,
               borderRadius: "6px",
               border: "1px solid #E1DFDD",
               backgroundColor: "#fff",
               color: "#0078D4",
-              fontSize: 13, fontWeight: 500,
+              fontSize: 13,
+              fontWeight: 500,
               textDecoration: "none",
               transition: "all 0.15s",
               "&:hover": { backgroundColor: "#EFF6FC", borderColor: "#0078D4" },
@@ -285,7 +341,9 @@ const VerifyReviewTask = ({ task, cr, onTaskComplete }: VerifyReviewTaskProps) =
           >
             <DescriptionOutlinedIcon sx={{ fontSize: 16 }} />
             {willPublish ? "Open Document for Review" : "View Draft Document"}
-            <OpenInNewIcon sx={{ fontSize: 14, color: "#A19F9D", ml: "auto" }} />
+            <OpenInNewIcon
+              sx={{ fontSize: 14, color: "#A19F9D", ml: "auto" }}
+            />
           </Box>
         )}
 
@@ -302,29 +360,40 @@ const VerifyReviewTask = ({ task, cr, onTaskComplete }: VerifyReviewTaskProps) =
           onClick={() => setOpenModal("reject")}
           variant="reject"
         />
-
       </Box>
 
       {/* ── Verify / Approve Modal ── */}
-      <Dialog open={openModal === "verify"} onClose={handleClose} maxWidth="sm" fullWidth>
+      <Dialog
+        open={openModal === "verify"}
+        onClose={handleClose}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle sx={{ fontSize: 15, fontWeight: 700, pb: 1 }}>
           {verifyModalTitle}
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" mb={2}>
-            {verifyModalBody}{" "}
-            {!willPublish && <strong>{task.Title}</strong>}
+            {verifyModalBody} {!willPublish && <strong>{task.Title}</strong>}
           </Typography>
           {willPublish && (
             <Box
               sx={{
-                mb: 2, p: 1.5,
+                mb: 2,
+                p: 1.5,
                 backgroundColor: "#F0FDF4",
                 borderRadius: "6px",
                 border: "1px solid #BBF7D0",
               }}
             >
-              <Typography sx={{ fontSize: 12, fontWeight: 600, color: "#16A34A", mb: 0.25 }}>
+              <Typography
+                sx={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: "#16A34A",
+                  mb: 0.25,
+                }}
+              >
                 Document
               </Typography>
               <Typography sx={{ fontSize: 13, color: "#323130" }}>
@@ -334,14 +403,25 @@ const VerifyReviewTask = ({ task, cr, onTaskComplete }: VerifyReviewTaskProps) =
           )}
           <TextField
             label="Comments (optional)"
-            multiline rows={4} fullWidth
+            multiline
+            rows={4}
+            fullWidth
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            placeholder={willPublish ? "Add any publishing notes..." : "Add any comments..."}
+            placeholder={
+              willPublish
+                ? "Add any publishing notes..."
+                : "Add any comments..."
+            }
           />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-          <Button onClick={handleClose} variant="outlined" color="inherit" disabled={submitting}>
+          <Button
+            onClick={handleClose}
+            variant="outlined"
+            color="inherit"
+            disabled={submitting}
+          >
             Cancel
           </Button>
           <Button
@@ -349,8 +429,17 @@ const VerifyReviewTask = ({ task, cr, onTaskComplete }: VerifyReviewTaskProps) =
             variant="contained"
             disableElevation
             disabled={submitting}
-            startIcon={submitting ? <CircularProgress size={14} color="inherit" /> : verifyButtonIcon}
-            sx={{ backgroundColor: "#107C10", "&:hover": { backgroundColor: "#0B6A0B" } }}
+            startIcon={
+              submitting ? (
+                <CircularProgress size={14} color="inherit" />
+              ) : (
+                verifyButtonIcon
+              )
+            }
+            sx={{
+              backgroundColor: "#107C10",
+              "&:hover": { backgroundColor: "#0B6A0B" },
+            }}
           >
             {submitting ? submittingLabel : confirmLabel}
           </Button>
@@ -358,9 +447,16 @@ const VerifyReviewTask = ({ task, cr, onTaskComplete }: VerifyReviewTaskProps) =
       </Dialog>
 
       {/* ── Reject Modal ── */}
-      <Dialog open={openModal === "reject"} onClose={handleClose} maxWidth="sm" fullWidth>
+      <Dialog
+        open={openModal === "reject"}
+        onClose={handleClose}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle sx={{ fontSize: 15, fontWeight: 700, pb: 1 }}>
-          {willPublish ? "Reject for Publishing" : `Reject — ${roleLabel} Review`}
+          {willPublish
+            ? "Reject for Publishing"
+            : `Reject — ${roleLabel} Review`}
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" mb={2}>
@@ -371,7 +467,10 @@ const VerifyReviewTask = ({ task, cr, onTaskComplete }: VerifyReviewTaskProps) =
           </Typography>
           <TextField
             label="Rejection Reason *"
-            multiline rows={4} fullWidth required
+            multiline
+            rows={4}
+            fullWidth
+            required
             value={rejectionReason}
             onChange={(e) => setRejectionReason(e.target.value)}
             placeholder={
@@ -382,7 +481,9 @@ const VerifyReviewTask = ({ task, cr, onTaskComplete }: VerifyReviewTaskProps) =
           />
           <TextField
             label="Additional Comments (optional)"
-            multiline rows={2} fullWidth
+            multiline
+            rows={2}
+            fullWidth
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             placeholder="Any additional context..."
@@ -390,7 +491,12 @@ const VerifyReviewTask = ({ task, cr, onTaskComplete }: VerifyReviewTaskProps) =
           />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-          <Button onClick={handleClose} variant="outlined" color="inherit" disabled={submitting}>
+          <Button
+            onClick={handleClose}
+            variant="outlined"
+            color="inherit"
+            disabled={submitting}
+          >
             Cancel
           </Button>
           <Button
@@ -399,7 +505,13 @@ const VerifyReviewTask = ({ task, cr, onTaskComplete }: VerifyReviewTaskProps) =
             color="error"
             disableElevation
             disabled={!rejectionReason.trim() || submitting}
-            startIcon={submitting ? <CircularProgress size={14} color="inherit" /> : <CloseIcon />}
+            startIcon={
+              submitting ? (
+                <CircularProgress size={14} color="inherit" />
+              ) : (
+                <CloseIcon />
+              )
+            }
           >
             {submitting ? "Rejecting..." : "Confirm Rejection"}
           </Button>

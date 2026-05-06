@@ -21,7 +21,6 @@ export interface Task {
     | "Change Authority Review"
     | "Document Controller Review"
     | "Compliance Authority Review"
-    | "Publishing Review"
     | "Publish Document"
     | "Author Review"
     | "Document Change Process"

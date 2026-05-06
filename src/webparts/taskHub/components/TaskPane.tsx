@@ -33,7 +33,6 @@ const TASK_TYPE_STYLES: Record<string, { bg: string; color: string }> = {
   "CR Completion": { bg: "#FFF4CE", color: "#835B00" },
   "Document Controller Review": { bg: "#FDE7E9", color: "#A4262C" },
   "Compliance Authority Review": { bg: "#E8F5E9", color: "#2E7D32" },
-  "Publishing Review": { bg: "#E8F0F8", color: "#004578" },
   "Release Authority Approval": { bg: "#E8F0F8", color: "#004578" },
   "Document Change Process": { bg: "#EFF6FC", color: "#0078D4" },
   "Publishing Rejection Review": { bg: "#FDE7E9", color: "#A4262C" },
@@ -195,7 +194,7 @@ const renderTaskContent = (
       );
     case "Compliance Authority Review":
     case "Document Controller Review":
-case "Publish Document": 
+    case "Publish Document":
       return (
         <VerifyReviewTask task={task} cr={cr} onTaskComplete={onTaskComplete} />
       );
