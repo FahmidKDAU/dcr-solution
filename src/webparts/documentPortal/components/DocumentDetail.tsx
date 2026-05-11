@@ -24,9 +24,25 @@ const DocumentDetail: React.FC<DocumentDetailProps> = ({
 }) => {
   const [pdfLoading, setPdfLoading] = useState(true);
 
-  const documentUrl = document.FileRef
-    ? `${window.location.origin}${document.FileRef}`
-    : null;
+  const sitePrefix = `${window.location.origin}/sites/DocumentChangeManagementDemo`;
+
+  // Viewer always uses PDF
+  const viewerUrl = document.PublishedFileUrl
+    ? `${sitePrefix}/${document.PublishedFileUrl}`
+    : document.FileRef
+      ? `${window.location.origin}${document.FileRef}`
+      : null;
+
+  // Download respects DownloadFormat
+  const downloadUrl = document.DownloadFormat === "Original" && document.DownloadFileUrl
+    ? `${sitePrefix}/${document.DownloadFileUrl}`
+    : viewerUrl;
+
+  const downloadLabel = document.DownloadFormat === "Original"
+    ? "Download Original"
+    : document.DownloadFormat === "Editable PDF"
+      ? "Download Editable PDF"
+      : "Download PDF";
 
   const typeColors = getDocTypeColors(document.DocumentType?.Title);
   const classificationColors = getClassificationColors(document.Classification);
@@ -42,23 +58,14 @@ const DocumentDetail: React.FC<DocumentDetailProps> = ({
   };
 
   const handleDownload = (): void => {
-    if (documentUrl) {
-      const link = window.document.createElement("a");
-      link.href = documentUrl;
-      link.setAttribute(
-        "download",
-        document.FileLeafRef || document.DocumentTitle || "document"
-      );
-      link.setAttribute("target", "_blank");
-      window.document.body.appendChild(link);
-      link.click();
-      window.document.body.removeChild(link);
+    if (downloadUrl) {
+      window.open(downloadUrl, "_blank");
     }
   };
 
   const handleOpenInTab = (): void => {
-    if (documentUrl) {
-      window.open(documentUrl, "_blank");
+    if (viewerUrl) {
+      window.open(viewerUrl, "_blank");
     }
   };
 
@@ -192,7 +199,7 @@ const DocumentDetail: React.FC<DocumentDetailProps> = ({
               "&:hover": { backgroundColor: "#F1F5F9" },
             }}
           >
-            Download
+            {downloadLabel}
           </Button>
           <Button
             onClick={handleOpenInTab}
@@ -347,7 +354,7 @@ const DocumentDetail: React.FC<DocumentDetailProps> = ({
           }}
         >
           {/* Loading state */}
-          {pdfLoading && documentUrl && (
+          {pdfLoading && viewerUrl && (
             <Box
               sx={{
                 position: "absolute",
@@ -368,9 +375,9 @@ const DocumentDetail: React.FC<DocumentDetailProps> = ({
             </Box>
           )}
 
-          {documentUrl ? (
+          {viewerUrl ? (
             <iframe
-              src={documentUrl}
+              src={viewerUrl}
               width="100%"
               height="100%"
               title="Document preview"

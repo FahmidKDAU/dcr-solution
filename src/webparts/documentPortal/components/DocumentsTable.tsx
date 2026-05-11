@@ -37,6 +37,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
   documents,
   onRowClick,
 }) => {
+  const sitePrefix = `${window.location.origin}/sites/DocumentChangeManagementDemo`;
   const [orderBy, setOrderBy] = useState<SortKey>("DocumentTitle");
   const [order, setOrder] = useState<"asc" | "desc">("asc");
 
@@ -250,16 +251,16 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
 
                 {/* Action */}
                 <TableCell sx={{ padding: "14px 20px", textAlign: "center" }}>
-                  {doc.FileRef && (
+                  {(doc.PublishedFileUrl || doc.FileRef) && (
                     <Tooltip title="Open in new tab" arrow>
                       <IconButton
                         size="small"
                         onClick={(e) => {
                           e.stopPropagation();
-                          window.open(
-                            `${window.location.origin}${doc.FileRef}`,
-                            "_blank"
-                          );
+                          const openUrl = doc.PublishedFileUrl
+                            ? `${sitePrefix}/${doc.PublishedFileUrl}`
+                            : `${window.location.origin}${doc.FileRef}`;
+                          window.open(openUrl, "_blank");
                         }}
                         sx={{
                           color: "#94A3B8",

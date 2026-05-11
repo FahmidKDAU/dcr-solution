@@ -36,7 +36,6 @@ const TASK_TYPE_LABELS: Partial<Record<Task["TaskType"], string>> = {
   "Document Change Process": "Document submitted for publishing",
   "Compliance Authority Review": "Compliance review submitted",
   "Document Controller Review": "Document controller review submitted",
-  "Publishing Review": "Publishing review submitted",
   "Participant Task": "Response submitted",
 };
 

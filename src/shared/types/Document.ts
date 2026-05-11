@@ -11,14 +11,16 @@ export interface Document {
   PublishedDate: Date;
   BusinessFunction?: LookupFieldItem[];
   Category?: LookupFieldItem[];
-  DocumentType?: LookupFieldItem; 
+  DocumentType?: LookupFieldItem;
   Classification?: "Public" | "Internal" | "Confidential" | "Restricted";
   Audience?: LookupFieldItem;
   CoreFunctionality?: LookupFieldItem;
-  
+  PublishedFileUrl?: string;
+  DownloadFileUrl?: string;
+  DownloadFormat?: "PDF" | "Original" | "Editable PDF";
   ReleaseAuthority?: SharePointPerson;
   Author0?: SharePointPerson;
   ChangeAuthority?: SharePointPerson;
   FileRef?: string;
-  FileLeafRef?: string;  
+  FileLeafRef?: string;
 }

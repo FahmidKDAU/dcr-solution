@@ -212,6 +212,9 @@ const getDocuments = async (): Promise<Document[]> => {
         "PublishedDate",
         "FileRef", // ← ADD THIS
         "FileLeafRef", // ← ADD THIS
+        "PublishedFileUrl",
+        "DownloadFileUrl",
+        "DownloadFormat",
         // Lookup fields
         "DocumentType/Id",
         "DocumentType/Title",
@@ -254,7 +257,9 @@ const getDocumentById = async (id: number): Promise<Document | null> => {
         "DocumentTitle",
 
         "Classification",
-
+        "PublishedFileUrl",
+        "DownloadFileUrl",
+        "DownloadFormat",
         // Expand lookup fields
         "DocumentType/Id",
         "DocumentType/Title",
