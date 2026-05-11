@@ -10,7 +10,6 @@ import { IReadonlyTheme } from "@microsoft/sp-component-base";
 
 import * as strings from "TaskHubWebPartStrings";
 import TaskHub from "./components/TaskHub";
-import { ITaskHubProps } from "./components/ITaskHubProps";
 import { PnPSetup } from "../../shared/services/PnPSetup";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -24,7 +23,40 @@ export default class TaskHubWebPart extends BaseClientSideWebPart<ITaskHubWebPar
   private _isDarkTheme: boolean = false;
   private _environmentMessage: string = "";
 
+  private _applyHostLayoutOverrides(isTeams: boolean): void {
+    if (isTeams) {
+      this.domElement.style.height = "100vh";
+      this.domElement.style.minHeight = "0";
+      this.domElement.style.margin = "0";
+      this.domElement.style.padding = "0";
+
+      if (this.domElement.parentElement) {
+        this.domElement.parentElement.style.height = "100vh";
+        this.domElement.parentElement.style.minHeight = "0";
+        this.domElement.parentElement.style.margin = "0";
+        this.domElement.parentElement.style.padding = "0";
+      }
+      return;
+    }
+
+    // Keep SharePoint host behavior untouched.
+    this.domElement.style.height = "";
+    this.domElement.style.minHeight = "";
+    this.domElement.style.margin = "";
+    this.domElement.style.padding = "";
+
+    if (this.domElement.parentElement) {
+      this.domElement.parentElement.style.height = "";
+      this.domElement.parentElement.style.minHeight = "";
+      this.domElement.parentElement.style.margin = "";
+      this.domElement.parentElement.style.padding = "";
+    }
+  }
+
   public render(): void {
+    const isTeams = !!this.context.sdks.microsoftTeams;
+    this._applyHostLayoutOverrides(isTeams);
+
     const element: React.ReactElement = React.createElement(
       ThemeProvider,
       { theme },
@@ -44,6 +76,7 @@ export default class TaskHubWebPart extends BaseClientSideWebPart<ITaskHubWebPar
 
   protected async onInit(): Promise<void> {
     await super.onInit();
+    this._applyHostLayoutOverrides(!!this.context.sdks.microsoftTeams);
     PnPSetup.initialize(this.context);
     this._environmentMessage = await this._getEnvironmentMessage();
     return Promise.resolve();

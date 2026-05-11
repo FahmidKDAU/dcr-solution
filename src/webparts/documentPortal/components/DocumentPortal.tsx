@@ -21,6 +21,10 @@ import DocumentDetail from "./DocumentDetail";
 
 type View = "list" | "detail";
 
+interface DocumentPortalProps {
+  hasTeamsContext?: boolean;
+}
+
 // Maximum chips to show before collapsing
 const MAX_VISIBLE_CHIPS = 3;
 
@@ -68,7 +72,7 @@ const FilterChip: React.FC<FilterChipProps> = ({ label, onRemove }) => (
 );
 
 // ── Main Component ────────────────────────────────────────────────────────────
-const DocumentPortal: React.FC = () => {
+const DocumentPortal: React.FC<DocumentPortalProps> = ({ hasTeamsContext = false }) => {
   const { documents, loading, error } = useDocuments();
   const [view, setView] = useState<View>("list");
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
@@ -167,10 +171,19 @@ const DocumentPortal: React.FC = () => {
     setView("list");
   };
 
+  const containerSx = {
+    height: hasTeamsContext ? "100vh" : "100%",
+    minHeight: 0,
+    overflow: "hidden",
+    display: "flex",
+    flexDirection: "column" as const,
+    backgroundColor: "white",
+  };
+
   // Loading state
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="400px">
+      <Box sx={containerSx} justifyContent="center" alignItems="center">
         <CircularProgress size={32} sx={{ color: BRANDING.primary }} />
       </Box>
     );
@@ -179,7 +192,7 @@ const DocumentPortal: React.FC = () => {
   // Error state
   if (error) {
     return (
-      <Box p={4}>
+      <Box sx={containerSx} p={4}>
         <Typography color="error">{error}</Typography>
       </Box>
     );
@@ -187,18 +200,17 @@ const DocumentPortal: React.FC = () => {
 
   // Detail view
   if (view === "detail" && selectedDocument) {
-    return <DocumentDetail document={selectedDocument} onBack={handleBack} />;
+    return (
+      <Box sx={containerSx}>
+        <DocumentDetail document={selectedDocument} onBack={handleBack} />
+      </Box>
+    );
   }
 
   // List view
   return (
     <Box
-      sx={{
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        backgroundColor: "white",
-      }}
+      sx={containerSx}
     >
       {/* Flat Blue Header */}
       <Box

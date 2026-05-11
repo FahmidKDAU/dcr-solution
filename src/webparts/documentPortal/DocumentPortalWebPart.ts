@@ -22,8 +22,9 @@ export default class DocumentPortalWebPart extends BaseClientSideWebPart<IDocume
   private _isDarkTheme: boolean = false;
 
   public render(): void {
-    // DocumentPortal doesn't need props - it uses hooks internally
-    const element = React.createElement(DocumentPortal);
+    const element = React.createElement(DocumentPortal, {
+      hasTeamsContext: !!this.context.sdks.microsoftTeams,
+    });
 
     const wrappedElement = React.createElement(
       WebPartProvider,

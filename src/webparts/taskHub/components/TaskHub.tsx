@@ -19,6 +19,7 @@ import TaskProcessingPane from "./TaskProcressingPane";
 
 interface TaskHubProps {
   webAbsoluteUrl: string;
+  hasTeamsContext?: boolean;
 }
 
 type PollingStatus = "waiting" | "found" | "timeout" | null;
@@ -187,7 +188,9 @@ const TaskHub = (props: TaskHubProps) => {
     <WebPartProvider value={{ webAbsoluteUrl: props.webAbsoluteUrl }}>
       <Box
         sx={{
-          height: "calc(100vh - var(--sp-applicationPageHeaderHeight, 120px))",
+          height: props.hasTeamsContext
+            ? "100vh"
+            : "calc(100vh - var(--sp-applicationPageHeaderHeight, 120px))",
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",
@@ -248,39 +251,45 @@ const TaskHub = (props: TaskHubProps) => {
 
         {/* ── Split layout (task selected OR polling in progress) ── */}
         {showSplitLayout && (
-          <Allotment>
-            <Allotment.Pane
-              minSize={250}
-              maxSize={600}
-              preferredSize="45%"
-              snap
-            >
-              {pollingStatus !== null ? (
-                <TaskProcessingPane
-                  pollingStatus={pollingStatus}
-                  onGoToInbox={handleGoToInbox}
-                />
-              ) : (
-                <TaskPane
-                  task={selectedTask}
-                  cr={cr}
-                  currentUser={currentUser}
-                  onBack={handleGoToInbox}
-                  onTaskComplete={handleTaskComplete}
-                  onRefetch={refreshCR}
-                />
-              )}
-            </Allotment.Pane>
+          <Box sx={{ flex: 1, height: "100%", minHeight: 0, overflow: "hidden" }}>
+            <Allotment defaultSizes={[45, 55]}>
+              <Allotment.Pane
+                minSize={250}
+                maxSize={600}
+                preferredSize="45%"
+                snap
+              >
+                <Box sx={{ height: "100%", minHeight: 0, overflow: "hidden" }}>
+                  {pollingStatus !== null ? (
+                    <TaskProcessingPane
+                      pollingStatus={pollingStatus}
+                      onGoToInbox={handleGoToInbox}
+                    />
+                  ) : (
+                    <TaskPane
+                      task={selectedTask}
+                      cr={cr}
+                      currentUser={currentUser}
+                      onBack={handleGoToInbox}
+                      onTaskComplete={handleTaskComplete}
+                      onRefetch={refreshCR}
+                    />
+                  )}
+                </Box>
+              </Allotment.Pane>
 
-            <Allotment.Pane minSize={400}>
-              <TaskDetail
-                cr={cr}
-                crLoading={crLoading}
-                onCRUpdate={refreshCR}
-                currentUser={currentUser ?? undefined}
-              />
-            </Allotment.Pane>
-          </Allotment>
+              <Allotment.Pane minSize={400}>
+                <Box sx={{ height: "100%", minHeight: 0, overflow: "hidden" }}>
+                  <TaskDetail
+                    cr={cr}
+                    crLoading={crLoading}
+                    onCRUpdate={refreshCR}
+                    currentUser={currentUser ?? undefined}
+                  />
+                </Box>
+              </Allotment.Pane>
+            </Allotment>
+          </Box>
         )}
       </Box>
     </WebPartProvider>
