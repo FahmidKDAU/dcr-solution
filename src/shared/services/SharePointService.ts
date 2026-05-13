@@ -330,8 +330,7 @@ const getTasks = async (userId: number): Promise<Task[]> => {
         "Requestor/EMail",
       )
       .expand("AssignedTo", "Author", "Requestor", "ChangeRequest")
-      .filter(`AssignedTo/Id eq ${userId}`)();
-
+     .filter(`AssignedTo/Id eq ${userId} and (Status eq 'Pending' or Status eq 'In Progress')`)();
     return tasks as Task[];
   } catch (error) {
     console.error("Error fetching tasks:", error);
@@ -365,7 +364,7 @@ const getTaskById = async (id: number): Promise<Task | null> => {
         "Requestor/EMail",
       )
       .expand("AssignedTo", "Author", "Requestor")
-      .filter(`Id eq ${id}`)();
+      .filter(`Id eq ${id} and (Status eq 'Pending' or Status eq 'In Progress')`)();
     return task.length > 0 ? (task[0] as Task) : null;
   } catch (error) {
     console.error(`Error fetching task with ID ${id}:`, error);

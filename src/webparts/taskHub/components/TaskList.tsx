@@ -95,16 +95,11 @@ const TaskList: React.FC<TaskListProps> = ({
   const [sortField, setSortField] = useState<SortField>("Created");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
-  // Filter to pending tasks only
-  const pendingTasks = useMemo(() => {
-    return tasks.filter(
-      (task) => task.Status === "Pending" || task.Status === "In Progress"
-    );
-  }, [tasks]);
+
 
   // Apply search and category filter
   const filteredTasks = useMemo(() => {
-    return pendingTasks.filter((task) => {
+    return tasks.filter((task) => {
       const matchesSearch =
         !searchQuery ||
         task.Title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -117,7 +112,7 @@ const TaskList: React.FC<TaskListProps> = ({
 
       return matchesSearch && matchesFilter;
     });
-  }, [pendingTasks, searchQuery, activeFilter]);
+  }, [tasks, searchQuery, activeFilter]);
 
   // Separate pinned and unpinned, then sort
   const { pinnedTasks, unpinnedTasks } = useMemo(() => {
@@ -151,8 +146,8 @@ const TaskList: React.FC<TaskListProps> = ({
   }, [filteredTasks, sortField, sortDirection]);
 
   const filterCategories = useMemo(
-    () => getFilterCategories(pendingTasks),
-    [pendingTasks]
+    () => getFilterCategories(tasks),
+    [tasks]
   );
 
   const handleSort = (field: SortField): void => {
@@ -282,7 +277,7 @@ const TaskList: React.FC<TaskListProps> = ({
             },
           }}
         >
-          All {pendingTasks.length}
+          All {tasks.length}
         </Button>
 
         {/* Category filter buttons */}

@@ -74,13 +74,17 @@ const TaskHub = (props: TaskHubProps) => {
   }, [selectedTask]);
 
   // Initial task load
-  useEffect(() => {
-    if (!currentUser) return;
-    SharePointService.getTasks(currentUser.Id)
-      .then(setTasks)
-      .catch(console.error)
-      .finally(() => setTasksLoading(false));
-  }, [currentUser]);
+useEffect(() => {
+  if (!currentUser) return;
+  SharePointService.getTasks(currentUser.Id)
+    .then((data) => {
+      console.log("Current user ID:", currentUser.Id);
+      console.log("Tasks returned:", data);
+      setTasks(data);
+    })
+    .catch(console.error)
+    .finally(() => setTasksLoading(false));
+}, [currentUser]);
 
   if (loading || tasksLoading) return <CircularProgress />;
 
