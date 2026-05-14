@@ -17,6 +17,7 @@ export interface Document {
   CoreFunctionality?: LookupFieldItem;
   PublishedFileUrl?: string;
   DownloadFileUrl?: string;
+  SourceFileUrl?: string;
   DownloadFormat?: "PDF" | "Original" | "Editable PDF";
   ReleaseAuthority?: SharePointPerson;
   Author0?: SharePointPerson;

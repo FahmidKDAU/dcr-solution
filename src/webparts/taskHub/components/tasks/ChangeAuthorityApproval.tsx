@@ -137,23 +137,22 @@ const CAApprovalTask = ({ task, cr, onTaskComplete }: CAApprovalTaskProps) => {
   };
 
   const handleReassign = async (): Promise<void> => {
-    setSubmitting(true);
-    try {
-      const selectedDept = departments.find((d) => d.Id === selectedDepartmentId);
-      if (!selectedDept || !selectedDept.ChangeAuthority) return;
-      await SharePointService.updateTask(task.Id, {
-        Status: "Reassigned",
-        AssignedTo: selectedDept.ChangeAuthority,
-      });
-      handleClose();
-      onTaskComplete?.();
-    } catch (error) {
-      console.error("Error reassigning task:", error);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
+  setSubmitting(true);
+  try {
+    const selectedDept = departments.find((d) => d.Id === selectedDepartmentId);
+    if (!selectedDept || !selectedDept.ChangeAuthority) return;
+    await SharePointService.updateTask(task.Id, {
+      Status: "Reassigned",
+       AssignedToId: selectedDept.ChangeAuthority.Id,
+    });
+    handleClose();
+    onTaskComplete?.();
+  } catch (error) {
+    console.error("Error reassigning task:", error);
+  } finally {
+    setSubmitting(false);
+  }
+};
   const selectedDept = departments.find((d) => d.Id === selectedDepartmentId);
 
   return (

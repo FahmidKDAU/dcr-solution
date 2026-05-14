@@ -14,9 +14,11 @@ import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import PublishIcon from "@mui/icons-material/Publish";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import EventRepeatIcon from "@mui/icons-material/EventRepeat";
 import { Task } from "../../../../shared/types/Task";
 import { IChangeRequest } from "../../../../shared/types/ChangeRequest";
 import SharePointService from "../../../../shared/services/SharePointService";
+import { getReviewPeriodLabel } from "../../../../shared/constants";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -106,17 +108,16 @@ const VerifyReviewTask = ({
   const isDocumentController = task.TaskType === "Document Controller Review";
   const isCoaTask = task.TaskType === "Compliance Authority Review";
 
-  // When CA = RA, Power Automate skips creating a separate Publishing Review
-  // task. The COA task absorbs the RA publish action instead.
   const caIsRa =
     !!cr?.ChangeAuthority?.Id &&
     !!cr?.ReleaseAuthority?.Id &&
     cr.ChangeAuthority.Id === cr.ReleaseAuthority.Id;
 
   const coaActsAsRa = isCoaTask && caIsRa;
-
-  // Whether this action results in a publish signal
   const willPublish = isPublishingReview || coaActsAsRa;
+
+  // Show review period for COA and RA roles (not DC)
+  const showReviewPeriod = isPublishingReview || isCoaTask;
 
   // ── Derived labels ────────────────────────────────────────────────────────
 
@@ -167,8 +168,6 @@ const VerifyReviewTask = ({
         Comments: comment || undefined,
       });
 
-      // Both the RA approving their own task AND the COA approving when CA = RA
-      // set the CR to "Ready for Publishing" — the single trigger for the publish flow
       if (willPublish && cr) {
         await SharePointService.updateChangeRequest(cr.ID, {
           Status: "Ready for Publishing",
@@ -226,7 +225,7 @@ const VerifyReviewTask = ({
           </Typography>
         </Box>
 
-        {/* ── CA = RA notice — only on COA task when applicable ── */}
+        {/* ── CA = RA notice ── */}
         {coaActsAsRa && (
           <Box
             sx={{
@@ -251,6 +250,50 @@ const VerifyReviewTask = ({
               the document directly to publishing — no separate RA review is
               required.
             </Typography>
+          </Box>
+        )}
+
+        {/* ── Review Period (read-only) ── */}
+        {showReviewPeriod && (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
+              px: 1.5,
+              py: 1.25,
+              backgroundColor: "#F9F9F9",
+              border: "1px solid #EDEBE9",
+              borderRadius: "6px",
+            }}
+          >
+            <EventRepeatIcon
+              sx={{ fontSize: 16, color: "#A19F9D", flexShrink: 0 }}
+            />
+            <Box>
+              <Typography
+                sx={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: "#A19F9D",
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                  lineHeight: 1.2,
+                }}
+              >
+                Review Period
+              </Typography>
+              <Typography
+                sx={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: cr?.ReviewPeriod ? "#323130" : "#A19F9D",
+                  mt: 0.25,
+                }}
+              >
+                {getReviewPeriodLabel(cr?.ReviewPeriod)}
+              </Typography>
+            </Box>
           </Box>
         )}
 
@@ -387,17 +430,33 @@ const VerifyReviewTask = ({
               }}
             >
               <Typography
-                sx={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: "#16A34A",
-                  mb: 0.25,
-                }}
+                sx={{ fontSize: 12, fontWeight: 600, color: "#16A34A", mb: 0.25 }}
               >
                 Document
               </Typography>
               <Typography sx={{ fontSize: 13, color: "#323130" }}>
                 {cr?.DraftDocumentName ?? task.Title}
+              </Typography>
+            </Box>
+          )}
+          {/* Review period summary in modal for COA/RA */}
+          {showReviewPeriod && cr?.ReviewPeriod && (
+            <Box
+              sx={{
+                mb: 2,
+                p: 1.5,
+                backgroundColor: "#F9F9F9",
+                borderRadius: "6px",
+                border: "1px solid #EDEBE9",
+              }}
+            >
+              <Typography
+                sx={{ fontSize: 12, fontWeight: 600, color: "#605E5C", mb: 0.25 }}
+              >
+                Review Period
+              </Typography>
+              <Typography sx={{ fontSize: 13, color: "#323130" }}>
+                {getReviewPeriodLabel(cr.ReviewPeriod)}
               </Typography>
             </Box>
           )}

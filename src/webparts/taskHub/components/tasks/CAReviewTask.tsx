@@ -8,6 +8,10 @@ import DialogActions from "@mui/material/DialogActions";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
 import CheckIcon from "@mui/icons-material/Check";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import EditNoteIcon from "@mui/icons-material/EditNote";
@@ -16,6 +20,7 @@ import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import { Task } from "../../../../shared/types/Task";
 import { IChangeRequest } from "../../../../shared/types/ChangeRequest";
 import SharePointService from "../../../../shared/services/SharePointService";
+import { REVIEW_PERIOD_OPTIONS } from "../../../../shared/constants";
 
 // ─── Required fields for this task type ──────────────────────────────────────
 
@@ -40,12 +45,19 @@ const CAReviewTask = ({ task, cr, onTaskComplete }: CAReviewTaskProps) => {
   const [openModal, setOpenModal] = useState<ModalType>(null);
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [reviewPeriod, setReviewPeriod] = useState<number | "">(
+    cr?.ReviewPeriod ?? ""
+  );
+  const [downloadFormat, setDownloadFormat] = useState<"PDF" | "Original" | "">(
+    cr?.DownloadFormat ?? ""
+  );
 
   // ── Required field validation ──
   const missingFields = cr
     ? REQUIRED_FIELDS.filter(({ field }) => !cr[field])
     : REQUIRED_FIELDS;
-  const canComplete = missingFields.length === 0;
+
+  const canComplete = missingFields.length === 0 && reviewPeriod !== "" && downloadFormat !== "";
 
   // Minor change & obsolete only available for existing documents
   const isNewDocument = cr?.NewDocument ?? false;
@@ -58,6 +70,12 @@ const CAReviewTask = ({ task, cr, onTaskComplete }: CAReviewTaskProps) => {
   const handleComplete = async (): Promise<void> => {
     setSubmitting(true);
     try {
+      // Save ReviewPeriod and DownloadFormat to CR first
+      await SharePointService.updateChangeRequest(cr!.ID, {
+        ReviewPeriod: reviewPeriod,
+        DownloadFormat: downloadFormat,
+      });
+
       await SharePointService.updateTask(task.Id, {
         Status: "Approved",
         Comments: comment || undefined,
@@ -107,7 +125,7 @@ const CAReviewTask = ({ task, cr, onTaskComplete }: CAReviewTaskProps) => {
     <>
       <Box display="flex" flexDirection="column" gap={2}>
         {/* ── Missing fields warning ── */}
-        {missingFields.length > 0 && (
+        {(missingFields.length > 0 || reviewPeriod === "" || downloadFormat === "") && (
           <Box
             sx={{
               display: "flex",
@@ -142,10 +160,11 @@ const CAReviewTask = ({ task, cr, onTaskComplete }: CAReviewTaskProps) => {
                   mt: 0.25,
                 }}
               >
-                Fill in the following on the right:{" "}
-                <strong>
-                  {missingFields.map((f) => f.label).join(", ")}
-                </strong>
+                {[
+                  ...missingFields.map((f) => f.label),
+                  ...(reviewPeriod === "" ? ["Review Period"] : []),
+                  ...(downloadFormat === "" ? ["Download Format"] : []),
+                ].join(", ")}
               </Typography>
             </Box>
           </Box>
@@ -172,6 +191,37 @@ const CAReviewTask = ({ task, cr, onTaskComplete }: CAReviewTaskProps) => {
             required fields are filled before marking as complete.
           </Typography>
         </Box>
+
+        {/* ── Review Period ── */}
+        <FormControl fullWidth size="small">
+          <InputLabel sx={{ fontSize: 13 }}>Review Period *</InputLabel>
+          <Select
+            value={reviewPeriod}
+            label="Review Period *"
+            onChange={(e) => setReviewPeriod(e.target.value as number)}
+            sx={{ fontSize: 13 }}
+          >
+            {REVIEW_PERIOD_OPTIONS.map((opt) => (
+              <MenuItem key={opt.value} value={opt.value} sx={{ fontSize: 13 }}>
+                {opt.label}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        {/* ── Download Format ── */}
+        <FormControl fullWidth size="small">
+          <InputLabel sx={{ fontSize: 13 }}>Download Format *</InputLabel>
+          <Select
+            value={downloadFormat}
+            label="Download Format *"
+            onChange={(e) => setDownloadFormat(e.target.value as "PDF" | "Original")}
+            sx={{ fontSize: 13 }}
+          >
+            <MenuItem value="PDF" sx={{ fontSize: 13 }}>PDF</MenuItem>
+            <MenuItem value="Original" sx={{ fontSize: 13 }}>Original (Word)</MenuItem>
+          </Select>
+        </FormControl>
 
         {/* ── Primary Action ── */}
         <Box
@@ -287,9 +337,18 @@ const CAReviewTask = ({ task, cr, onTaskComplete }: CAReviewTaskProps) => {
           Complete Review
         </DialogTitle>
         <DialogContent>
-          <Typography variant="body2" color="text.secondary" mb={2}>
+          <Typography variant="body2" color="text.secondary" mb={1}>
             You are marking this review as complete:{" "}
             <strong>{task.Title}</strong>
+          </Typography>
+          <Typography variant="body2" color="text.secondary" mb={2}>
+            Review period set to{" "}
+            <strong>
+              {REVIEW_PERIOD_OPTIONS.find((o) => o.value === reviewPeriod)?.label}
+            </strong>
+          </Typography>
+          <Typography variant="body2" color="text.secondary" mb={2}>
+            Download format set to <strong>{downloadFormat === "Original" ? "Original (Word)" : "PDF"}</strong>
           </Typography>
           <TextField
             label="Comments (optional)"

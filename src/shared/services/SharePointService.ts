@@ -112,6 +112,8 @@ const getChangeRequestById = async (
         "Classification",
         "DraftDocumentName",
         "PublishedDate",
+        "ReviewPeriod",
+        "DownloadFormat",
         // Lookup fields
         "CoreFunctionality/Id",
         "CoreFunctionality/Title",
@@ -214,6 +216,7 @@ const getDocuments = async (): Promise<Document[]> => {
         "FileLeafRef", // ← ADD THIS
         "PublishedFileUrl",
         "DownloadFileUrl",
+        "SourceFileUrl",
         "DownloadFormat",
         // Lookup fields
         "DocumentType/Id",
@@ -229,15 +232,15 @@ const getDocuments = async (): Promise<Document[]> => {
         // Choice field (no expand needed)
         "Classification",
       )
-      .expand(
-        "DocumentType",
-        "Category",
-        "BusinessFunction",
-        "CoreFunctionality",
-        "Audience",
-      )
-      .orderBy("DocumentTitle", true)();
-
+.expand(
+  "DocumentType",
+  "Category",
+  "BusinessFunction",
+  "CoreFunctionality",
+  "Audience",
+)
+.filter("FSObjType eq 1") // ← folders only, one row per document
+.orderBy("DocumentTitle", true)();
     console.log(documents);
     return documents as unknown as Document[];
   } catch (error) {
@@ -259,6 +262,7 @@ const getDocumentById = async (id: number): Promise<Document | null> => {
         "Classification",
         "PublishedFileUrl",
         "DownloadFileUrl",
+        "SourceFileUrl",
         "DownloadFormat",
         // Expand lookup fields
         "DocumentType/Id",
@@ -374,7 +378,7 @@ const getTaskById = async (id: number): Promise<Task | null> => {
 
 const updateTask = async (
   taskId: number,
-  data: Partial<Task>,
+  data: Record<string, unknown>,
 ): Promise<void> => {
   try {
     const sp = PnPSetup.getSP();

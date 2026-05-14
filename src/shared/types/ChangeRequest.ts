@@ -38,4 +38,7 @@ export interface IChangeRequest {
   TargetDocumentId?: number;
   DraftDocumentUrl?: string;
   DraftFolderUrl?: string;
+  ReviewPeriod?: number;
+  DownloadFormat?: "PDF" | "Original";
+
 }

@@ -34,15 +34,13 @@ const DocumentDetail: React.FC<DocumentDetailProps> = ({
       : null;
 
   // Download respects DownloadFormat
-  const downloadUrl = document.DownloadFormat === "Original" && document.DownloadFileUrl
-    ? `${sitePrefix}/${document.DownloadFileUrl}`
+  const downloadUrl = document.DownloadFormat === "Original" && document.SourceFileUrl
+    ? `${sitePrefix}/${document.SourceFileUrl}`
     : viewerUrl;
 
   const downloadLabel = document.DownloadFormat === "Original"
-    ? "Download Original"
-    : document.DownloadFormat === "Editable PDF"
-      ? "Download Editable PDF"
-      : "Download PDF";
+    ? "Download Word"
+    : "Download PDF";
 
   const typeColors = getDocTypeColors(document.DocumentType?.Title);
   const classificationColors = getClassificationColors(document.Classification);

@@ -20,6 +20,7 @@ import { useDepartments } from "../../../shared/hooks/useDepartments";
 import { useParticipants } from "../../../shared/hooks/useParticipants";
 import MinorChangesTab from "./tabs/MinorChangesTab";
 import ProgressTab from "./tabs/ProgressTab";
+import { REVIEW_PERIOD_OPTIONS } from "../../../shared/constants";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -997,6 +998,27 @@ export const TaskDetail = ({
                 saving={savingField === "DraftDocumentName"}
                 placeholder="Not set"
                 disabled={!canEdit}
+              />
+              <InlineField
+                label="Review Period"
+                value={
+                  cr.ReviewPeriod
+                    ? REVIEW_PERIOD_OPTIONS.find(
+                        (option) => option.value === cr.ReviewPeriod
+                      )?.label ?? `${cr.ReviewPeriod} months`
+                    : undefined
+                }
+                onSave={(v) => {
+                  const selected = REVIEW_PERIOD_OPTIONS.find(
+                    (option) => option.label === v
+                  );
+                  return handleLookupSave("ReviewPeriod", selected?.value ?? null);
+                }}
+                type="select"
+                options={REVIEW_PERIOD_OPTIONS.map((option) => option.label)}
+                saving={savingField === "ReviewPeriod"}
+                disabled={!canEdit}
+                placeholder="Not set"
               />
             </Section>
 
