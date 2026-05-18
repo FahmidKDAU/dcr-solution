@@ -66,11 +66,15 @@ const TaskHub = (props: TaskHubProps) => {
   // Load CR whenever selected task changes
   useEffect(() => {
     if (!selectedTask) return;
-    setCrLoading(true);
-    SharePointService.getChangeRequestById(selectedTask.ChangeRequestId)
-      .then(setCr)
-      .catch(console.error)
-      .finally(() => setCrLoading(false));
+    if (selectedTask.ChangeRequestId && selectedTask.TaskType !== "Document Review") {
+      setCrLoading(true);
+      SharePointService.getChangeRequestById(selectedTask.ChangeRequestId)
+        .then(setCr)
+        .catch(console.error)
+        .finally(() => setCrLoading(false));
+    } else {
+      setCr(null);
+    }
   }, [selectedTask]);
 
   // Initial task load
@@ -91,7 +95,7 @@ useEffect(() => {
   // ── Helpers ──
 
   const refreshCR = () => {
-    if (!selectedTask) return;
+    if (!selectedTask || !selectedTask.ChangeRequestId) return;
     SharePointService.getChangeRequestById(selectedTask.ChangeRequestId)
       .then(setCr)
       .catch(console.error);

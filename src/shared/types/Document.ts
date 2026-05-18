@@ -24,4 +24,7 @@ export interface Document {
   ChangeAuthority?: SharePointPerson;
   FileRef?: string;
   FileLeafRef?: string;
+  ReviewPeriod?: number;
+  ReviewDate?: string;
+  ReviewStatus?: string;
 }

@@ -9,6 +9,7 @@ import { IChangeRequest } from "../../../shared/types/ChangeRequest";
 import CAApprovalTask from "./tasks/ChangeAuthorityApproval";
 import CAReviewTask from "./tasks/CAReviewTask";
 import DocumentChangeProcessTask from "./tasks/DocumentChangeProcessTask";
+import DocumentReviewTask from "./tasks/DocumentReviewTask";
 import ParticipantTask from "./tasks/ParticipantTask";
 import VerifyReviewTask from "./tasks/VerifyReviewTask";
 import PublishingRejectionReviewTask from "./tasks/PublishingRejectionReviewTask";
@@ -159,6 +160,10 @@ const renderTaskContent = (
   currentUser?: any,
   onRefetch?: () => void,
 ) => {
+  if (task.TaskType === "Document Review") {
+    return <DocumentReviewTask task={task} onTaskComplete={onTaskComplete} />;
+  }
+
   if (!cr) {
     return (
       <Box display="flex" justifyContent="center" mt={2}>

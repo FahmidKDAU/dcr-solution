@@ -5,6 +5,11 @@ export interface Task {
   Id: number;
   Title: string;
   ChangeRequestId: number;
+  PublishedDocumentId?: number;
+  PublishedDocument?: {
+    Id: number;
+    DocumentTitle?: string;
+  };
   // Expanded lookup field
   ChangeRequest?: {
     Id: number;
@@ -25,7 +30,9 @@ export interface Task {
     | "Author Review"
     | "Document Change Process"
     | "Participant Task"
-    | "Publishing Rejection Review";
+    | "Publishing Rejection Review"
+    | "Document Review";
+
   AssignedTo?: SharePointPerson;
   Status:
     | "Pending"
@@ -39,7 +46,8 @@ export interface Task {
     | "On Hold"
     | "New"
     | "Marked as Minor Change"
-    | "Marked for Document Obsoletion";
+    | "Marked for Document Obsoletion"
+    | "Start Change Request";
   Created: Date;
   DueDate?: Date;
   Requestor?: SharePointPerson;
