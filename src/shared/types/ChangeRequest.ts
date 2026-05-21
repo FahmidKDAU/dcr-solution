@@ -40,5 +40,6 @@ export interface IChangeRequest {
   DraftFolderUrl?: string;
   ReviewPeriod?: number;
   DownloadFormat?: "PDF" | "Original";
-
+  Requestor?: SharePointPerson;
+  Created?: string;
 }

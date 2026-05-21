@@ -21,6 +21,7 @@ import { useParticipants } from "../../../shared/hooks/useParticipants";
 import MinorChangesTab from "./tabs/MinorChangesTab";
 import ProgressTab from "./tabs/ProgressTab";
 import { REVIEW_PERIOD_OPTIONS } from "../../../shared/constants";
+import AuditTrailTab from "./tabs/AuditTrailTab";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -925,6 +926,7 @@ export const TaskDetail = ({
         <Tab label="Published Document" />
         {!cr.NewDocument && <Tab label={`Minor Changes`} />}
         <Tab label="Progress" value={4} />
+        <Tab label="Audit Trail" value={5} />
       </Tabs>
 
       {/* ── Content ── */}
@@ -1355,6 +1357,7 @@ export const TaskDetail = ({
           <MinorChangesTab documentId={cr.TargetDocumentId} />
         )}
         {tab === 4 && <ProgressTab cr={cr} />}
+        {tab === 5 && <AuditTrailTab cr={cr} />}
       </Box>
     </Box>
   );

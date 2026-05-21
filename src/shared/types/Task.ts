@@ -50,6 +50,7 @@ export interface Task {
     | "Start Change Request";
   Created: Date;
   DueDate?: Date;
+  CompletedDate?: string;
   Requestor?: SharePointPerson;
   Comments?: string;
   isPinned?: boolean;

@@ -659,38 +659,24 @@ const getParticipantByTaskContext = async (
 
   return results[0] ?? null;
 };
-
 const getParticipantTaskByContext = async (
   changeRequestId: number,
   userId: number,
   role: "Contributor" | "Reviewer",
 ): Promise<{ Id: number; Comments?: string } | null> => {
   const sp = PnPSetup.getSP();
-  const taskType = role === "Reviewer" ? "Reviewer Task" : "Contributor Task";
 
-  // Filter by ChangeRequestId and AssignedTo separately to avoid compound OData
-  // filter issues with expanded person fields, then match TaskType in JS.
+  // Both contributors and reviewers use "Participant Task" as TaskType
   const tasks = await sp.web.lists
     .getByTitle("Tasks")
     .items.select("Id", "Comments", "TaskType", "AssignedTo/Id")
     .expand("AssignedTo")
     .filter(
-      `ChangeRequestId eq ${changeRequestId} and AssignedTo/Id eq ${userId}`,
+      `ChangeRequestId eq ${changeRequestId} and AssignedTo/Id eq ${userId} and TaskType eq 'Participant Task'`
     )
-    .top(10)();
+    .top(5)();
 
-  const match = tasks.find(
-    (t: { TaskType: string }) => t.TaskType === taskType,
-  );
-  if (match) {
-    return match as { Id: number; Comments?: string };
-  }
-  // Fallback: return first result if no TaskType match (e.g. task type not yet set)
-  console.warn(
-    `[getParticipantTaskByContext] No task with TaskType "${taskType}" found for CR ${changeRequestId}, user ${userId}. Tasks found:`,
-    tasks,
-  );
-  return (tasks[0] as { Id: number; Comments?: string }) ?? null;
+  return tasks.length > 0 ? (tasks[0] as { Id: number; Comments?: string }) : null;
 };
 
 const getDraftDocumentFolderByChangeRequestId = async (
@@ -826,6 +812,42 @@ const getSystemConfigValue = async (key: string): Promise<boolean> => {
   }
 };
 
+const getAuditTasksByCRId = async (
+  changeRequestId: number
+): Promise<(Task & { CompletedDate?: string })[]> => {
+  try {
+    const sp = PnPSetup.getSP();
+    const tasks = await sp.web.lists
+      .getByTitle("Tasks")
+      .items.select(
+        "Id",
+        "Title",
+        "TaskType",
+        "Status",
+        "Comments",
+        "Created",
+        "Modified",       // ← replaces CompletedDate
+        "ChangeRequestId",
+        "AssignedTo/Id",
+        "AssignedTo/Title",
+        "AssignedTo/EMail",
+      )
+      .expand("AssignedTo")
+      .filter(`ChangeRequestId eq ${changeRequestId}`)
+      .orderBy("Created", true)
+      .top(200)();
+
+    // Map Modified → CompletedDate so the tab component needs no changes
+    return tasks.map((t: any) => ({
+      ...t,
+      CompletedDate: t.Modified,
+    }));
+  } catch (error) {
+    console.error("Error fetching audit tasks:", error);
+    throw error;
+  }
+};
+
 export default {
   getDepartments,
   createChangeRequest,
@@ -856,4 +878,5 @@ export default {
   uploadFilesToDraftFolder,
   ensureServerRelativePath,
   getSystemConfigValue,
+  getAuditTasksByCRId,
 };
