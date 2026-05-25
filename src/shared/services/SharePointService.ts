@@ -83,10 +83,54 @@ const getDepartments = async (): Promise<Department[]> => {
 const getChangeRequests = async (): Promise<IChangeRequest[]> => {
   try {
     const sp = PnPSetup.getSP();
-    const changeRequests = await sp.web.lists
+    const items = await sp.web.lists
       .getByTitle("Change Requests")
-      .items();
-    return changeRequests;
+      .items.select(
+        "Id",
+        "Title",
+        "ChangeRequestNumber",
+        "ScopeofChange",
+        "Status",
+        "Urgency",
+        "NewDocument",
+        "Classification",
+        "DraftDocumentName",
+        "ReviewPeriod",
+        "Created",
+        "Author0/Id",
+        "Author0/Title",
+        "Author0/EMail",
+        "ChangeAuthority/Id",
+        "ChangeAuthority/Title",
+        "ChangeAuthority/EMail",
+        "ReleaseAuthority/Id",
+        "ReleaseAuthority/Title",
+        "ReleaseAuthority/EMail",
+        "DocumentType/Id",
+        "DocumentType/Title",
+        "Category/Id",
+        "Category/Title",
+        "Audience/Id",
+        "Audience/Title",
+        "BusinessFunction/Id",
+        "BusinessFunction/Title",
+        "CoreFunctionality/Id",
+        "CoreFunctionality/Title",
+      )
+      .expand(
+        "Author0",
+        "ChangeAuthority",
+        "ReleaseAuthority",
+        "DocumentType",
+        "Category",
+        "Audience",
+        "BusinessFunction",
+        "CoreFunctionality",
+      )
+      .orderBy("Created", false)
+      .top(500)();
+
+    return items as IChangeRequest[];
   } catch (error) {
     console.error("Error fetching change requests:", error);
     throw error;

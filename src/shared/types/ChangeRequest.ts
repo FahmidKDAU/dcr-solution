@@ -18,7 +18,7 @@ export interface IChangeRequest {
     | "Document Review"
     | "Published"
     | "Rejected"
-    | "Ready for Publishing" ;
+    | "Ready for Publishing";
   Author: SharePointPerson;
   ChangeAuthority: SharePointPerson;
   Author0: SharePointPerson;
@@ -42,4 +42,7 @@ export interface IChangeRequest {
   DownloadFormat?: "PDF" | "Original";
   Requestor?: SharePointPerson;
   Created?: string;
+  ReadAcknowledgementRequired?: boolean;
+  ReadAudienceId?: LookupFieldItem;
+  ReadDueDate?: string;
 }

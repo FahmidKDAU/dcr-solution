@@ -7,7 +7,7 @@ import Tooltip from "@mui/material/Tooltip";
 import { IChangeRequest } from "../../../../shared/types/ChangeRequest";
 import { Task } from "../../../../shared/types/Task";
 import SharePointService from "../../../../shared/services/SharePointService";
-import { getInitials, getAvatarColor } from "../../../../shared/utils/avatarUtils";
+
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 import { getAvatarInitials, getAvatarColor } from "../../../../shared/utils/avatarUtils";
