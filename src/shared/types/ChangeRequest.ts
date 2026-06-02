@@ -43,6 +43,6 @@ export interface IChangeRequest {
   Requestor?: SharePointPerson;
   Created?: string;
   ReadAcknowledgementRequired?: boolean;
-  ReadAudienceId?: LookupFieldItem;
+  ReadAudienceGroups?: LookupFieldItem[];
   ReadDueDate?: string;
 }

@@ -1201,6 +1201,61 @@ export const TaskDetail = ({
                 excludeIds={contributorPeople.map((p) => p.Id)}
               />
             </Section>
+
+            {/* ── Compliance Section ── */}
+            {(cr.ReadAcknowledgementRequired || (cr.ReadAudienceGroups?.length ?? 0) > 0) && (
+              <Section title="Compliance">
+                <InlineField
+                  label="Read acknowledgement"
+                  value={cr.ReadAcknowledgementRequired ? "Required" : "Not required"}
+                  onSave={() => Promise.resolve()}
+                  disabled
+                  renderValue={(v) => (
+                    <Box
+                      component="span"
+                      sx={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 0.5,
+                        backgroundColor: cr.ReadAcknowledgementRequired
+                          ? "#DFF6DD"
+                          : "#F3F2F1",
+                        color: cr.ReadAcknowledgementRequired
+                          ? "#107C10"
+                          : "#605E5C",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        px: 1.25,
+                        py: 0.25,
+                        borderRadius: "10px",
+                      }}
+                    >
+                      {v}
+                    </Box>
+                  )}
+                />
+                {cr.ReadAcknowledgementRequired && (cr.ReadAudienceGroups?.length ?? 0) > 0 && (
+                  <InlineField
+                    label="Audience"
+                    value={(cr.ReadAudienceGroups ?? []).map((a) => a.Title).join(", ")}
+                    onSave={() => Promise.resolve()}
+                    disabled
+                  />
+                )}
+                {cr.ReadAcknowledgementRequired && cr.ReadDueDate && (
+                  <InlineField
+                    label="Due date"
+                    value={new Date(cr.ReadDueDate).toLocaleDateString("en-AU", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                    onSave={() => Promise.resolve()}
+                    disabled
+                  />
+                )}
+              </Section>
+            )}
           </Box>
         )}
 

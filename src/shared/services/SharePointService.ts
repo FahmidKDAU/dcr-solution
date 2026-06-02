@@ -12,6 +12,7 @@ import "@pnp/sp/sites";
 import { Task } from "../types/Task";
 import { Participant } from "../types/Participant";
 import { MinorChange } from "../types/MinorChange";
+import { LookupFieldItem } from "../types/LookupFieldItem";
 
 const normalizeServerRelativePath = (path: string): string => {
   const trimmed = path.trim();
@@ -80,6 +81,21 @@ const getDepartments = async (): Promise<Department[]> => {
   }
 };
 
+const getAudienceGroups = async (): Promise<LookupFieldItem[]> => {
+  try {
+    const sp = PnPSetup.getSP();
+    const items = await sp.web.lists
+      .getByTitle("Audience Groups Configuration")
+      .items.select("Id", "Title")
+      .orderBy("Title", true)
+      .top(100)();
+    return items as LookupFieldItem[];
+  } catch (error) {
+    console.error("Error fetching audience groups:", error);
+    throw error;
+  }
+};
+
 const getChangeRequests = async (): Promise<IChangeRequest[]> => {
   try {
     const sp = PnPSetup.getSP();
@@ -96,6 +112,8 @@ const getChangeRequests = async (): Promise<IChangeRequest[]> => {
         "Classification",
         "DraftDocumentName",
         "ReviewPeriod",
+        "ReadAcknowledgementRequired",
+        "ReadDueDate",
         "Created",
         "Author0/Id",
         "Author0/Title",
@@ -112,6 +130,8 @@ const getChangeRequests = async (): Promise<IChangeRequest[]> => {
         "Category/Title",
         "Audience/Id",
         "Audience/Title",
+        "ReadAudienceGroups/Id",
+        "ReadAudienceGroups/Title",
         "BusinessFunction/Id",
         "BusinessFunction/Title",
         "CoreFunctionality/Id",
@@ -124,6 +144,7 @@ const getChangeRequests = async (): Promise<IChangeRequest[]> => {
         "DocumentType",
         "Category",
         "Audience",
+        "ReadAudienceGroups",
         "BusinessFunction",
         "CoreFunctionality",
       )
@@ -157,6 +178,8 @@ const getChangeRequestById = async (
         "DraftDocumentName",
         "PublishedDate",
         "ReviewPeriod",
+        "ReadAcknowledgementRequired",
+        "ReadDueDate",
         "DownloadFormat",
         // Lookup fields
         "CoreFunctionality/Id",
@@ -169,6 +192,8 @@ const getChangeRequestById = async (
         "Category/Title", // ← add
         "Audience/Id",
         "Audience/Title",
+        "ReadAudienceGroups/Id",
+        "ReadAudienceGroups/Title",
         // People fields
         "ChangeAuthority/Id",
         "ChangeAuthority/Title",
@@ -199,6 +224,7 @@ const getChangeRequestById = async (
         "DocumentType", // ← add
         "Category", // ← add
         "Audience",
+        "ReadAudienceGroups",
         "ChangeAuthority",
         "ReleaseAuthority",
         "Author0",
@@ -377,14 +403,9 @@ const getTasks = async (userId: number): Promise<Task[]> => {
         "Requestor/Id",
         "Requestor/Title",
         "Requestor/EMail",
-         "PublishedDocumentId",
+        "PublishedDocumentId",
       )
-      .expand(
-        "AssignedTo",
-        "Author",
-        "Requestor",
-        "ChangeRequest",
-      )
+      .expand("AssignedTo", "Author", "Requestor", "ChangeRequest")
       .filter(
         `AssignedTo/Id eq ${userId} and (Status eq 'Pending' or Status eq 'In Progress')`,
       )();
@@ -716,11 +737,13 @@ const getParticipantTaskByContext = async (
     .items.select("Id", "Comments", "TaskType", "AssignedTo/Id")
     .expand("AssignedTo")
     .filter(
-      `ChangeRequestId eq ${changeRequestId} and AssignedTo/Id eq ${userId} and TaskType eq 'Participant Task'`
+      `ChangeRequestId eq ${changeRequestId} and AssignedTo/Id eq ${userId} and TaskType eq 'Participant Task'`,
     )
     .top(5)();
 
-  return tasks.length > 0 ? (tasks[0] as { Id: number; Comments?: string }) : null;
+  return tasks.length > 0
+    ? (tasks[0] as { Id: number; Comments?: string })
+    : null;
 };
 
 const getDraftDocumentFolderByChangeRequestId = async (
@@ -857,7 +880,7 @@ const getSystemConfigValue = async (key: string): Promise<boolean> => {
 };
 
 const getAuditTasksByCRId = async (
-  changeRequestId: number
+  changeRequestId: number,
 ): Promise<(Task & { CompletedDate?: string })[]> => {
   try {
     const sp = PnPSetup.getSP();
@@ -870,7 +893,7 @@ const getAuditTasksByCRId = async (
         "Status",
         "Comments",
         "Created",
-        "Modified",       // ← replaces CompletedDate
+        "Modified", // ← replaces CompletedDate
         "ChangeRequestId",
         "AssignedTo/Id",
         "AssignedTo/Title",
@@ -923,4 +946,5 @@ export default {
   ensureServerRelativePath,
   getSystemConfigValue,
   getAuditTasksByCRId,
+  getAudienceGroups,
 };
