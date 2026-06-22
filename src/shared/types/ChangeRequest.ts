@@ -45,4 +45,6 @@ export interface IChangeRequest {
   ReadAcknowledgementRequired?: boolean;
   ReadAudienceGroups?: LookupFieldItem[];
   ReadDueDate?: string;
+  VersionNumber: string;
+  DocumentNumber: string; 
 }

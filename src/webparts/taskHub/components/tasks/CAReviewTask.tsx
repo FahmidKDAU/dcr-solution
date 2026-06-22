@@ -14,7 +14,6 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
-import InputLabel from "@mui/material/InputLabel";
 import ListItemText from "@mui/material/ListItemText";
 import Switch from "@mui/material/Switch";
 import Divider from "@mui/material/Divider";
@@ -79,6 +78,9 @@ const CAReviewTask = ({ task, cr, onTaskComplete }: CAReviewTaskProps) => {
   const [downloadFormat, setDownloadFormat] = useState<"PDF" | "Original" | "">(
     cr?.DownloadFormat ?? "",
   );
+  const [versionNumber, setVersionNumber] = useState(
+    cr?.VersionNumber ?? (cr?.NewDocument ? "1.0" : ""),
+  );
 
   // ── Read acknowledgement state ──
   const [readAcknowledgementRequired, setReadAcknowledgementRequired] =
@@ -109,6 +111,7 @@ const CAReviewTask = ({ task, cr, onTaskComplete }: CAReviewTaskProps) => {
     missingFields.length === 0 &&
     reviewPeriod !== "" &&
     downloadFormat !== "" &&
+    versionNumber !== "" &&
     (!readAcknowledgementRequired || readAudienceIds.length > 0);
 
   const isNewDocument = cr?.NewDocument ?? false;
@@ -118,6 +121,7 @@ const CAReviewTask = ({ task, cr, onTaskComplete }: CAReviewTaskProps) => {
     ...missingFields.map((f) => f.label),
     ...(reviewPeriod === "" ? ["review period"] : []),
     ...(downloadFormat === "" ? ["download format"] : []),
+    ...(versionNumber === "" ? ["version number"] : []),
     ...(readAcknowledgementRequired && readAudienceIds.length === 0
       ? ["audience"]
       : []),
@@ -134,15 +138,13 @@ const CAReviewTask = ({ task, cr, onTaskComplete }: CAReviewTaskProps) => {
       await SharePointService.updateChangeRequest(cr!.ID, {
         ReviewPeriod: reviewPeriod,
         DownloadFormat: downloadFormat,
+        VersionNumber: versionNumber,
         ReadAcknowledgementRequired: readAcknowledgementRequired,
         ReadDueDate:
           readAcknowledgementRequired && readDueDate ? readDueDate : null,
-        ReadAudienceGroups: {
-          results:
-            readAcknowledgementRequired && readAudienceIds.length > 0
-              ? readAudienceIds
-              : [],
-        },
+ReadAudienceGroupsId: readAcknowledgementRequired && readAudienceIds.length > 0
+  ? readAudienceIds
+  : [],
       });
       await SharePointService.updateTask(task.Id, {
         Status: "Approved",
@@ -280,11 +282,11 @@ const CAReviewTask = ({ task, cr, onTaskComplete }: CAReviewTaskProps) => {
               value={downloadFormat}
               displayEmpty
               onChange={(e) =>
-                setDownloadFormat(e.target.value as "PDF" | "Original")
+                setDownloadFormat(e.target.value as "PDF" | "Original" | "")
               }
               sx={{ fontSize: 13 }}
               renderValue={(v) =>
-                v === "" ? (
+                !v ? (
                   <Typography sx={{ fontSize: 13, color: "#A19F9D" }}>
                     Select format
                   </Typography>
@@ -304,6 +306,27 @@ const CAReviewTask = ({ task, cr, onTaskComplete }: CAReviewTaskProps) => {
             </Select>
           </FormControl>
         </Box>
+
+        {/* ── Document Version ── */}
+        <Box>
+          <FieldLabel>Version number</FieldLabel>
+          <TextField
+            fullWidth
+            size="small"
+            value={versionNumber}
+            onChange={(e) => setVersionNumber(e.target.value)}
+            placeholder="e.g. 1.0"
+            sx={{ "& input": { fontSize: 13 } }}
+          />
+        </Box>
+        {!isNewDocument && cr?.DocumentNumber && (
+          <Box>
+            <FieldLabel optional>Document number</FieldLabel>
+            <Typography sx={{ fontSize: 13, color: "#323130" }}>
+              {cr.DocumentNumber}
+            </Typography>
+          </Box>
+        )}
 
         <Divider sx={{ borderColor: "#EDEBE9" }} />
 
@@ -594,6 +617,23 @@ const CAReviewTask = ({ task, cr, onTaskComplete }: CAReviewTaskProps) => {
                 sx={{ fontSize: 12, fontWeight: 500, color: "#323130" }}
               >
                 {downloadFormat === "Original" ? "Original (Word)" : "PDF"}
+              </Typography>
+            </Box>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                py: 0.75,
+                borderBottom: "0.5px solid #F3F2F1",
+              }}
+            >
+              <Typography sx={{ fontSize: 12, color: "#605E5C" }}>
+                Version number
+              </Typography>
+              <Typography
+                sx={{ fontSize: 12, fontWeight: 500, color: "#323130" }}
+              >
+                {versionNumber}
               </Typography>
             </Box>
             {readAcknowledgementRequired && (

@@ -136,6 +136,8 @@ const getChangeRequests = async (): Promise<IChangeRequest[]> => {
         "BusinessFunction/Title",
         "CoreFunctionality/Id",
         "CoreFunctionality/Title",
+        "VersionNumber",
+        "DocumentNumber"
       )
       .expand(
         "Author0",
@@ -217,6 +219,8 @@ const getChangeRequestById = async (
         "TargetDocumentId",
         "DraftDocumentUrl",
         "DraftFolderUrl",
+        "VersionNumber",
+        "DocumentNumber"
       )
       .expand(
         "CoreFunctionality",
@@ -301,6 +305,8 @@ const getDocuments = async (): Promise<Document[]> => {
         "Audience/Title",
         // Choice field (no expand needed)
         "Classification",
+        "VersionNumber",
+        "DocumentNumber"
       )
       .expand(
         "DocumentType",
@@ -358,6 +364,8 @@ const getDocumentById = async (id: number): Promise<Document | null> => {
         "Author0/EMail",
         "FileRef",
         "FileLeafRef",
+        "VersionNumber",
+        "DocumentNumber"
       )
       .expand(
         "Category",

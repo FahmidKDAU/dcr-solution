@@ -23,6 +23,8 @@ import { BRANDING } from "../../../shared/theme/theme";
 export interface ChangeRequestFormData {
   title: string;
   scopeOfChange: string;
+  versionNumber?: string;
+  documentNumber?: string;
   newDocument: boolean;
   externalDocument: boolean;
   departmentId: number | undefined;
@@ -45,6 +47,8 @@ export interface ChangeRequestFormData {
 const EMPTY_FORM: ChangeRequestFormData = {
   title: "",
   scopeOfChange: "",
+  versionNumber: undefined,
+  documentNumber: undefined,
   departmentId: undefined,
   newDocument: true,
   externalDocument: false,
@@ -244,6 +248,8 @@ const ChangeRequestForm: React.FC = () => {
           ...prev,
           departmentId: selectedDoc.CoreFunctionality?.Id,
           changeAuthority: selectedDoc.ChangeAuthority ?? undefined,
+          versionNumber: selectedDoc.VersionNumber ?? undefined,
+          documentNumber: selectedDoc.DocumentNumber ?? undefined,
           businessFunctionIds: selectedDoc.BusinessFunction?.map((bf) => bf.Id) || [],
           documentCategoryIds: selectedDoc.Category?.map((dc) => dc.Id) || [],
           documentTypeId: mapDocumentTypeToId(selectedDoc.DocumentType?.Title),
@@ -266,6 +272,8 @@ const ChangeRequestForm: React.FC = () => {
     setFormData((prev) => ({
       ...prev,
       documentId: undefined,
+      versionNumber: undefined,
+      documentNumber: undefined,
       departmentId: undefined,
       changeAuthority: undefined,
       externalDocument: false,
@@ -318,6 +326,8 @@ const ChangeRequestForm: React.FC = () => {
       const payload = {
         Title: formData.title,
         ScopeofChange: formData.scopeOfChange,
+        VersionNumber: formData.versionNumber || undefined,
+        DocumentNumber: formData.documentNumber || undefined,
         NewDocument: formData.newDocument,
         ExternalDocument: formData.externalDocument,
         CoreFunctionalityId: formData.departmentId,
