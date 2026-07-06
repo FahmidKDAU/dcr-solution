@@ -15,18 +15,10 @@ import CircularProgress from "@mui/material/CircularProgress";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
-import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import { Task } from "../../../../shared/types/Task";
 import { IChangeRequest } from "../../../../shared/types/ChangeRequest";
 import { Department } from "../../../../shared/types/Department";
 import SharePointService from "../../../../shared/services/SharePointService";
-
-// ─── Required fields for this task type ──────────────────────────────────────
-
-const REQUIRED_FIELDS: { field: keyof IChangeRequest; label: string }[] = [
-  { field: "ReleaseAuthority", label: "Release Authority" },
-  { field: "Author0",           label: "Author" },
-];
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -91,12 +83,6 @@ const CAApprovalTask = ({ task, cr, onTaskComplete }: CAApprovalTaskProps) => {
     SharePointService.getDepartments().then(setDepartments).catch(console.error);
   }, []);
 
-  // ── Required field validation ──
-  const missingFields = cr
-    ? REQUIRED_FIELDS.filter(({ field }) => !cr[field])
-    : REQUIRED_FIELDS;
-  const canApprove = missingFields.length === 0;
-
   const handleClose = () => {
     setOpenModal(null);
     setComment("");
@@ -139,6 +125,7 @@ const CAApprovalTask = ({ task, cr, onTaskComplete }: CAApprovalTaskProps) => {
   const handleReassign = async (): Promise<void> => {
   setSubmitting(true);
   try {
+    if (selectedDepartmentId === cr?.CoreFunctionality?.Id) return;
     const selectedDept = departments.find((d) => d.Id === selectedDepartmentId);
     if (!selectedDept || !selectedDept.ChangeAuthority) return;
     await SharePointService.updateTask(task.Id, {
@@ -159,27 +146,7 @@ const CAApprovalTask = ({ task, cr, onTaskComplete }: CAApprovalTaskProps) => {
     <>
       <Box display="flex" flexDirection="column" gap={1.5}>
 
-        {/* ── Missing fields warning ── */}
-        {missingFields.length > 0 && (
-          <Box sx={{
-            display: "flex", gap: 1, alignItems: "flex-start",
-            backgroundColor: "#FFF4CE",
-            border: "1px solid #FFB900",
-            borderRadius: "4px",
-            px: 1.5, py: 1.25,
-          }}>
-            <WarningAmberIcon sx={{ fontSize: 16, color: "#835B00", mt: 0.2, flexShrink: 0 }} />
-            <Box>
-              <Typography sx={{ fontSize: 12, fontWeight: 600, color: "#603D00", lineHeight: 1.4 }}>
-                Complete required fields to approve
-              </Typography>
-              <Typography sx={{ fontSize: 11, color: "#835B00", lineHeight: 1.5, mt: 0.25 }}>
-                Fill in the following on the right:{" "}
-                <strong>{missingFields.map((f) => f.label).join(", ")}</strong>
-              </Typography>
-            </Box>
-          </Box>
-        )}
+   
 
         {/* ── Approve ── */}
         <ActionButton
@@ -187,7 +154,7 @@ const CAApprovalTask = ({ task, cr, onTaskComplete }: CAApprovalTaskProps) => {
           icon={<CheckIcon sx={{ fontSize: 16 }} />}
           onClick={() => setOpenModal("approve")}
           variant="approve"
-          disabled={!canApprove}
+          disabled={false}
         />
 
         {/* ── Reject ── */}
@@ -292,7 +259,7 @@ const CAApprovalTask = ({ task, cr, onTaskComplete }: CAApprovalTaskProps) => {
             The task will be reassigned to the Change Authority of the selected department.
           </Typography>
           <FormControl fullWidth>
-            <InputLabel>Department *</InputLabel>
+            <InputLabel>Department</InputLabel>
             <Select
               value={selectedDepartmentId}
               onChange={(e) => setSelectedDepartmentId(Number(e.target.value))}
@@ -318,6 +285,12 @@ const CAApprovalTask = ({ task, cr, onTaskComplete }: CAApprovalTaskProps) => {
               </Typography>
             </Box>
           )}
+
+          {selectedDepartmentId === cr?.CoreFunctionality?.Id && (
+            <Typography sx={{ mt: 1.5, fontSize: 12, color: "#A4262C" }}>
+              This is already the assigned department. Select a different one.
+            </Typography>
+          )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
           <Button onClick={handleClose} variant="outlined" color="inherit" disabled={submitting}>
@@ -326,7 +299,7 @@ const CAApprovalTask = ({ task, cr, onTaskComplete }: CAApprovalTaskProps) => {
           <Button
             onClick={handleReassign}
             variant="contained"
-            disabled={!selectedDepartmentId || submitting}
+            disabled={!selectedDepartmentId || selectedDepartmentId === cr?.CoreFunctionality?.Id || submitting}
             startIcon={submitting ? <CircularProgress size={14} color="inherit" /> : <SwapHorizIcon />}
           >
             {submitting ? "Reassigning..." : "Confirm Reassign"}
