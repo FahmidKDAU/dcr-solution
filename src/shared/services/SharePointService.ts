@@ -887,6 +887,29 @@ const getSystemConfigValue = async (key: string): Promise<boolean> => {
   }
 };
 
+/**
+ * Fetches a single global system role (e.g. "Compliance Authority",
+ * "Document Controller", "Managing Director") from the System Roles list.
+ * Returns the assigned person, or null if not found.
+ */
+const getSystemRole = async (
+  roleTitle: string,
+): Promise<SharePointPerson | null> => {
+  try {
+    const sp = PnPSetup.getSP();
+    const items = await sp.web.lists
+      .getByTitle("System Roles")
+      .items.select("Title", "Person/Id", "Person/Title", "Person/EMail")
+      .expand("Person")
+      .filter(`Title eq '${roleTitle}'`)
+      .top(1)();
+    return items.length > 0 ? (items[0].Person as SharePointPerson) : null;
+  } catch (error) {
+    console.error(`Error fetching system role '${roleTitle}':`, error);
+    return null;
+  }
+};
+
 const getAuditTasksByCRId = async (
   changeRequestId: number,
 ): Promise<(Task & { CompletedDate?: string })[]> => {
@@ -953,6 +976,7 @@ export default {
   uploadFilesToDraftFolder,
   ensureServerRelativePath,
   getSystemConfigValue,
+  getSystemRole,
   getAuditTasksByCRId,
   getAudienceGroups,
 };

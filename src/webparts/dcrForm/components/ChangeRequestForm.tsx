@@ -85,7 +85,9 @@ const SuccessScreen: React.FC<SuccessScreenProps> = ({ onSubmitAnother }) => (
   >
     {/* Header */}
     <Box sx={{ backgroundColor: BRANDING.primary, padding: "20px 24px" }}>
-      <Typography sx={{ fontSize: "18px", fontWeight: 500, color: "white", mb: "4px" }}>
+      <Typography
+        sx={{ fontSize: "18px", fontWeight: 500, color: "white", mb: "4px" }}
+      >
         Submit Change Request
       </Typography>
       <Typography sx={{ fontSize: "12px", color: "rgba(255,255,255,0.75)" }}>
@@ -183,7 +185,7 @@ const SuccessScreen: React.FC<SuccessScreenProps> = ({ onSubmitAnother }) => (
             onClick={() =>
               window.open(
                 `${window.location.origin}/sites/DocumentChangeManagementDemo/SitePages/Document-Portal.aspx`,
-                "_blank"
+                "_blank",
               )
             }
             sx={{
@@ -223,17 +225,20 @@ const ChangeRequestForm: React.FC = () => {
     { Id: 4, Title: "Form" },
   ];
 
-  const mapDocumentTypeToId = (documentType?: string | null): number | undefined => {
+  const mapDocumentTypeToId = (
+    documentType?: string | null,
+  ): number | undefined => {
     if (!documentType) return undefined;
     const match = documentTypeOptions.find(
-      (type) => type.Title.toLowerCase() === documentType.toLowerCase()
+      (type) => type.Title.toLowerCase() === documentType.toLowerCase(),
     );
     return match?.Id ?? undefined;
   };
 
   const [formData, setFormData] = useState<ChangeRequestFormData>(EMPTY_FORM);
 
-  const isExistingDocumentSelected = !formData.newDocument && !!formData.documentId;
+  const isExistingDocumentSelected =
+    !formData.newDocument && !!formData.documentId;
   const { documents } = useDocuments();
   const { departments } = useDepartments();
 
@@ -242,15 +247,24 @@ const ChangeRequestForm: React.FC = () => {
     const autoPopulateFromDocument = async (): Promise<void> => {
       if (formData.newDocument || !formData.documentId) return;
       try {
-        const selectedDoc = await SharePointService.getDocumentById(formData.documentId);
+        const selectedDoc = await SharePointService.getDocumentById(
+          formData.documentId,
+        );
         if (!selectedDoc) return;
+
+        // Live lookup — get current Change Authority from dept config, not from the document
+        const matchedDept = departments.find(
+          (d) => d.Id === selectedDoc.CoreFunctionality?.Id,
+        );
+
         setFormData((prev) => ({
           ...prev,
           departmentId: selectedDoc.CoreFunctionality?.Id,
-          changeAuthority: selectedDoc.ChangeAuthority ?? undefined,
+          changeAuthority: matchedDept?.ChangeAuthority ?? undefined, // ← was selectedDoc.ChangeAuthority
           versionNumber: selectedDoc.VersionNumber ?? undefined,
           documentNumber: selectedDoc.DocumentNumber ?? undefined,
-          businessFunctionIds: selectedDoc.BusinessFunction?.map((bf) => bf.Id) || [],
+          businessFunctionIds:
+            selectedDoc.BusinessFunction?.map((bf) => bf.Id) || [],
           documentCategoryIds: selectedDoc.Category?.map((dc) => dc.Id) || [],
           documentTypeId: mapDocumentTypeToId(selectedDoc.DocumentType?.Title),
           classification: selectedDoc.Classification || "",
@@ -290,7 +304,7 @@ const ChangeRequestForm: React.FC = () => {
 
   const handleFieldChange = (
     field: keyof ChangeRequestFormData,
-    value: ChangeRequestFormData[keyof ChangeRequestFormData]
+    value: ChangeRequestFormData[keyof ChangeRequestFormData],
   ): void => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -340,10 +354,20 @@ const ChangeRequestForm: React.FC = () => {
         DraftDocumentName: formData.draftDocumentName || undefined,
         ReleaseAuthorityId: formData.releaseAuthority?.Id || undefined,
         Author0Id: formData.author?.Id || undefined,
-        ReviewersId: formData.reviewerIds.length > 0 ? formData.reviewerIds : undefined,
-        ContributorsId: formData.contributorIds.length > 0 ? formData.contributorIds : undefined,
-        BusinessFunctionId: formData.businessFunctionIds.length > 0 ? formData.businessFunctionIds : undefined,
-        CategoryId: formData.documentCategoryIds.length > 0 ? formData.documentCategoryIds : undefined,
+        ReviewersId:
+          formData.reviewerIds.length > 0 ? formData.reviewerIds : undefined,
+        ContributorsId:
+          formData.contributorIds.length > 0
+            ? formData.contributorIds
+            : undefined,
+        BusinessFunctionId:
+          formData.businessFunctionIds.length > 0
+            ? formData.businessFunctionIds
+            : undefined,
+        CategoryId:
+          formData.documentCategoryIds.length > 0
+            ? formData.documentCategoryIds
+            : undefined,
         isCrComplete: !!(formData.releaseAuthority && formData.author),
       };
 
@@ -353,18 +377,30 @@ const ChangeRequestForm: React.FC = () => {
       const latestItem = changeRequests[changeRequests.length - 1];
       const itemId = latestItem?.Id;
 
-      if (!itemId) throw new Error("Unable to resolve the created Change Request ID.");
+      if (!itemId)
+        throw new Error("Unable to resolve the created Change Request ID.");
 
       // Create participant rows
-      if (formData.reviewerIds.length > 0 || formData.contributorIds.length > 0) {
-        await SharePointService.createParticipant(itemId, formData.contributorIds, formData.reviewerIds);
+      if (
+        formData.reviewerIds.length > 0 ||
+        formData.contributorIds.length > 0
+      ) {
+        await SharePointService.createParticipant(
+          itemId,
+          formData.contributorIds,
+          formData.reviewerIds,
+        );
       }
 
       // Upload attachments
       if (formData.attachments.length > 0) {
-        await SharePointService.uploadAttachments(itemId, formData.attachments, (current, total, fileName) => {
-          console.log(`Uploading file ${current} of ${total}: ${fileName}`);
-        });
+        await SharePointService.uploadAttachments(
+          itemId,
+          formData.attachments,
+          (current, total, fileName) => {
+            console.log(`Uploading file ${current} of ${total}: ${fileName}`);
+          },
+        );
       }
 
       setSubmitted(true);
@@ -392,7 +428,14 @@ const ChangeRequestForm: React.FC = () => {
     <Box sx={{ minHeight: "100%", backgroundColor: "white" }}>
       {/* Header */}
       <Box sx={{ backgroundColor: BRANDING.primary, padding: "20px 24px" }}>
-        <Typography sx={{ fontSize: "18px", fontWeight: 500, color: "white", marginBottom: "4px" }}>
+        <Typography
+          sx={{
+            fontSize: "18px",
+            fontWeight: 500,
+            color: "white",
+            marginBottom: "4px",
+          }}
+        >
           Submit Change Request
         </Typography>
         <Typography sx={{ fontSize: "12px", color: "rgba(255,255,255,0.75)" }}>
@@ -403,7 +446,11 @@ const ChangeRequestForm: React.FC = () => {
       {/* Form */}
       <Box component="form" onSubmit={handleSubmit} sx={{ padding: "24px" }}>
         {submitError && (
-          <Alert severity="error" sx={{ mb: 3 }} onClose={() => setSubmitError(null)}>
+          <Alert
+            severity="error"
+            sx={{ mb: 3 }}
+            onClose={() => setSubmitError(null)}
+          >
             {submitError}
           </Alert>
         )}
@@ -434,7 +481,9 @@ const ChangeRequestForm: React.FC = () => {
               justifyContent: "space-between",
               alignItems: "center",
               cursor: "pointer",
-              borderBottom: additionalDetailsOpen ? "1px solid #E2E8F0" : "none",
+              borderBottom: additionalDetailsOpen
+                ? "1px solid #E2E8F0"
+                : "none",
               "&:hover": { backgroundColor: "#F1F5F9" },
             }}
           >
@@ -453,7 +502,9 @@ const ChangeRequestForm: React.FC = () => {
                 sx={{
                   fontSize: "11px",
                   padding: "3px 8px",
-                  backgroundColor: additionalDetailsOpen ? "#E6F1FB" : "#E2E8F0",
+                  backgroundColor: additionalDetailsOpen
+                    ? "#E6F1FB"
+                    : "#E2E8F0",
                   color: additionalDetailsOpen ? BRANDING.primary : "#64748B",
                   borderRadius: "4px",
                 }}
@@ -468,9 +519,13 @@ const ChangeRequestForm: React.FC = () => {
                 </Typography>
               )}
               {additionalDetailsOpen ? (
-                <ExpandLessIcon sx={{ color: BRANDING.primary, fontSize: 20 }} />
+                <ExpandLessIcon
+                  sx={{ color: BRANDING.primary, fontSize: 20 }}
+                />
               ) : (
-                <ExpandMoreIcon sx={{ color: BRANDING.primary, fontSize: 20 }} />
+                <ExpandMoreIcon
+                  sx={{ color: BRANDING.primary, fontSize: 20 }}
+                />
               )}
             </Box>
           </Box>

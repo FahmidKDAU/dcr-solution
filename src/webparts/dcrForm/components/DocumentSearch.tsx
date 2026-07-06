@@ -2,6 +2,7 @@
 import React from "react";
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from "@mui/material/TextField";
+import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { Document } from "../../../shared/types/Document";
 import { BRANDING } from "../../../shared/theme/theme";
@@ -23,45 +24,95 @@ export const DocumentSearch = ({
   return (
     <Autocomplete
       options={validDocuments}
-      getOptionLabel={(doc) => doc.DocumentTitle ?? ""}
+      getOptionLabel={(doc) =>
+        [doc.DocumentNumber, doc.DocumentTitle].filter(Boolean).join(" — ")
+      }
       value={selectedDoc}
       onChange={(_, newValue) => onChange(newValue?.Id ?? undefined)}
       isOptionEqualToValue={(option, val) => option.Id === val.Id}
-      filterOptions={(options, { inputValue }) =>
-        options.filter((doc) =>
-          doc.DocumentTitle?.toLowerCase().includes(inputValue.toLowerCase())
-        )
-      }
+      filterOptions={(options, { inputValue }) => {
+        const q = inputValue.toLowerCase();
+        return options.filter(
+          (doc) =>
+            doc.DocumentTitle?.toLowerCase().includes(q) ||
+            doc.DocumentNumber?.toLowerCase().includes(q)
+        );
+      }}
       noOptionsText={
-        <Typography sx={{ fontSize: "13px", color: "#94A3B8" }}>
+        <Typography sx={{ fontSize: "13px", color: "#94A3B8", px: "2px" }}>
           No documents found
         </Typography>
       }
       popupIcon={
-        // Match the MUI Select chevron style
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M4 6l4 4 4-4" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          <path
+            d="M4 6l4 4 4-4"
+            stroke="#94A3B8"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
       }
       renderOption={(props, option) => (
-        <Typography
+        <Box
           component="li"
           {...props}
-          sx={{ fontSize: "14px", color: "#1E293B", py: "9px !important", px: "14px !important" }}
+          sx={{
+            display: "flex",
+            alignItems: "baseline",
+            gap: "10px",
+            py: "9px !important",
+            px: "12px !important",
+            minHeight: "unset !important",
+          }}
         >
-          {option.DocumentTitle}
-        </Typography>
+          {option.DocumentNumber && (
+            <Typography
+              sx={{
+                fontSize: "12px",
+                color: BRANDING.primary,
+                fontFamily: "monospace",
+                flexShrink: 0,
+              }}
+            >
+              {option.DocumentNumber}
+            </Typography>
+          )}
+          <Typography
+            sx={{
+              fontSize: "13px",
+              color: "#1E293B",
+              flex: 1,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {option.DocumentTitle}
+          </Typography>
+          {(option.CoreFunctionality?.Title || option.VersionNumber) && (
+            <Typography
+              sx={{
+                fontSize: "12px",
+                color: "#94A3B8",
+                flexShrink: 0,
+              }}
+            >
+              {[option.CoreFunctionality?.Title, option.VersionNumber
+                ? `v${option.VersionNumber}`
+                : undefined]
+                .filter(Boolean)
+                .join(" · ")}
+            </Typography>
+          )}
+        </Box>
       )}
       renderInput={(params) => (
         <TextField
           {...params}
-          placeholder="Search by document title..."
-          // Remove the floating label entirely — we use FieldLabel above
+          placeholder="Search by title or document number..."
           InputLabelProps={{ shrink: false, style: { display: "none" } }}
-          InputProps={{
-            ...params.InputProps,
-            // Remove the default clear + popup buttons padding interference
-          }}
           sx={{
             "& .MuiOutlinedInput-root": {
               fontSize: "14px",
@@ -80,7 +131,6 @@ export const DocumentSearch = ({
               fontSize: "14px",
               "&::placeholder": { color: "#94A3B8", opacity: 1 },
             },
-            // Style the clear button to be subtle
             "& .MuiAutocomplete-clearIndicator": {
               color: "#94A3B8",
               "&:hover": { color: "#475569", backgroundColor: "transparent" },
@@ -92,7 +142,6 @@ export const DocumentSearch = ({
           }}
         />
       )}
-      // Match the dropdown paper style
       slotProps={{
         paper: {
           sx: {
@@ -101,10 +150,7 @@ export const DocumentSearch = ({
             boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
             mt: "4px",
             "& .MuiAutocomplete-listbox": {
-              padding: "4px 0",
-              "& .MuiAutocomplete-option": {
-                minHeight: "unset",
-              },
+              padding: "0",
               "& .MuiAutocomplete-option.Mui-focused": {
                 backgroundColor: "#F8FAFC",
               },
