@@ -67,6 +67,10 @@ const DocumentDetail: React.FC<DocumentDetailProps> = ({
     }
   };
 
+  const handleStartChangeRequest = (): void => {
+    window.location.href = `${sitePrefix}/SitePages/Submit-Change-Request.aspx?documentId=${document.Id}`;
+  };
+
   // Label styles for metadata
   const labelSx = {
     fontSize: "10px",
@@ -214,6 +218,21 @@ const DocumentDetail: React.FC<DocumentDetailProps> = ({
             }}
           >
             Open in tab
+          </Button>
+          <Button
+            onClick={handleStartChangeRequest}
+            sx={{
+              padding: "6px 14px",
+              fontSize: "12px",
+              backgroundColor: "rgba(255,255,255,0.15)",
+              color: "white",
+              borderRadius: "6px",
+              textTransform: "none",
+              fontWeight: 400,
+              "&:hover": { backgroundColor: "rgba(255,255,255,0.25)" },
+            }}
+          >
+            Start Change Request
           </Button>
         </Box>
       </Box>

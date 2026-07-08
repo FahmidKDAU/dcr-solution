@@ -44,6 +44,10 @@ export interface ChangeRequestFormData {
   draftDocumentName: string;
 }
 
+interface ChangeRequestFormProps {
+  preselectedDocumentId?: number;
+}
+
 const EMPTY_FORM: ChangeRequestFormData = {
   title: "",
   scopeOfChange: "",
@@ -212,7 +216,9 @@ const SuccessScreen: React.FC<SuccessScreenProps> = ({ onSubmitAnother }) => (
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-const ChangeRequestForm: React.FC = () => {
+const ChangeRequestForm: React.FC<ChangeRequestFormProps> = ({
+  preselectedDocumentId,
+}) => {
   const [additionalDetailsOpen, setAdditionalDetailsOpen] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -246,16 +252,27 @@ const ChangeRequestForm: React.FC = () => {
   useEffect(() => {
     const autoPopulateFromDocument = async (): Promise<void> => {
       if (formData.newDocument || !formData.documentId) return;
+      if (departments.length === 0) return;
+
+      console.log("autoPopulate firing", {
+        documentId: formData.documentId,
+        departmentsLoaded: departments.length,
+      });
+
       try {
         const selectedDoc = await SharePointService.getDocumentById(
           formData.documentId,
         );
+        console.log("selectedDoc", selectedDoc);
+        console.log("CoreFunctionality", selectedDoc?.CoreFunctionality);
         if (!selectedDoc) return;
 
         // Live lookup — get current Change Authority from dept config, not from the document
         const matchedDept = departments.find(
-          (d) => d.Id === selectedDoc.CoreFunctionality?.Id,
+          (d) => d.Id === selectedDoc?.CoreFunctionality?.Id,
         );
+        console.log("matchedDept", matchedDept);
+        console.log("changeAuthority", matchedDept?.ChangeAuthority);
 
         setFormData((prev) => ({
           ...prev,
@@ -278,7 +295,7 @@ const ChangeRequestForm: React.FC = () => {
       }
     };
     autoPopulateFromDocument().catch(console.error);
-  }, [formData.documentId, formData.newDocument]);
+  }, [formData.documentId, formData.newDocument, departments]);
 
   // Reset fields when switching to New Document
   useEffect(() => {
@@ -301,6 +318,15 @@ const ChangeRequestForm: React.FC = () => {
       draftDocumentName: "",
     }));
   }, [formData.newDocument]);
+
+  useEffect(() => {
+    if (!preselectedDocumentId) return;
+    setFormData((prev) => ({
+      ...prev,
+      newDocument: false,
+      documentId: preselectedDocumentId,
+    }));
+  }, [preselectedDocumentId]);
 
   const handleFieldChange = (
     field: keyof ChangeRequestFormData,

@@ -22,11 +22,15 @@ export default class DcrFormWebPart extends BaseClientSideWebPart<IDcrFormWebPar
   }
 
   public render(): void {
+    const params = new URLSearchParams(window.location.search);
+    const preselectedDocumentId = params.get('documentId');
+
     const element: React.ReactElement = React.createElement(
       ThemeProvider,
       { theme },
       React.createElement(CssBaseline),
       React.createElement(DcrForm, {
+        preselectedDocumentId: preselectedDocumentId ? Number(preselectedDocumentId) : undefined,
       })
     );
 
