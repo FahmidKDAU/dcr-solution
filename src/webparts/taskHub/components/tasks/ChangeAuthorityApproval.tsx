@@ -122,16 +122,24 @@ const CAApprovalTask = ({ task, cr, onTaskComplete }: CAApprovalTaskProps) => {
     }
   };
 
-  const handleReassign = async (): Promise<void> => {
+const handleReassign = async (): Promise<void> => {
   setSubmitting(true);
   try {
-    if (selectedDepartmentId === cr?.CoreFunctionality?.Id) return;
     const selectedDept = departments.find((d) => d.Id === selectedDepartmentId);
-    if (!selectedDept || !selectedDept.ChangeAuthority) return;
+    if (!selectedDept || !selectedDept.ChangeAuthority || !cr) return;
+
+    // Update the task
     await SharePointService.updateTask(task.Id, {
       Status: "Reassigned",
-       AssignedToId: selectedDept.ChangeAuthority.Id,
+      AssignedToId: selectedDept.ChangeAuthority.Id,
     });
+
+    // Update the CR — reflect new Change Authority and department
+    await SharePointService.updateChangeRequest(cr.ID, {
+      ChangeAuthorityId: selectedDept.ChangeAuthority.Id,
+      CoreFunctionalityId: selectedDept.Id,
+    });
+
     handleClose();
     onTaskComplete?.();
   } catch (error) {
@@ -140,6 +148,7 @@ const CAApprovalTask = ({ task, cr, onTaskComplete }: CAApprovalTaskProps) => {
     setSubmitting(false);
   }
 };
+
   const selectedDept = departments.find((d) => d.Id === selectedDepartmentId);
 
   return (

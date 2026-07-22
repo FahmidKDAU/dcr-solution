@@ -13,6 +13,7 @@ import { Task } from "../types/Task";
 import { Participant } from "../types/Participant";
 import { MinorChange } from "../types/MinorChange";
 import { LookupFieldItem } from "../types/LookupFieldItem";
+import { ReadAcknowledgement } from "../types/ReadAcknowledgement";
 
 const normalizeServerRelativePath = (path: string): string => {
   const trimmed = path.trim();
@@ -424,6 +425,59 @@ const getTasks = async (userId: number): Promise<Task[]> => {
   }
 };
 
+const getPendingReadAcknowledgements = async (
+  userId: number,
+): Promise<ReadAcknowledgement[]> => {
+  try {
+    const sp = PnPSetup.getSP();
+    const items = await sp.web.lists
+      .getByTitle("Read Acknowledgements")
+      .items.select(
+        "Id",
+        "Title",
+        "Acknowledged",
+        "AcknowledgedDate",
+        "DocumentVersion",
+        "Person/Id",
+        "Person/Title",
+        "Person/EMail",
+        "PublishedDocumentId/Id",
+        "PublishedDocumentId/DocumentTitle",
+        "PublishedDocumentId/PublishedFileUrl",
+        "ReadRequirementsId/Id",
+        "ReadRequirementsId/DueDate",
+      )
+      .expand("Person", "PublishedDocumentId", "ReadRequirementsId")
+      .filter(`Person/Id eq ${userId} and Acknowledged eq 0`)
+      .top(100)();
+
+    return items as unknown as ReadAcknowledgement[];
+  } catch (error) {
+    console.error("Error fetching pending read acknowledgements:", error);
+    return [];
+  }
+};
+
+const acknowledgeDocument = async (
+  acknowledgementId: number,
+  documentVersion?: string,
+): Promise<void> => {
+  try {
+    const sp = PnPSetup.getSP();
+    await sp.web.lists
+      .getByTitle("Read Acknowledgements")
+      .items.getById(acknowledgementId)
+      .update({
+        Acknowledged: true,
+        AcknowledgedDate: new Date().toISOString(),
+        DocumentVersion: documentVersion ?? null,
+      });
+  } catch (error) {
+    console.error("Error acknowledging document:", error);
+    throw error;
+  }
+};
+
 const getTaskById = async (id: number): Promise<Task | null> => {
   try {
     const sp = PnPSetup.getSP();
@@ -517,20 +571,23 @@ const getCurrentUser = async (): Promise<SharePointPerson> => {
     throw error;
   }
 };
-// Option 2: Search by Title OR Email
 const searchUsers = async (searchText: string): Promise<SharePointPerson[]> => {
   try {
     const sp = PnPSetup.getSP();
+    const search = searchText.toLowerCase();
 
     const users = await sp.web.siteUsers
-      .filter(
-        `(startswith(Title,'${searchText}')) or (startswith(EMail,'${searchText}'))`,
-      )
       .select("Id", "Title", "EMail")
-      .top(10)();
+      .top(500)();
 
-    console.log("Search results:", users);
-    return users as SharePointPerson[];
+    const filtered = (users as Array<{ Title?: string; EMail?: string }>).filter(
+      (u) =>
+        u.Title?.toLowerCase().includes(search) ||
+        u.EMail?.toLowerCase().includes(search),
+    );
+
+    console.log("Search results:", filtered);
+    return filtered as SharePointPerson[];
   } catch (error) {
     console.error("Error searching users:", error);
     throw error;
@@ -569,6 +626,7 @@ const getParticipants = async (
         "DueDate",
         "StartDate",
         "CompletedDate",
+        "Instructions",
         "Notes",
         "Person/Id",
         "Person/Title",
@@ -691,6 +749,7 @@ const getParticipantsByChangeRequestId = async (changeRequestId: number) => {
       "DueDate",
       "StartDate",
       "CompletedDate",
+      "Instructions",
       "Notes",
     )
     .filter(`ChangeRequestId eq ${changeRequestId}`)
@@ -709,6 +768,7 @@ const getParticipantsByChangeRequestId = async (changeRequestId: number) => {
         DueDate: row.DueDate,
         StartDate: row.StartDate,
         CompletedDate: row.CompletedDate,
+        Instructions: row.Instructions,
         Notes: row.Notes,
         Person: { Id: row.PersonId, Title: user.Title, EMail: "" },
       };
@@ -721,17 +781,19 @@ const getParticipantsByChangeRequestId = async (changeRequestId: number) => {
 const getParticipantByTaskContext = async (
   changeRequestId: number,
   userId: number,
-): Promise<{ Id: number; Notes?: string } | null> => {
+): Promise<{ Id: number; Notes?: string; Role?: string; Instructions?: string } | null> => {
   const sp = PnPSetup.getSP();
 
   const results = await sp.web.lists
     .getByTitle("CR Participants")
-    .items.select("Id", "Notes", "Role")
+    .items.select("Id", "Notes", "Role", "Instructions")
     .filter(`ChangeRequestId eq ${changeRequestId} and PersonId eq ${userId}`)
     .top(1)();
 
   return results[0] ?? null;
 };
+
+
 const getParticipantTaskByContext = async (
   changeRequestId: number,
   userId: number,
@@ -958,6 +1020,8 @@ export default {
   getCurrentUser,
   searchUsers,
   getTasks,
+  getPendingReadAcknowledgements,
+  acknowledgeDocument,
   getTaskById,
   updateTask,
   getAttachments,

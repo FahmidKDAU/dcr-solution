@@ -81,12 +81,28 @@ export const PeoplePicker = ({
         setOpen(false);
       }
     };
+
+    const handleScroll = (): void => {
+      if (open && containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setDropdownPos({
+          top: rect.bottom + window.scrollY + 4,
+          left: rect.left + window.scrollX,
+          width: rect.width,
+        });
+      }
+    };
+
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    window.addEventListener("scroll", handleScroll, true);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("scroll", handleScroll, true);
+    };
+  }, [open]);
 
   const handleSearch = async (text: string): Promise<void> => {
-    if (text.length < 2) { setOptions([]); return; }
+    if (text.length === 0) { setOptions([]); return; }
     setLoading(true);
     try {
       const results = await SharePointService.searchUsers(text);
@@ -238,17 +254,12 @@ export const PeoplePicker = ({
                 <Typography sx={{ fontSize: "13px", color: "#94A3B8" }}>Searching...</Typography>
               </Box>
             )}
-            {!loading && inputValue.length < 2 && (
-              <Box sx={{ px: 2, py: 1.5 }}>
-                <Typography sx={{ fontSize: "13px", color: "#94A3B8" }}>Type at least 2 characters</Typography>
-              </Box>
-            )}
-            {!loading && inputValue.length >= 2 && options.length === 0 && (
+            {!loading && inputValue.length >= 1 && options.length === 0 && (
               <Box sx={{ px: 2, py: 1.5 }}>
                 <Typography sx={{ fontSize: "13px", color: "#94A3B8" }}>No results found</Typography>
               </Box>
             )}
-            {!loading && options.map((person, index) => (
+            {!loading && inputValue.length >= 1 && options.map((person, index) => (
               <Box
                 key={person.Id}
                 onMouseDown={(e) => { e.preventDefault(); handleSelect(person); }}

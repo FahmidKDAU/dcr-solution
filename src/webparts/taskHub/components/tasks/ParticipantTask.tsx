@@ -4,7 +4,6 @@ import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
 import Divider from "@mui/material/Divider";
-import CircularProgress from "@mui/material/CircularProgress";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
@@ -31,16 +30,15 @@ const ParticipantTask = ({
   const [participantNotes, setParticipantNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const [docLoading, setDocLoading] = useState(false);
   const [participant, setParticipant] = useState<{
     Id: number;
     Notes: string;
     Role: string;
+    Instructions: string;
   } | null>(null);
   const participantRole = participant?.Role;
   const isReviewer = participantRole === "Reviewer";
   const positiveLabel = isReviewer ? "Approve" : "Mark Complete";
-  const authorSuggestions = (task.Comments ?? "").trim();
   const draftUrl = cr?.DraftDocumentUrl ?? null;
   useEffect(() => {
     if (!task.AssignedTo?.Id) return; // ← Add this guard
@@ -53,10 +51,14 @@ const ParticipantTask = ({
         if (resolvedParticipant) {
           const resolvedRole =
             (resolvedParticipant as { Role?: string }).Role ?? "Contributor";
+          const resolvedInstructions =
+            (resolvedParticipant as { Instructions?: string }).Instructions ??
+            "";
           setParticipant({
             Id: resolvedParticipant.Id,
             Notes: resolvedParticipant.Notes ?? "",
             Role: resolvedRole,
+            Instructions: resolvedInstructions,
           });
           setParticipantNotes(resolvedParticipant.Notes ?? "");
         }
@@ -102,14 +104,7 @@ const ParticipantTask = ({
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
       {/* ── Document Link ── */}
-      {docLoading ? (
-        <Box display="flex" alignItems="center" gap={1} py={1}>
-          <CircularProgress size={14} sx={{ color: "#0078D4" }} />
-          <Typography sx={{ fontSize: 12, color: "#605E5C" }}>
-            Loading document...
-          </Typography>
-        </Box>
-      ) : draftUrl ? (
+      {draftUrl ? (
         <Box
           component="a"
           href={`${draftUrl}${draftUrl.includes("?") ? "&" : "?"}web=1`}
@@ -120,19 +115,22 @@ const ParticipantTask = ({
             alignItems: "center",
             gap: 1.5,
             p: 1.5,
-            backgroundColor: "#EFF6FC",
-            border: "1px solid #C7E0F4",
+            backgroundColor: "#FFFFFF",
+            border: "1px solid #D0E7F9",
             borderRadius: 1.5,
             textDecoration: "none",
-            transition: "background 0.15s",
-            "&:hover": { backgroundColor: "#DEEDFB" },
+            transition: "background-color 0.15s ease, border-color 0.15s ease",
+            "&:hover": {
+              backgroundColor: "#F5FAFF",
+              borderColor: "#B6DBF7",
+            },
           }}
         >
           <Box
             sx={{
               width: 32,
               height: 32,
-              backgroundColor: "#0078D4",
+              backgroundColor: "#EAF4FD",
               borderRadius: 1,
               display: "flex",
               alignItems: "center",
@@ -140,7 +138,7 @@ const ParticipantTask = ({
               flexShrink: 0,
             }}
           >
-            <AttachFileIcon sx={{ fontSize: 16, color: "#fff" }} />
+            <AttachFileIcon sx={{ fontSize: 16, color: "#0078D4" }} />
           </Box>
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography
@@ -151,7 +149,7 @@ const ParticipantTask = ({
                 lineHeight: 1.3,
               }}
             >
-              Open Draft Document
+              Open draft document
             </Typography>
             <Typography sx={{ fontSize: 11, color: "#605E5C" }}>
               Click to open in SharePoint
@@ -178,24 +176,30 @@ const ParticipantTask = ({
 
       <Divider />
 
-      {/* ── Author Suggestions ── */}
-      {authorSuggestions && (
+      {/* ── Instructions ── */}
+      {participant?.Instructions && (
         <Box
           sx={{
-            display: "flex",
-            alignItems: "flex-start",
-            gap: 1,
             p: 1.5,
-            backgroundColor: "#FFF4CE",
+            backgroundColor: "#EFF6FC",
             borderRadius: 1,
-            border: "1px solid #FFB900",
+            border: "1px solid #C7E0F4",
           }}
         >
-          <Typography sx={{ fontSize: 12, color: "#835B00" }}>
-            <Box component="span" sx={{ fontWeight: 700 }}>
-              Author suggestions:
-            </Box>{" "}
-            {authorSuggestions}
+          <Typography
+            sx={{
+              fontSize: 10,
+              fontWeight: 700,
+              color: "#005A9E",
+              letterSpacing: 0.5,
+              textTransform: "uppercase",
+              mb: 0.5,
+            }}
+          >
+            Instructions
+          </Typography>
+          <Typography sx={{ fontSize: 12, color: "#004578", whiteSpace: "pre-wrap" }}>
+            {participant.Instructions}
           </Typography>
         </Box>
       )}
@@ -205,7 +209,7 @@ const ParticipantTask = ({
         <Typography
           sx={{ fontSize: 12, fontWeight: 600, color: "#323130", mb: 1 }}
         >
-          Your Notes
+          Your notes
         </Typography>
         <TextField
           multiline

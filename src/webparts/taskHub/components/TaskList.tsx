@@ -12,6 +12,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowDropUpIcon from "@mui/icons-material/ArrowDropUp";
 import StarIcon from "@mui/icons-material/Star";
+import MenuBookIcon from "@mui/icons-material/MenuBook";
 import { Task } from "../../../shared/types/Task";
 import { BRANDING } from "../../../shared/theme/theme";
 import TaskCard from "./TaskCard";
@@ -22,6 +23,8 @@ interface TaskListProps {
   onTaskSelect: (task: Task) => void;
   onTasksChange?: (tasks: Task[]) => void;
   loading?: boolean;
+  readCount?: number;
+  onReadRequirementsClick?: () => void;
 }
 
 // ─── Task Type Config (for filter buttons) ────────────────────────────────────
@@ -89,6 +92,8 @@ const TaskList: React.FC<TaskListProps> = ({
   onTaskSelect,
   onTasksChange,
   loading = false,
+  readCount,
+  onReadRequirementsClick,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
@@ -318,6 +323,52 @@ const TaskList: React.FC<TaskListProps> = ({
 
       {/* Task List */}
       <Box sx={{ flex: 1, overflow: "auto" }}>
+        {readCount && readCount > 0 ? (
+          <Box
+            onClick={onReadRequirementsClick}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
+              px: 2,
+              py: 1.5,
+              backgroundColor: "#EFF6FC",
+              borderBottom: "1px solid #C7E0F4",
+              cursor: "pointer",
+              "&:hover": { backgroundColor: "#DEEFFE" },
+            }}
+          >
+            <MenuBookIcon sx={{ fontSize: 18, color: "#0078D4" }} />
+            <Typography
+              sx={{
+                fontSize: 13,
+                fontWeight: 500,
+                color: "#0078D4",
+                flex: 1,
+              }}
+            >
+              Read Requirements
+            </Typography>
+            <Box
+              sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minWidth: 20,
+                height: 20,
+                borderRadius: "10px",
+                backgroundColor: "#0078D4",
+                color: "white",
+                fontSize: 11,
+                fontWeight: 700,
+                px: 0.75,
+              }}
+            >
+              {readCount}
+            </Box>
+          </Box>
+        ) : null}
+
         {loading && filteredTasks.length === 0 ? (
           <Box
             display="flex"

@@ -36,7 +36,7 @@ interface DocumentChangeProcessTaskProps {
   onCRUpdate?: () => void;
 }
 
-const getInitials = (name: string) =>
+const getInitials = (name: string): string =>
   name
     .split(" ")
     .map((n) => n[0])
@@ -60,7 +60,7 @@ const DetailField = ({
 }: {
   label: string;
   value: React.ReactNode;
-}) => (
+}): React.ReactElement => (
   <Box
     sx={{ display: "grid", gridTemplateColumns: "120px 1fr", py: 0.75, gap: 1 }}
   >
@@ -139,10 +139,14 @@ const DocumentChangeProcessTask = ({
   const [draftFilesLoading, setDraftFilesLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [settingActive, setSettingActive] = useState(false);
+  const [tasks, setTasks] = useState<Task[]>([]);
 
   const isAuthor = cr.Author0?.Id === currentUser.Id;
   const isCa = cr.ChangeAuthority?.Id === currentUser.Id;
   const isExistingDocument = !cr.NewDocument && !!cr.TargetDocumentId;
+  const authorComplete = tasks.some(
+    (t) => t.TaskType === "Document Change Process" && t.Status === "Author Approved",
+  );
 
   const allParticipants = [...contributors, ...reviewers];
   const total = allParticipants.length;
@@ -173,6 +177,14 @@ const DocumentChangeProcessTask = ({
   const hasActiveDocument = !!cr.DraftDocumentUrl;
   const canSubmit =
     allParticipantsComplete && allMinorChangesActioned && hasActiveDocument;
+
+  useEffect(() => {
+    if (!isCa) return;
+
+    SharePointService.getAuditTasksByCRId(cr.ID)
+      .then((items) => setTasks(items))
+      .catch(console.error);
+  }, [cr.ID, isCa]);
 
   // Resolve draft folder: try library lookup first, fall back to cr.DraftFolderUrl
   // ensureServerRelativePath in the service handles site-relative → full server-relative
@@ -285,7 +297,7 @@ const DocumentChangeProcessTask = ({
   const handleToggleMinorChange = async (
     item: MinorChange,
     e?: React.MouseEvent,
-  ) => {
+  ): Promise<void> => {
     if (e) e.stopPropagation();
     const isChecked = item.Status === "Implemented";
     setSavingMinorId(item.Id);
@@ -319,7 +331,7 @@ const DocumentChangeProcessTask = ({
 const handleSubmitToPublishing = async (): Promise<void> => {
   setSubmitting(true);
   try {
-    await SharePointService.updateTask(task.Id, { Status: "Complete" });
+    await SharePointService.updateTask(task.Id, { Status: "Author Approved" });
     await SharePointService.updateChangeRequest(cr.ID, {
       Status: "Document Review",  // ← was "Publishing Approval", Power Automate takes over from here
     });
@@ -356,6 +368,8 @@ const handleSubmitToPublishing = async (): Promise<void> => {
     blockingReasons.push("minor changes to be actioned");
   if (!hasActiveDocument)
     blockingReasons.push("an active document to be selected");
+  if (isCa && !authorComplete)
+    blockingReasons.push("author to complete their section");
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2, p: 2.5 }}>
@@ -1011,7 +1025,7 @@ const handleSubmitToPublishing = async (): Promise<void> => {
             <Button
               variant="contained"
               disableElevation
-              disabled={!canSubmit || submitting}
+              disabled={!canSubmit || submitting || (isCa && !authorComplete)}
               onClick={handleSubmitToPublishing}
               sx={{
                 flex: 1,
@@ -1032,6 +1046,11 @@ const handleSubmitToPublishing = async (): Promise<void> => {
                   ? "Submit to publishing"
                   : "Release candidate ready"}
             </Button>
+            {isCa && !authorComplete && !submitting && (
+              <Typography sx={{ fontSize: 12, color: "#605E5C", mt: 0.75 }}>
+                Waiting for the author to confirm before submitting to publishing.
+              </Typography>
+            )}
             {isCa && (
               <Button
                 variant="outlined"

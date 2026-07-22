@@ -45,6 +45,7 @@ export interface Task {
     | "Needs more info"
     | "On Hold"
     | "New"
+    | "Author Approved"
     | "Marked as Minor Change"
     | "Marked for Document Obsoletion"
     | "Start Change Request";

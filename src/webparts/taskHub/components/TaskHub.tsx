@@ -16,6 +16,8 @@ import { TaskDetail } from "./TaskDetail";
 import { IChangeRequest } from "../../../shared/types/ChangeRequest";
 import { WebPartProvider } from "../../../shared/contexts/WebPartContext";
 import TaskProcessingPane from "./TaskProcressingPane";
+import { useReadAcknowledgements } from "../../../shared/hooks/useReadAcknowledgements";
+import ReadRequirementsPane from "./ReadRequirementsPane";
 
 interface TaskHubProps {
   webAbsoluteUrl: string;
@@ -42,6 +44,7 @@ const TASK_TYPE_LABELS: Partial<Record<Task["TaskType"], string>> = {
 
 const TaskHub = (props: TaskHubProps) => {
   const { currentUser, loading } = useCurrentUser();
+  const { count: readCount } = useReadAcknowledgements(currentUser?.Id);
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tasksLoading, setTasksLoading] = useState(true);
@@ -49,6 +52,7 @@ const TaskHub = (props: TaskHubProps) => {
   const [cr, setCr] = useState<IChangeRequest | null>(null);
   const [crLoading, setCrLoading] = useState(false);
   const [pollingStatus, setPollingStatus] = useState<PollingStatus>(null);
+  const [showReadRequirements, setShowReadRequirements] = useState(false);
 
   // Toast state
   const [toastOpen, setToastOpen] = useState(false);
@@ -120,6 +124,7 @@ useEffect(() => {
   const handleGoToInbox = () => {
     stopPolling();
     setPollingStatus(null);
+    setShowReadRequirements(false);
     setSelectedTask(null);
     setCr(null);
   };
@@ -190,7 +195,8 @@ useEffect(() => {
 
   // ── Render ──
 
-  const showSplitLayout = selectedTask !== null || pollingStatus !== null;
+  const showSplitLayout =
+    selectedTask !== null || pollingStatus !== null || showReadRequirements;
 
   return (
     <WebPartProvider value={{ webAbsoluteUrl: props.webAbsoluteUrl }}>
@@ -254,6 +260,8 @@ useEffect(() => {
             onTaskSelect={setSelectedTask}
             onTasksChange={setTasks}
             loading={tasksLoading}
+            readCount={readCount}
+            onReadRequirementsClick={() => setShowReadRequirements(true)}
           />
         )}
 
@@ -268,7 +276,12 @@ useEffect(() => {
                 snap
               >
                 <Box sx={{ height: "100%", minHeight: 0, overflow: "hidden" }}>
-                  {pollingStatus !== null ? (
+                  {showReadRequirements ? (
+                    <ReadRequirementsPane
+                      userId={currentUser?.Id ?? 0}
+                      onBack={() => setShowReadRequirements(false)}
+                    />
+                  ) : pollingStatus !== null ? (
                     <TaskProcessingPane
                       pollingStatus={pollingStatus}
                       onGoToInbox={handleGoToInbox}

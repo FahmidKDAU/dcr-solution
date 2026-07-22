@@ -10,6 +10,7 @@ export interface Participant {
   DueDate?: string;
   StartDate?: string;
   CompletedDate?: string;
+  Instructions?: string;
   Notes?: string;
 }
 

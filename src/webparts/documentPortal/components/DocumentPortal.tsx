@@ -12,8 +12,11 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import CloseIcon from "@mui/icons-material/Close";
+import MenuBookIcon from "@mui/icons-material/MenuBook";
 import { Document } from "../../../shared/types/Document";
 import { useDocuments } from "../../../shared/hooks/useDocuments";
+import { useCurrentUser } from "../../../shared/hooks/useCurrentUser";
+import { useReadAcknowledgements } from "../../../shared/hooks/useReadAcknowledgements";
 import { BRANDING } from "../../../shared/theme/theme";
 import FilterDropdown from "./FilterDropdown";
 import DocumentsTable from "./DocumentsTable";
@@ -73,6 +76,8 @@ const FilterChip: React.FC<FilterChipProps> = ({ label, onRemove }) => (
 
 // ── Main Component ────────────────────────────────────────────────────────────
 const DocumentPortal: React.FC<DocumentPortalProps> = ({ hasTeamsContext = false }) => {
+  const { currentUser } = useCurrentUser();
+  const { count: readCount } = useReadAcknowledgements(currentUser?.Id);
   const { documents, loading, error } = useDocuments();
   const [view, setView] = useState<View>("list");
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
@@ -212,6 +217,44 @@ const DocumentPortal: React.FC<DocumentPortalProps> = ({ hasTeamsContext = false
     <Box
       sx={containerSx}
     >
+      {readCount > 0 && (
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1.5,
+            px: 3,
+            py: 1.25,
+            backgroundColor: "#EFF6FC",
+            borderBottom: "1px solid #C7E0F4",
+          }}
+        >
+          <MenuBookIcon sx={{ fontSize: 16, color: "#0078D4" }} />
+          <Typography sx={{ fontSize: 13, color: "#0078D4", flex: 1 }}>
+            You have <strong>{readCount}</strong>{" "}
+            {readCount === 1 ? "document" : "documents"} pending
+            acknowledgement.
+          </Typography>
+          <Button
+            size="small"
+            href="/sites/DocumentChangeManagementDemo/SitePages/Read-Requirements.aspx"
+            sx={{
+              fontSize: 12,
+              textTransform: "none",
+              color: "#0078D4",
+              fontWeight: 600,
+              p: 0,
+              "&:hover": {
+                backgroundColor: "transparent",
+                textDecoration: "underline",
+              },
+            }}
+          >
+            View all
+          </Button>
+        </Box>
+      )}
+
       {/* Flat Blue Header */}
       <Box
         sx={{

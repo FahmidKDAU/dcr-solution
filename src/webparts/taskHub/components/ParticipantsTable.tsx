@@ -42,6 +42,7 @@ export interface ParticipantRow {
   DueDate?: string;
   StartDate?: string;
   CompletedDate?: string;
+  Instructions?: string;
   Notes?: string;
   Person: { Id: number; Title: string; EMail: string };
 }
@@ -187,12 +188,12 @@ const StartConfirmModal = ({
           </Typography>
         </Box>
         <TextField
-          label="Notes (optional)"
+          label="Instructions (optional)"
           multiline rows={3} fullWidth size="small"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Add any instructions or context for the participant..."
-          helperText="This will be included in the notification sent to the participant."
+          helperText="These instructions will be visible to the participant in their task."
         />
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
@@ -455,9 +456,15 @@ const ParticipantRow = ({
           <Typography sx={{ fontSize: 10, fontWeight: 600, color: "#A19F9D", textTransform: "uppercase", letterSpacing: 0.4, mb: 0.25 }}>Completed</Typography>
           <Typography sx={{ fontSize: 12, color: "#605E5C" }}>{formatDate(participant.CompletedDate)}</Typography>
         </Box>
+        {participant.Instructions && (
+          <Box sx={{ flex: 1 }}>
+            <Typography sx={{ fontSize: 10, fontWeight: 600, color: "#A19F9D", textTransform: "uppercase", letterSpacing: 0.4, mb: 0.25 }}>Instructions</Typography>
+            <Typography sx={{ fontSize: 12, color: "#605E5C" }}>{participant.Instructions}</Typography>
+          </Box>
+        )}
         {participant.Notes && (
           <Box sx={{ flex: 1 }}>
-            <Typography sx={{ fontSize: 10, fontWeight: 600, color: "#A19F9D", textTransform: "uppercase", letterSpacing: 0.4, mb: 0.25 }}>Notes</Typography>
+            <Typography sx={{ fontSize: 10, fontWeight: 600, color: "#A19F9D", textTransform: "uppercase", letterSpacing: 0.4, mb: 0.25 }}>Response</Typography>
             <Typography sx={{ fontSize: 12, color: "#605E5C" }}>{participant.Notes}</Typography>
           </Box>
         )}
@@ -492,23 +499,8 @@ const ParticipantSection = ({
       await SharePointService.updateParticipant(startTarget.Id, {
         Status: "In Progress",
         StartDate: new Date().toISOString(),
+        Instructions: notes || undefined,
       });
-
-      const participantTask = await SharePointService.getParticipantTaskByContext(
-        changeRequestId,
-        startTarget.Person.Id,
-        role,
-      );
-
-      if (participantTask) {
-        if (notes) {
-          await SharePointService.updateTask(participantTask.Id, { Comments: notes });
-        }
-      } else {
-        console.warn("[handleStartConfirm] No task found for participant — notes not saved.", {
-          changeRequestId, userId: startTarget.Person.Id, role,
-        });
-      }
 
       setStartTarget(null);
       onRefetch();
