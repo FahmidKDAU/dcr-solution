@@ -177,18 +177,30 @@ const DocumentPortal: React.FC<DocumentPortalProps> = ({ hasTeamsContext = false
   };
 
   const containerSx = {
-    height: hasTeamsContext ? "100vh" : "100%",
-    minHeight: 0,
-    overflow: "hidden",
+    ...(hasTeamsContext
+      ? { height: "100vh", overflow: "hidden", minHeight: 0 }
+      : {}),
     display: "flex",
     flexDirection: "column" as const,
     backgroundColor: "white",
   };
 
+  const detailViewSx = {
+    height: hasTeamsContext
+      ? "100%"
+      : "calc(100vh - var(--sp-applicationPageHeaderHeight, 110px))",
+    minHeight: 0,
+    overflow: "hidden",
+  };
+
   // Loading state
   if (loading) {
     return (
-      <Box sx={containerSx} justifyContent="center" alignItems="center">
+      <Box
+        sx={{ ...containerSx, minHeight: hasTeamsContext ? 0 : "50vh" }}
+        justifyContent="center"
+        alignItems="center"
+      >
         <CircularProgress size={32} sx={{ color: BRANDING.primary }} />
       </Box>
     );
@@ -197,7 +209,7 @@ const DocumentPortal: React.FC<DocumentPortalProps> = ({ hasTeamsContext = false
   // Error state
   if (error) {
     return (
-      <Box sx={containerSx} p={4}>
+      <Box sx={{ ...containerSx, minHeight: hasTeamsContext ? 0 : "50vh" }} p={4}>
         <Typography color="error">{error}</Typography>
       </Box>
     );
@@ -206,7 +218,7 @@ const DocumentPortal: React.FC<DocumentPortalProps> = ({ hasTeamsContext = false
   // Detail view
   if (view === "detail" && selectedDocument) {
     return (
-      <Box sx={containerSx}>
+      <Box sx={{ ...containerSx, ...detailViewSx }}>
         <DocumentDetail document={selectedDocument} onBack={handleBack} />
       </Box>
     );
@@ -434,7 +446,7 @@ const DocumentPortal: React.FC<DocumentPortalProps> = ({ hasTeamsContext = false
       </Box>
 
       {/* Table */}
-      <Box sx={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+      <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
         {filteredDocuments.length > 0 ? (
           <DocumentsTable documents={filteredDocuments} onRowClick={handleRowClick} />
         ) : (

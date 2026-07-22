@@ -202,13 +202,11 @@ useEffect(() => {
     <WebPartProvider value={{ webAbsoluteUrl: props.webAbsoluteUrl }}>
       <Box
         sx={{
-          height: props.hasTeamsContext
-            ? "100vh"
-            : "calc(100vh - var(--sp-applicationPageHeaderHeight, 120px))",
-          overflow: "hidden",
           display: "flex",
           flexDirection: "column",
-          minHeight: 0,
+          ...(props.hasTeamsContext
+            ? { height: "100vh", overflow: "hidden", minHeight: 0 }
+            : {}),
         }}
       >
         {/* ── Success toast — shown for all task completions ── */}
@@ -267,7 +265,15 @@ useEffect(() => {
 
         {/* ── Split layout (task selected OR polling in progress) ── */}
         {showSplitLayout && (
-          <Box sx={{ flex: 1, height: "100%", minHeight: 0, overflow: "hidden" }}>
+          <Box
+            sx={{
+              height: props.hasTeamsContext
+                ? "100%"
+                : "calc(100vh - var(--sp-applicationPageHeaderHeight, 110px))",
+              minHeight: 0,
+              overflow: "hidden",
+            }}
+          >
             <Allotment defaultSizes={[45, 55]}>
               <Allotment.Pane
                 minSize={250}

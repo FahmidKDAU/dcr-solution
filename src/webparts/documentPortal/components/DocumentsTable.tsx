@@ -119,7 +119,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
   }
 
   return (
-    <TableContainer sx={{ flex: 1, overflow: "auto" }}>
+    <TableContainer sx={{ flex: 1 }}>
       <Table stickyHeader>
         <TableHead>
           <TableRow>
