@@ -1,5 +1,5 @@
 // src/webparts/taskHub/components/TaskHub.tsx
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useCurrentUser } from "../../../shared/hooks/useCurrentUser";
 import { Task } from "../../../shared/types/Task";
 import Box from "@mui/material/Box";
@@ -51,6 +51,8 @@ const TaskHub = (props: TaskHubProps) => {
   const [crLoading, setCrLoading] = useState(false);
   const [pollingStatus, setPollingStatus] = useState<PollingStatus>(null);
   const [showReadRequirements, setShowReadRequirements] = useState(false);
+  const [splitPaneHeight, setSplitPaneHeight] = useState<number | null>(null);
+  const splitContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Toast state
   const [toastOpen, setToastOpen] = useState(false);
@@ -64,6 +66,28 @@ const TaskHub = (props: TaskHubProps) => {
       if (pollingRef.current) clearInterval(pollingRef.current);
     };
   }, []);
+
+  useLayoutEffect(() => {
+    const isSplitLayout = selectedTask !== null || pollingStatus !== null || showReadRequirements;
+    if (props.hasTeamsContext || !isSplitLayout) return;
+
+    const updateHeight = () => {
+      const el = splitContainerRef.current;
+      if (!el) return;
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      setSplitPaneHeight(Math.max(400, window.innerHeight - top));
+    };
+
+    updateHeight();
+    window.addEventListener("resize", updateHeight);
+    const ro = new ResizeObserver(updateHeight);
+    ro.observe(document.body);
+
+    return () => {
+      window.removeEventListener("resize", updateHeight);
+      ro.disconnect();
+    };
+  }, [props.hasTeamsContext, selectedTask, pollingStatus, showReadRequirements]);
 
   // Load CR whenever selected task changes
   useEffect(() => {
@@ -264,11 +288,14 @@ useEffect(() => {
         {/* ── Split layout (task selected OR polling in progress) ── */}
         {showSplitLayout && (
           <Box
+            ref={splitContainerRef}
             sx={{
               display: "flex",
               height: props.hasTeamsContext
                 ? "100%"
-                : "calc(100vh - var(--sp-applicationPageHeaderHeight, 110px))",
+                : splitPaneHeight !== null
+                  ? `${splitPaneHeight}px`
+                  : "calc(100vh - var(--sp-applicationPageHeaderHeight, 110px))",
               minHeight: 0,
               overflow: "hidden",
             }}
