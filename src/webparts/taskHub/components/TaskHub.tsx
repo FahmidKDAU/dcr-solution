@@ -10,8 +10,6 @@ import TaskPane from "./TaskPane";
 import CircularProgress from "@mui/material/CircularProgress";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
-import { Allotment } from "allotment";
-import "allotment/dist/style.css";
 import { TaskDetail } from "./TaskDetail";
 import { IChangeRequest } from "../../../shared/types/ChangeRequest";
 import { WebPartProvider } from "../../../shared/contexts/WebPartContext";
@@ -267,6 +265,7 @@ useEffect(() => {
         {showSplitLayout && (
           <Box
             sx={{
+              display: "flex",
               height: props.hasTeamsContext
                 ? "100%"
                 : "calc(100vh - var(--sp-applicationPageHeaderHeight, 110px))",
@@ -274,48 +273,54 @@ useEffect(() => {
               overflow: "hidden",
             }}
           >
-            <Allotment defaultSizes={[45, 55]}>
-              <Allotment.Pane
-                minSize={250}
-                maxSize={600}
-                preferredSize="45%"
-                snap
-              >
-                <Box sx={{ height: "100%", minHeight: 0, overflow: "hidden" }}>
-                  {showReadRequirements ? (
-                    <ReadRequirementsPane
-                      userId={currentUser?.Id ?? 0}
-                      onBack={() => setShowReadRequirements(false)}
-                    />
-                  ) : pollingStatus !== null ? (
-                    <TaskProcessingPane
-                      pollingStatus={pollingStatus}
-                      onGoToInbox={handleGoToInbox}
-                    />
-                  ) : (
-                    <TaskPane
-                      task={selectedTask}
-                      cr={cr}
-                      currentUser={currentUser}
-                      onBack={handleGoToInbox}
-                      onTaskComplete={handleTaskComplete}
-                      onRefetch={refreshCR}
-                    />
-                  )}
-                </Box>
-              </Allotment.Pane>
+            <Box
+              sx={{
+                flexBasis: "42%",
+                minWidth: 320,
+                maxWidth: 520,
+                flexShrink: 0,
+                borderRight: "1px solid #EDEBE9",
+                height: "100%",
+                overflow: "hidden",
+              }}
+            >
+              {showReadRequirements ? (
+                <ReadRequirementsPane
+                  userId={currentUser?.Id ?? 0}
+                  onBack={() => setShowReadRequirements(false)}
+                />
+              ) : pollingStatus !== null ? (
+                <TaskProcessingPane
+                  pollingStatus={pollingStatus}
+                  onGoToInbox={handleGoToInbox}
+                />
+              ) : (
+                <TaskPane
+                  task={selectedTask}
+                  cr={cr}
+                  currentUser={currentUser}
+                  onBack={handleGoToInbox}
+                  onTaskComplete={handleTaskComplete}
+                  onRefetch={refreshCR}
+                />
+              )}
+            </Box>
 
-              <Allotment.Pane minSize={400}>
-                <Box sx={{ height: "100%", minHeight: 0, overflow: "hidden" }}>
-                  <TaskDetail
-                    cr={cr}
-                    crLoading={crLoading}
-                    onCRUpdate={refreshCR}
-                    currentUser={currentUser ?? undefined}
-                  />
-                </Box>
-              </Allotment.Pane>
-            </Allotment>
+            <Box
+              sx={{
+                flex: 1,
+                minWidth: 0,
+                height: "100%",
+                overflow: "hidden",
+              }}
+            >
+              <TaskDetail
+                cr={cr}
+                crLoading={crLoading}
+                onCRUpdate={refreshCR}
+                currentUser={currentUser ?? undefined}
+              />
+            </Box>
           </Box>
         )}
       </Box>
