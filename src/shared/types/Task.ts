@@ -15,6 +15,7 @@ export interface Task {
     Id: number;
     ChangeRequestNumber?: string;
     Title?: string;
+    DraftDocumentName?: string;
   };
   TaskType:
     | "CA Review"
@@ -32,6 +33,14 @@ export interface Task {
     | "Participant Task"
     | "Publishing Rejection Review"
     | "Document Review";
+  Role?:
+    | "Reviewer"
+    | "Contributor"
+    | "Change Authority"
+    | "Compliance Authority"
+    | "Release Authority"
+    | "Author"
+    | "Requestor";
 
   AssignedTo?: SharePointPerson;
   Status:

@@ -2,6 +2,7 @@
 import React from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
+import Tooltip from "@mui/material/Tooltip";
 import StarIcon from "@mui/icons-material/Star";
 import StarBorderIcon from "@mui/icons-material/StarBorder";
 import { Task } from "../../../shared/types/Task";
@@ -107,6 +108,26 @@ const getTaskTypeConfig = (
   );
 };
 
+const TASK_TYPE_CHIP_COLORS: Record<string, { color: string; bgColor: string }> = {
+  "CA Review": { color: "#0078D4", bgColor: "#E6F1FB" },
+  "Change Authority Review": { color: "#0078D4", bgColor: "#E6F1FB" },
+  "Change Authority Approval": { color: "#0D7D5F", bgColor: "#E6F7F2" },
+  "Compliance Authority Review": { color: "#7C3AED", bgColor: "#F3E8FF" },
+  "Document Controller Review": { color: "#7C3AED", bgColor: "#F3E8FF" },
+  "Final Approval": { color: "#0D7D5F", bgColor: "#E6F7F2" },
+  "Author Review": { color: "#0891B2", bgColor: "#E0F6F9" },
+  "Document Change Process": { color: "#B5850A", bgColor: "#FEF3E2" },
+  "Participant Task": { color: "#9E3A5A", bgColor: "#FCE8EF" },
+  "CR Completion": { color: "#64748B", bgColor: "#F1F5F9" },
+  "CR Info Required": { color: "#64748B", bgColor: "#F1F5F9" },
+  "Publish Document": { color: "#0891B2", bgColor: "#E0F6F9" },
+  "Publishing Rejection Review": { color: "#A4262C", bgColor: "#FDE7E9" },
+  "Document Review": { color: "#0078D4", bgColor: "#E6F1FB" },
+};
+
+const getTaskTypeChipColor = (taskType: string): { color: string; bgColor: string } =>
+  TASK_TYPE_CHIP_COLORS[taskType] || { color: "#64748B", bgColor: "#F1F5F9" };
+
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 
 const AVATAR_COLORS = [
@@ -197,7 +218,7 @@ const formatDueDate = (
 
 // ─── Grid columns ─────────────────────────────────────────────────────────────
 
-const GRID_COLUMNS = "24px 4px 70px 75px 1fr 100px 70px 70px";
+const GRID_COLUMNS = "24px 4px 70px 110px 170px 70px 1fr 100px 70px 70px";
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
@@ -307,6 +328,41 @@ const TaskCard = ({
       >
         {config.label}
       </Typography>
+
+      <Typography
+        sx={{
+          fontSize: "11px",
+          color: "#475569",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        }}
+      >
+        {task.Role || "—"}
+      </Typography>
+
+      <Tooltip title={task.TaskType} arrow placement="top" enterDelay={400}>
+        <Typography
+          component="span"
+          sx={{
+            fontSize: "10px",
+            padding: "2px 8px",
+            backgroundColor: getTaskTypeChipColor(task.TaskType).bgColor,
+            color: getTaskTypeChipColor(task.TaskType).color,
+            borderRadius: "3px",
+            fontWeight: 500,
+            width: "fit-content",
+            maxWidth: "100%",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            display: "inline-block",
+            cursor: "default",
+          }}
+        >
+          {task.TaskType}
+        </Typography>
+      </Tooltip>
 
       {/* CR Number */}
       <Typography

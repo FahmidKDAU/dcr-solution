@@ -7,7 +7,6 @@ import {
   Collapse,
   Alert,
   Fade,
-  Slide,
 } from "@mui/material";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -79,19 +78,9 @@ interface SuccessScreenProps {
 }
 
 const SuccessScreen: React.FC<SuccessScreenProps> = ({ onSubmitAnother }) => (
-  <Box
-    sx={{
-      minHeight: "100%",
-      backgroundColor: "white",
-      display: "flex",
-      flexDirection: "column",
-    }}
-  >
-    {/* Header */}
+  <Box sx={{ minHeight: "100%", backgroundColor: "white", display: "flex", flexDirection: "column" }}>
     <Box sx={{ backgroundColor: BRANDING.primary, padding: "20px 24px" }}>
-      <Typography
-        sx={{ fontSize: "18px", fontWeight: 500, color: "white", mb: "4px" }}
-      >
+      <Typography sx={{ fontSize: "18px", fontWeight: 500, color: "white", mb: "4px" }}>
         Submit Change Request
       </Typography>
       <Typography sx={{ fontSize: "12px", color: "rgba(255,255,255,0.75)" }}>
@@ -99,118 +88,68 @@ const SuccessScreen: React.FC<SuccessScreenProps> = ({ onSubmitAnother }) => (
       </Typography>
     </Box>
 
-    {/* Success content */}
-    <Slide in direction="up" timeout={500} appear>
+    <Box sx={{ padding: "24px", maxWidth: 640 }}>
       <Box
         sx={{
-          flex: 1,
           display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "48px 24px",
-          textAlign: "center",
+          alignItems: "flex-start",
+          gap: 1.5,
+          backgroundColor: "#DFF6DD",
+          border: "1px solid #9FD89F",
+          borderRadius: "4px",
+          padding: "12px 16px",
+          mb: 3,
         }}
       >
-        {/* Icon */}
-        <Box
-          sx={{
-            width: 72,
-            height: 72,
-            borderRadius: "50%",
-            backgroundColor: "#DFF6DD",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            mb: 3,
-          }}
-        >
-          <CheckCircleOutlineIcon sx={{ fontSize: 40, color: "#107C10" }} />
-        </Box>
-
-        {/* Title */}
-        <Typography
-          sx={{
-            fontSize: "22px",
-            fontWeight: 700,
-            color: "#1E293B",
-            mb: 1.5,
-          }}
-        >
-          Change Request Submitted
-        </Typography>
-
-        {/* Description */}
-        <Typography
-          sx={{
-            fontSize: "14px",
-            color: "#64748B",
-            lineHeight: 1.6,
-            maxWidth: 420,
-            mb: 1.5,
-          }}
-        >
-          Your change request has been submitted successfully and is now being
-          reviewed by the Change Authority.
-        </Typography>
-
-        <Typography
-          sx={{
-            fontSize: "13px",
-            color: "#94A3B8",
-            lineHeight: 1.6,
-            maxWidth: 420,
-            mb: 4,
-          }}
-        >
-          You will receive an email notification with updates as your request
-          progresses through the review process.
-        </Typography>
-
-        {/* Actions */}
-        <Box display="flex" gap={2} flexWrap="wrap" justifyContent="center">
-          <Button
-            variant="contained"
-            onClick={onSubmitAnother}
-            sx={{
-              padding: "10px 24px",
-              fontSize: "13px",
-              fontWeight: 500,
-              backgroundColor: BRANDING.primary,
-              borderRadius: "6px",
-              textTransform: "none",
-              "&:hover": { backgroundColor: BRANDING.primaryDark },
-            }}
-          >
-            Submit Another Request
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={() =>
-              window.open(
-                `${window.location.origin}/sites/DocumentChangeManagementDemo/SitePages/Document-Portal.aspx`,
-                "_blank",
-              )
-            }
-            sx={{
-              padding: "10px 24px",
-              fontSize: "13px",
-              fontWeight: 500,
-              borderColor: BRANDING.primary,
-              color: BRANDING.primary,
-              borderRadius: "6px",
-              textTransform: "none",
-              "&:hover": {
-                backgroundColor: "#EFF6FC",
-                borderColor: BRANDING.primary,
-              },
-            }}
-          >
-            Go to Document Portal
-          </Button>
+        <CheckCircleOutlineIcon sx={{ fontSize: 18, color: "#107C10", mt: "1px" }} />
+        <Box>
+          <Typography sx={{ fontSize: "14px", fontWeight: 600, color: "#0B590B", mb: 0.5 }}>
+            Change request submitted
+          </Typography>
+          <Typography sx={{ fontSize: "13px", color: "#3B3A39", lineHeight: 1.5 }}>
+            Your request is now being reviewed by the Change Authority. You&apos;ll get an
+            email as it moves through the approval process.
+          </Typography>
         </Box>
       </Box>
-    </Slide>
+
+      <Box display="flex" gap={1.5}>
+        <Button
+          variant="contained"
+          onClick={onSubmitAnother}
+          sx={{
+            padding: "6px 16px",
+            fontSize: "13px",
+            fontWeight: 500,
+            backgroundColor: BRANDING.primary,
+            borderRadius: "2px",
+            textTransform: "none",
+            boxShadow: "none",
+            "&:hover": { backgroundColor: BRANDING.primaryDark, boxShadow: "none" },
+          }}
+        >
+          Submit another request
+        </Button>
+        <Button
+          onClick={() =>
+            window.open(
+              `${window.location.origin}/sites/DocumentChangeManagementDemo/SitePages/Document-Portal.aspx`,
+              "_blank",
+            )
+          }
+          sx={{
+            padding: "6px 16px",
+            fontSize: "13px",
+            fontWeight: 500,
+            color: BRANDING.primary,
+            textTransform: "none",
+            "&:hover": { backgroundColor: "#F3F2F1" },
+          }}
+        >
+          Go to Document Portal
+        </Button>
+      </Box>
+    </Box>
   </Box>
 );
 
@@ -442,7 +381,7 @@ const ChangeRequestForm: React.FC<ChangeRequestFormProps> = ({
   // ── Success screen ──
   if (submitted) {
     return (
-      <Fade in={submitted} timeout={400} appear>
+      <Fade in={submitted} timeout={200} appear>
         <Box sx={{ minHeight: "100%", backgroundColor: "white" }}>
           <SuccessScreen onSubmitAnother={handleSubmitAnother} />
         </Box>
