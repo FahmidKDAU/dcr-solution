@@ -27,6 +27,7 @@ export interface Document {
   ReviewPeriod?: number;
   ReviewDate?: string;
   ReviewStatus?: string;
+  Modified?: string;
   VersionNumber?: string;
   DocumentNumber?: string;
 }

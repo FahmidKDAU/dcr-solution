@@ -9,6 +9,7 @@ import "@pnp/sp/site-users/web";
 import "@pnp/sp/folders";
 import "@pnp/sp/files";
 import "@pnp/sp/sites";
+import "@pnp/sp/search";
 import { Task } from "../types/Task";
 import { Participant } from "../types/Participant";
 import { MinorChange } from "../types/MinorChange";
@@ -287,6 +288,7 @@ const getDocuments = async (): Promise<Document[]> => {
         "Id",
         "DocumentTitle",
         "PublishedDate",
+        "Modified",
         "FileRef", // ← ADD THIS
         "FileLeafRef", // ← ADD THIS
         "PublishedFileUrl",
@@ -383,6 +385,44 @@ const getDocumentById = async (id: number): Promise<Document | null> => {
   } catch (error) {
     console.error(`Error fetching document with ID ${id}:`, error);
     throw error;
+  }
+};
+
+export interface ContentSearchResult {
+  title: string;
+  path: string;
+  snippet: string;
+}
+
+const searchDocumentContent = async (
+  query: string,
+): Promise<ContentSearchResult[]> => {
+  try {
+    const sp = PnPSetup.getSP();
+    const webUrl = await getWebServerRelativeUrl();
+    const libraryPath = `${window.location.origin}${webUrl}/Published Documents`;
+
+    const results = await sp.search({
+      Querytext: `${query}* path:"${libraryPath}"`,
+      SelectProperties: ["Path", "Title", "HitHighlightedSummary"],
+      RowLimit: 50,
+      TrimDuplicates: false,
+    });
+
+    const primaryResults = results.PrimarySearchResults as Array<{
+      Path?: string;
+      Title?: string;
+      HitHighlightedSummary?: string;
+    }>;
+
+    return primaryResults.map((r) => ({
+      title: r.Title ?? "Untitled",
+      path: r.Path ?? "",
+      snippet: r.HitHighlightedSummary ?? "",
+    }));
+  } catch (error) {
+    console.error("Error searching document content:", error);
+    return [];
   }
 };
 
@@ -1017,6 +1057,7 @@ export default {
   createChangeRequest,
   getDocuments,
   getDocumentById,
+  searchDocumentContent,
   uploadAttachments,
   getChangeRequests,
   getChangeRequestById,

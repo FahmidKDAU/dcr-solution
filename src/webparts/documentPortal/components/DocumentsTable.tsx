@@ -21,7 +21,7 @@ interface DocumentsTableProps {
   onRowClick: (doc: Document) => void;
 }
 
-type SortKey = "DocumentTitle" | "DocumentType" | "PublishedDate";
+type SortKey = "DocumentTitle" | "DocumentType" | "PublishedDate" | "Modified";
 
 const formatDate = (date?: string | Date): string => {
   if (!date) return "—";
@@ -33,13 +33,73 @@ const formatDate = (date?: string | Date): string => {
   });
 };
 
+const formatRelativeTime = (date?: string | Date): string => {
+  if (!date) return "—";
+  const d = typeof date === "string" ? new Date(date) : date;
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} week${Math.floor(diffDays / 7) > 1 ? "s" : ""} ago`;
+  return formatDate(d);
+};
+
+const MAX_VISIBLE_TAGS = 2;
+
+const TagList: React.FC<{ items: string[] }> = ({ items }) => {
+  if (items.length === 0) {
+    return <Typography sx={{ fontSize: "12px", color: "#94A3B8" }}>—</Typography>;
+  }
+  const visible = items.slice(0, MAX_VISIBLE_TAGS);
+  const hiddenCount = items.length - MAX_VISIBLE_TAGS;
+  return (
+    <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
+      {visible.map((item) => (
+        <Box
+          key={item}
+          component="span"
+          sx={{
+            fontSize: "10px",
+            padding: "2px 7px",
+            borderRadius: "3px",
+            border: "1px solid #E2E8F0",
+            color: "#64748B",
+            backgroundColor: "#F8FAFC",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {item}
+        </Box>
+      ))}
+      {hiddenCount > 0 && (
+        <Box
+          component="span"
+          sx={{
+            fontSize: "10px",
+            padding: "2px 7px",
+            borderRadius: "3px",
+            border: "1px solid #E2E8F0",
+            color: "#94A3B8",
+            backgroundColor: "#fff",
+          }}
+        >
+          +{hiddenCount}
+        </Box>
+      )}
+    </Box>
+  );
+};
+
 const DocumentsTable: React.FC<DocumentsTableProps> = ({
   documents,
   onRowClick,
 }) => {
   const sitePrefix = `${window.location.origin}/sites/DocumentChangeManagementDemo`;
-  const [orderBy, setOrderBy] = useState<SortKey>("DocumentTitle");
-  const [order, setOrder] = useState<"asc" | "desc">("asc");
+  const [orderBy, setOrderBy] = useState<SortKey>("Modified");
+  const [order, setOrder] = useState<"asc" | "desc">("desc");
 
   const handleSort = (column: SortKey): void => {
     if (orderBy === column) {
@@ -63,6 +123,10 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
         case "PublishedDate":
           aVal = a.PublishedDate ? new Date(a.PublishedDate).toISOString() : "";
           bVal = b.PublishedDate ? new Date(b.PublishedDate).toISOString() : "";
+          break;
+        case "Modified":
+          aVal = a.Modified ? new Date(a.Modified).toISOString() : "";
+          bVal = b.Modified ? new Date(b.Modified).toISOString() : "";
           break;
         default:
           aVal = a.DocumentTitle ?? "";
@@ -133,6 +197,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                 Document name
               </TableSortLabel>
             </TableCell>
+            <TableCell sx={{ ...headerCellSx, width: "90px" }}>Doc #</TableCell>
             <TableCell sx={{ ...headerCellSx, width: "90px" }}>
               <TableSortLabel
                 active={orderBy === "DocumentType"}
@@ -145,6 +210,16 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
             </TableCell>
             <TableCell sx={{ ...headerCellSx, width: "20%" }}>Function</TableCell>
             <TableCell sx={{ ...headerCellSx, width: "18%" }}>Category</TableCell>
+            <TableCell sx={{ ...headerCellSx, width: "100px" }}>
+              <TableSortLabel
+                active={orderBy === "Modified"}
+                direction={orderBy === "Modified" ? order : "desc"}
+                onClick={() => handleSort("Modified")}
+                sx={sortLabelSx}
+              >
+                Updated
+              </TableSortLabel>
+            </TableCell>
             <TableCell sx={{ ...headerCellSx, width: "100px" }}>
               <TableSortLabel
                 active={orderBy === "PublishedDate"}
@@ -162,10 +237,8 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
         <TableBody>
           {sortedDocuments.map((doc) => {
             const typeColors = getDocTypeColors(doc.DocumentType?.Title);
-            const functions =
-              doc.BusinessFunction?.map((f) => f.Title).join(", ") || "—";
-            const categories =
-              doc.Category?.map((c) => c.Title).join(", ") || "—";
+            const functions = doc.BusinessFunction?.map((f) => f.Title) ?? [];
+            const categories = doc.Category?.map((c) => c.Title) ?? [];
 
             return (
               <TableRow
@@ -189,6 +262,10 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                   }}
                 >
                   {doc.DocumentTitle}
+                </TableCell>
+
+                <TableCell sx={{ padding: "14px 20px", color: "#64748B", fontSize: "12px" }}>
+                  {doc.DocumentNumber || "—"}
                 </TableCell>
 
                 {/* Type Badge - Muted colors */}
@@ -217,17 +294,16 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                 </TableCell>
 
                 {/* Function */}
-                <TableCell
-                  sx={{
-                    padding: "14px 20px",
-                    color: "#64748B",
-                    fontSize: "12px",
-                  }}
-                >
-                  {functions}
+                <TableCell sx={{ padding: "14px 20px" }}>
+                  <TagList items={functions} />
                 </TableCell>
 
                 {/* Category */}
+                <TableCell sx={{ padding: "14px 20px" }}>
+                  <TagList items={categories} />
+                </TableCell>
+
+                {/* Updated */}
                 <TableCell
                   sx={{
                     padding: "14px 20px",
@@ -235,7 +311,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                     fontSize: "12px",
                   }}
                 >
-                  {categories}
+                  {formatRelativeTime(doc.Modified)}
                 </TableCell>
 
                 {/* Release Date */}

@@ -10,6 +10,7 @@ import {
   IconButton,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
+import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import CloseIcon from "@mui/icons-material/Close";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
@@ -21,6 +22,7 @@ import { BRANDING } from "../../../shared/theme/theme";
 import FilterDropdown from "./FilterDropdown";
 import DocumentsTable from "./DocumentsTable";
 import DocumentDetail from "./DocumentDetail";
+import ContentSearchModal from "./ContentSearchModal";
 
 type View = "list" | "detail";
 
@@ -86,6 +88,7 @@ const DocumentPortal: React.FC<DocumentPortalProps> = ({ hasTeamsContext = false
   const [functionFilter, setFunctionFilter] = useState<string[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
   const [showAllChips, setShowAllChips] = useState(false);
+  const [contentSearchOpen, setContentSearchOpen] = useState(false);
 
   // Build filter options
   const typeOptions = useMemo(() => {
@@ -127,7 +130,13 @@ const DocumentPortal: React.FC<DocumentPortalProps> = ({ hasTeamsContext = false
 
       return matchesSearch && matchesType && matchesFunction && matchesCategory;
     });
-  }, [documents, searchQuery, typeFilter, functionFilter, categoryFilter]);
+  }, [
+    documents,
+    searchQuery,
+    typeFilter,
+    functionFilter,
+    categoryFilter,
+  ]);
 
   // Build all active filter chips
   const allChips = useMemo(() => {
@@ -323,6 +332,21 @@ const DocumentPortal: React.FC<DocumentPortalProps> = ({ hasTeamsContext = false
             ),
           }}
         />
+
+        <Box
+          onClick={() => setContentSearchOpen(true)}
+          sx={{
+            display: "flex", alignItems: "center", gap: 0.75,
+            px: 1.5, ml: 1, height: 32, borderRadius: "6px", cursor: "pointer",
+            fontSize: 12, fontWeight: 600,
+            border: "1.5px solid rgba(255,255,255,0.4)",
+            color: "rgba(255,255,255,0.9)", whiteSpace: "nowrap",
+            "&:hover": { backgroundColor: "rgba(255,255,255,0.1)" },
+          }}
+        >
+          <SearchOutlinedIcon sx={{ fontSize: 15 }} />
+          Search inside documents
+        </Box>
       </Box>
 
       {/* Filter Bar */}
@@ -482,6 +506,13 @@ const DocumentPortal: React.FC<DocumentPortalProps> = ({ hasTeamsContext = false
           </Box>
         )}
       </Box>
+
+      <ContentSearchModal
+        open={contentSearchOpen}
+        onClose={() => setContentSearchOpen(false)}
+        documents={documents}
+        onOpenDocument={handleRowClick}
+      />
     </Box>
   );
 };
