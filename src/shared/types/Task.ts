@@ -16,6 +16,7 @@ export interface Task {
     ChangeRequestNumber?: string;
     Title?: string;
     DraftDocumentName?: string;
+    DocumentNumber?: string;
   };
   TaskType:
     | "CA Review"

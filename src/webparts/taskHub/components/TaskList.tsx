@@ -82,7 +82,7 @@ type SortDirection = "asc" | "desc";
 
 // ─── Grid columns ─────────────────────────────────────────────────────────────
 
-const GRID_COLUMNS = "24px 4px 70px 110px 170px 70px 1fr 100px 70px 70px";
+const GRID_COLUMNS = "24px 4px 70px 110px 170px 70px 70px 1fr 100px 70px 70px";
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
@@ -457,6 +457,7 @@ const TaskList: React.FC<TaskListProps> = ({
               <span>Role</span>
               <span>Task Type</span>
               <span>CR #</span>
+              <span>Doc #</span>
               <span>Task</span>
               <span>Requester</span>
               <Box

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Checkbox from "@mui/material/Checkbox";
@@ -186,6 +186,7 @@ const VerifyReviewTask = ({
     "minor",
   );
   const [manualVersionEdit, setManualVersionEdit] = useState(false);
+  const didInitVersionToggle = useRef(false);
   const [documentNumber, setDocumentNumber] = useState<string>(
     cr?.DocumentNumber ?? "",
   );
@@ -252,6 +253,22 @@ const VerifyReviewTask = ({
 
   useEffect(() => {
     if (!parsedPrev) return;
+
+    // First run after previousVersion loads: figure out which toggle the
+    // already-saved versionNumber corresponds to, without overwriting it.
+    if (!didInitVersionToggle.current) {
+      didInitVersionToggle.current = true;
+      if (versionNumber === suggestedMajor) {
+        setVersionIncrement("major");
+      } else if (versionNumber === suggestedMinor) {
+        setVersionIncrement("minor");
+      } else if (versionNumber) {
+        setManualVersionEdit(true);
+      }
+      return;
+    }
+
+    // Subsequent runs = user actually clicked a toggle button - apply it.
     const suggestion = computeVersion(versionIncrement);
     if (suggestion) setVersionNumber(suggestion);
     // eslint-disable-next-line react-hooks/exhaustive-deps

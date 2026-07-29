@@ -218,7 +218,7 @@ const formatDueDate = (
 
 // ─── Grid columns ─────────────────────────────────────────────────────────────
 
-const GRID_COLUMNS = "24px 4px 70px 110px 170px 70px 1fr 100px 70px 70px";
+const GRID_COLUMNS = "24px 4px 70px 110px 170px 70px 70px 1fr 100px 70px 70px";
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
@@ -373,6 +373,10 @@ const TaskCard = ({
         }}
       >
         {crNumber}
+      </Typography>
+
+      <Typography sx={{ fontSize: "12px", color: "#64748B" }}>
+        {task.ChangeRequest?.DocumentNumber || "—"}
       </Typography>
 
       {/* Task title */}
