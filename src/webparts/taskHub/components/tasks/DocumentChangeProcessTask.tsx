@@ -143,10 +143,15 @@
 
     const isAuthor = cr.Author0?.Id === currentUser.Id;
     const isCa = cr.ChangeAuthority?.Id === currentUser.Id;
+    const isSelfCa = isAuthor && isCa;
     const isExistingDocument = !cr.NewDocument && !!cr.TargetDocumentId;
-    const authorComplete = tasks.some(
-      (t) => t.TaskType === "Document Change Process" && t.Status === "Author Approved",
-    );
+    const authorComplete = isSelfCa
+      ? true
+      : tasks.some(
+          (t) =>
+            t.TaskType === "Document Change Process" &&
+            t.Status === "Author Approved",
+        );
 
     const allParticipants = [...contributors, ...reviewers];
     const total = allParticipants.length;

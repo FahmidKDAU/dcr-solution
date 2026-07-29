@@ -255,7 +255,7 @@ const createChangeRequest = async (
       .getByTitle("Change Requests")
       .items.add(data);
 
-    return result.data as Record<string, unknown>;
+    return result as unknown as Record<string, unknown>;
   } catch (error) {
     console.error("Error creating Change Request:", error);
     throw error;

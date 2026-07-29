@@ -7,11 +7,12 @@ import {
   Collapse,
   Alert,
   Fade,
+  CircularProgress,
 } from "@mui/material";
-import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import { SharePointPerson } from "../../../shared/types/SharePointPerson";
+import { IChangeRequest } from "../../../shared/types/ChangeRequest";
 import { useDocuments } from "../../../shared/hooks/useDocuments";
 import { useDepartments } from "../../../shared/hooks/useDepartments";
 import SharePointService from "../../../shared/services/SharePointService";
@@ -71,13 +72,11 @@ const EMPTY_FORM: ChangeRequestFormData = {
   draftDocumentName: "",
 };
 
+type SubmissionStatus = "form" | "waiting" | "found" | "timeout";
+
 // ─── Success Screen ───────────────────────────────────────────────────────────
 
-interface SuccessScreenProps {
-  onSubmitAnother: () => void;
-}
-
-const SuccessScreen: React.FC<SuccessScreenProps> = ({ onSubmitAnother }) => (
+const SuccessScreen: React.FC<{ cr: IChangeRequest; onSubmitAnother: () => void }> = ({ cr, onSubmitAnother }) => (
   <Box sx={{ minHeight: "100%", backgroundColor: "white", display: "flex", flexDirection: "column" }}>
     <Box sx={{ backgroundColor: BRANDING.primary, padding: "20px 24px" }}>
       <Typography sx={{ fontSize: "18px", fontWeight: 500, color: "white", mb: "4px" }}>
@@ -89,27 +88,39 @@ const SuccessScreen: React.FC<SuccessScreenProps> = ({ onSubmitAnother }) => (
     </Box>
 
     <Box sx={{ padding: "24px", maxWidth: 640 }}>
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "flex-start",
-          gap: 1.5,
-          backgroundColor: "#DFF6DD",
-          border: "1px solid #9FD89F",
-          borderRadius: "4px",
-          padding: "12px 16px",
-          mb: 3,
-        }}
-      >
-        <CheckCircleOutlineIcon sx={{ fontSize: 18, color: "#107C10", mt: "1px" }} />
-        <Box>
-          <Typography sx={{ fontSize: "14px", fontWeight: 600, color: "#0B590B", mb: 0.5 }}>
-            Change request submitted
+      <Box sx={{ border: "0.5px solid #E2E8F0", borderRadius: "8px", overflow: "hidden", mb: 3 }}>
+        <Box sx={{ padding: "16px 18px" }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1.25 }}>
+            <Typography sx={{ fontSize: "11px", color: "#94A3B8", letterSpacing: "0.5px", fontWeight: 600 }}>
+              {cr.ChangeRequestNumber}
+            </Typography>
+            <Typography
+              sx={{ fontSize: "11px", fontWeight: 500, color: "#B5850A", backgroundColor: "#FEF3E2", padding: "3px 9px", borderRadius: "3px" }}
+            >
+              Awaiting approval
+            </Typography>
+          </Box>
+          <Typography sx={{ fontSize: "15px", fontWeight: 500, color: "#1E293B", mb: 1.5 }}>
+            {cr.Title}
           </Typography>
-          <Typography sx={{ fontSize: "13px", color: "#3B3A39", lineHeight: 1.5 }}>
-            Your request is now being reviewed by the Change Authority. You&apos;ll get an
-            email as it moves through the approval process.
-          </Typography>
+          <Box sx={{ borderTop: "0.5px solid #E2E8F0", pt: 1.25, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 16px" }}>
+            <Box>
+              <Typography sx={{ fontSize: "10px", color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                Change authority
+              </Typography>
+              <Typography sx={{ fontSize: "12px", color: "#1E293B", mt: "2px" }}>
+                {cr.ChangeAuthority?.Title || "—"}
+              </Typography>
+            </Box>
+            <Box>
+              <Typography sx={{ fontSize: "10px", color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                Next step
+              </Typography>
+              <Typography sx={{ fontSize: "12px", color: "#1E293B", mt: "2px" }}>
+                Awaiting Change Authority approval
+              </Typography>
+            </Box>
+          </Box>
         </Box>
       </Box>
 
@@ -118,13 +129,9 @@ const SuccessScreen: React.FC<SuccessScreenProps> = ({ onSubmitAnother }) => (
           variant="contained"
           onClick={onSubmitAnother}
           sx={{
-            padding: "6px 16px",
-            fontSize: "13px",
-            fontWeight: 500,
-            backgroundColor: BRANDING.primary,
-            borderRadius: "2px",
-            textTransform: "none",
-            boxShadow: "none",
+            padding: "6px 16px", fontSize: "13px", fontWeight: 500,
+            backgroundColor: BRANDING.primary, borderRadius: "2px",
+            textTransform: "none", boxShadow: "none",
             "&:hover": { backgroundColor: BRANDING.primaryDark, boxShadow: "none" },
           }}
         >
@@ -132,23 +139,63 @@ const SuccessScreen: React.FC<SuccessScreenProps> = ({ onSubmitAnother }) => (
         </Button>
         <Button
           onClick={() =>
-            window.open(
-              `${window.location.origin}/sites/DocumentChangeManagementDemo/SitePages/Document-Portal.aspx`,
-              "_blank",
-            )
+            window.open(`${window.location.origin}/sites/DocumentChangeManagementDemo/SitePages/Document-Portal.aspx`, "_blank")
           }
-          sx={{
-            padding: "6px 16px",
-            fontSize: "13px",
-            fontWeight: 500,
-            color: BRANDING.primary,
-            textTransform: "none",
-            "&:hover": { backgroundColor: "#F3F2F1" },
-          }}
+          sx={{ padding: "6px 16px", fontSize: "13px", fontWeight: 500, color: BRANDING.primary, textTransform: "none", "&:hover": { backgroundColor: "#F3F2F1" } }}
         >
           Go to Document Portal
         </Button>
       </Box>
+    </Box>
+  </Box>
+);
+
+const SubmittingScreen: React.FC<{ status: "waiting" | "timeout"; onBackToInbox: () => void }> = ({ status, onBackToInbox }) => (
+  <Box sx={{ minHeight: "100%", backgroundColor: "white", display: "flex", flexDirection: "column" }}>
+    <Box sx={{ backgroundColor: BRANDING.primary, padding: "20px 24px" }}>
+      <Typography sx={{ fontSize: "18px", fontWeight: 500, color: "white", mb: "4px" }}>
+        Submit Change Request
+      </Typography>
+      <Typography sx={{ fontSize: "12px", color: "rgba(255,255,255,0.75)" }}>
+        Request a new or updated document
+      </Typography>
+    </Box>
+
+    <Box sx={{ padding: "24px", maxWidth: 640 }}>
+      <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5, border: "0.5px solid #E2E8F0", borderRadius: "8px", padding: "14px 18px" }}>
+        {status === "waiting" ? (
+          <CircularProgress size={16} thickness={5} sx={{ color: BRANDING.primary, mt: "2px" }} />
+        ) : (
+          <Box sx={{ width: 16, height: 16, mt: "2px" }} />
+        )}
+        <Box>
+          <Typography sx={{ fontSize: "13px", fontWeight: 500, color: "#1E293B", mb: 0.5 }}>
+            {status === "waiting" ? "Submitting your change request…" : "Still processing"}
+          </Typography>
+          <Typography sx={{ fontSize: "12px", color: "#64748B", lineHeight: 1.5 }}>
+            {status === "waiting"
+              ? "Assigning a reference number. This usually takes a few seconds."
+              : "Your request was received and is still being processed. You'll get an email with your reference number shortly."}
+          </Typography>
+        </Box>
+      </Box>
+
+      {status === "timeout" && (
+        <Box mt={2}>
+          <Button
+            variant="contained"
+            onClick={onBackToInbox}
+            sx={{
+              padding: "6px 16px", fontSize: "13px", fontWeight: 500,
+              backgroundColor: BRANDING.primary, borderRadius: "2px",
+              textTransform: "none", boxShadow: "none",
+              "&:hover": { backgroundColor: BRANDING.primaryDark, boxShadow: "none" },
+            }}
+          >
+            Go to Document Portal
+          </Button>
+        </Box>
+      )}
     </Box>
   </Box>
 );
@@ -161,7 +208,22 @@ const ChangeRequestForm: React.FC<ChangeRequestFormProps> = ({
   const [additionalDetailsOpen, setAdditionalDetailsOpen] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [status, setStatus] = useState<SubmissionStatus>("form");
+  const [createdCR, setCreatedCR] = useState<IChangeRequest | null>(null);
+  const pollingRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, []);
+
+  const stopPolling = (): void => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+  };
 
   const documentTypeOptions = [
     { Id: 1, Title: "Policy" },
@@ -284,7 +346,9 @@ const ChangeRequestForm: React.FC<ChangeRequestFormProps> = ({
   };
 
   const handleSubmitAnother = (): void => {
-    setSubmitted(false);
+    stopPolling();
+    setStatus("form");
+    setCreatedCR(null);
     setFormData({ ...EMPTY_FORM, newDocument: false });
     setAdditionalDetailsOpen(false);
     setSubmitError(null);
@@ -319,71 +383,79 @@ const ChangeRequestForm: React.FC<ChangeRequestFormProps> = ({
         DraftDocumentName: formData.draftDocumentName || undefined,
         ReleaseAuthorityId: formData.releaseAuthority?.Id || undefined,
         Author0Id: formData.author?.Id || undefined,
-        ReviewersId:
-          formData.reviewerIds.length > 0 ? formData.reviewerIds : undefined,
-        ContributorsId:
-          formData.contributorIds.length > 0
-            ? formData.contributorIds
-            : undefined,
-        BusinessFunctionId:
-          formData.businessFunctionIds.length > 0
-            ? formData.businessFunctionIds
-            : undefined,
-        CategoryId:
-          formData.documentCategoryIds.length > 0
-            ? formData.documentCategoryIds
-            : undefined,
+        ReviewersId: formData.reviewerIds.length > 0 ? formData.reviewerIds : undefined,
+        ContributorsId: formData.contributorIds.length > 0 ? formData.contributorIds : undefined,
+        BusinessFunctionId: formData.businessFunctionIds.length > 0 ? formData.businessFunctionIds : undefined,
+        CategoryId: formData.documentCategoryIds.length > 0 ? formData.documentCategoryIds : undefined,
         isCrComplete: !!(formData.releaseAuthority && formData.author),
       };
 
-      await SharePointService.createChangeRequest(payload);
+      const result = await SharePointService.createChangeRequest(payload);
+      const resolvedId = (result as { Id?: number }).Id;
 
-      const changeRequests = await SharePointService.getChangeRequests();
-      const latestItem = changeRequests[changeRequests.length - 1];
-      const itemId = latestItem?.Id;
-
-      if (!itemId)
+      if (!resolvedId)
         throw new Error("Unable to resolve the created Change Request ID.");
 
-      // Create participant rows
-      if (
-        formData.reviewerIds.length > 0 ||
-        formData.contributorIds.length > 0
-      ) {
-        await SharePointService.createParticipant(
-          itemId,
-          formData.contributorIds,
-          formData.reviewerIds,
-        );
+      if (formData.reviewerIds.length > 0 || formData.contributorIds.length > 0) {
+        await SharePointService.createParticipant(resolvedId, formData.contributorIds, formData.reviewerIds);
       }
 
-      // Upload attachments
       if (formData.attachments.length > 0) {
-        await SharePointService.uploadAttachments(
-          itemId,
-          formData.attachments,
-          (current, total, fileName) => {
-            console.log(`Uploading file ${current} of ${total}: ${fileName}`);
-          },
-        );
+        await SharePointService.uploadAttachments(resolvedId, formData.attachments, (current, total, fileName) => {
+          console.log(`Uploading file ${current} of ${total}: ${fileName}`);
+        });
       }
 
-      setSubmitted(true);
+      setIsSubmitting(false);
+      setStatus("waiting");
+
+      let attempts = 0;
+      const maxAttempts = 15;
+
+      pollingRef.current = setInterval(() => {
+        attempts++;
+        SharePointService.getChangeRequestById(resolvedId)
+          .then((freshCR) => {
+            if (freshCR?.ChangeRequestNumber) {
+              stopPolling();
+              setCreatedCR(freshCR);
+              setStatus("found");
+            } else if (attempts >= maxAttempts) {
+              stopPolling();
+              setStatus("timeout");
+            }
+          })
+          .catch(() => {
+            if (attempts >= maxAttempts) {
+              stopPolling();
+              setStatus("timeout");
+            }
+          });
+      }, 4000);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.error("Error:", error);
       setSubmitError(message);
-    } finally {
       setIsSubmitting(false);
     }
   };
 
   // ── Success screen ──
-  if (submitted) {
+  if (status === "waiting" || status === "timeout") {
     return (
-      <Fade in={submitted} timeout={200} appear>
+      <Fade in timeout={200} appear>
         <Box sx={{ minHeight: "100%", backgroundColor: "white" }}>
-          <SuccessScreen onSubmitAnother={handleSubmitAnother} />
+          <SubmittingScreen status={status} onBackToInbox={handleSubmitAnother} />
+        </Box>
+      </Fade>
+    );
+  }
+
+  if (status === "found" && createdCR) {
+    return (
+      <Fade in timeout={200} appear>
+        <Box sx={{ minHeight: "100%", backgroundColor: "white" }}>
+          <SuccessScreen cr={createdCR} onSubmitAnother={handleSubmitAnother} />
         </Box>
       </Fade>
     );

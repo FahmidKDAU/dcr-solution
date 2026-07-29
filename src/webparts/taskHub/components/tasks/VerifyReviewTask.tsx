@@ -170,9 +170,6 @@ const VerifyReviewTask = ({
   // Show review period (read-only summary) for COA and RA roles (not DC)
   const showReviewPeriod = isPublishingReview || isCoaTaskType;
 
-  // Is this a new document (no DocumentNumber assigned yet)?
-  const isNewDocument = cr?.NewDocument ?? false;
-
   // ── COA editable fields (Compliance Authority has override authority) ─────
 
   const [reviewPeriod, setReviewPeriod] = useState<string | number>(
@@ -184,6 +181,11 @@ const VerifyReviewTask = ({
   const [versionNumber, setVersionNumber] = useState<string>(
     cr?.VersionNumber ?? "",
   );
+  const [previousVersion, setPreviousVersion] = useState<string | null>(null);
+  const [versionIncrement, setVersionIncrement] = useState<"minor" | "major">(
+    "minor",
+  );
+  const [manualVersionEdit, setManualVersionEdit] = useState(false);
   const [documentNumber, setDocumentNumber] = useState<string>(
     cr?.DocumentNumber ?? "",
   );
@@ -213,6 +215,53 @@ const VerifyReviewTask = ({
       .catch(console.error)
       .finally(() => setAudienceGroupsLoading(false));
   }, [isCoaTask]);
+
+  useEffect(() => {
+    if (!isCoaTask || !cr?.TargetDocumentId) return;
+    SharePointService.getDocumentById(cr.TargetDocumentId)
+      .then((doc) => setPreviousVersion(doc?.VersionNumber ?? null))
+      .catch(console.error);
+  }, [isCoaTask, cr?.TargetDocumentId]);
+
+  const parseVersion = (
+    v: string | null,
+  ): { major: number; minor: number } | null => {
+    if (!v) return null;
+    const match = v.trim().match(/^(\d+)\.(\d+)$/);
+    if (!match) return null;
+    return { major: parseInt(match[1], 10), minor: parseInt(match[2], 10) };
+  };
+
+  const parsedPrev = parseVersion(previousVersion);
+
+  const computeVersion = (increment: "minor" | "major"): string | null => {
+    if (!parsedPrev) return null;
+    return increment === "minor"
+      ? `${parsedPrev.major}.${parsedPrev.minor + 1}`
+      : `${parsedPrev.major + 1}.0`;
+  };
+
+  const sanitizeVersionInput = (raw: string): string => {
+    const cleaned = raw.replace(/[^0-9.]/g, "");
+    const parts = cleaned.split(".");
+    return parts.length > 2 ? `${parts[0]}.${parts.slice(1).join("")}` : cleaned;
+  };
+
+  const suggestedMinor = computeVersion("minor");
+  const suggestedMajor = computeVersion("major");
+
+  useEffect(() => {
+    if (!parsedPrev) return;
+    const suggestion = computeVersion(versionIncrement);
+    if (suggestion) setVersionNumber(suggestion);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [previousVersion, versionIncrement]);
+
+  const versionMismatch =
+    !!parsedPrev &&
+    !!versionNumber &&
+    versionNumber !== suggestedMinor &&
+    versionNumber !== suggestedMajor;
 
   // ── Derived labels ────────────────────────────────────────────────────────
 
@@ -259,7 +308,7 @@ const VerifyReviewTask = ({
         ...(reviewPeriod === "" ? ["review period"] : []),
         ...(downloadFormat === "" ? ["download format"] : []),
         ...(versionNumber === "" ? ["version number"] : []),
-        ...(!isNewDocument && documentNumber === ""
+        ...(!cr?.DocumentNumber && documentNumber === ""
           ? ["document number"]
           : []),
         ...(readAcknowledgementRequired && readAudienceIds.length === 0
@@ -291,7 +340,7 @@ const VerifyReviewTask = ({
           ReviewPeriod: reviewPeriod,
           DownloadFormat: downloadFormat,
           VersionNumber: versionNumber,
-          DocumentNumber: documentNumber || undefined,
+          DocumentNumber: cr?.DocumentNumber || documentNumber || undefined,
           ReadAcknowledgementRequired: readAcknowledgementRequired,
           ReadDueDate:
             readAcknowledgementRequired && readDueDate ? readDueDate : null,
@@ -343,7 +392,18 @@ const VerifyReviewTask = ({
 
   return (
     <>
-      <Box display="flex" flexDirection="column" gap={2}>
+      <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+        <Box
+          sx={{
+            flex: 1,
+            overflowY: "auto",
+            px: 2,
+            py: 2,
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
+          }}
+        >
         {/* ── Info box ── */}
         <Box
           sx={{
@@ -392,6 +452,74 @@ const VerifyReviewTask = ({
           </Box>
         )}
 
+        {cr?.DraftDocumentUrl ? (
+          <Box
+            component="a"
+            href={`${cr.DraftDocumentUrl}?web=1`}
+            target="_blank"
+            rel="noopener noreferrer"
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              px: 1.5,
+              py: 1,
+              borderRadius: "6px",
+              border: "1px solid #E1DFDD",
+              backgroundColor: "#fff",
+              color: "#0078D4",
+              fontSize: 13,
+              fontWeight: 500,
+              textDecoration: "none",
+              transition: "all 0.15s",
+              "&:hover": { backgroundColor: "#EFF6FC", borderColor: "#0078D4" },
+            }}
+          >
+            <DescriptionOutlinedIcon sx={{ fontSize: 16 }} />
+            <Box
+              flex={1}
+              sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+            >
+              {willPublish ? "Document for Publishing" : "Draft Document"}
+            </Box>
+            <OpenInNewIcon sx={{ fontSize: 14, color: "#A19F9D" }} />
+          </Box>
+        ) : (
+          draftFiles.length > 0 && (
+            <Box
+              component="a"
+              href={`${draftFiles[0].ServerRelativeUrl}?web=1`}
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                px: 1.5,
+                py: 1,
+                borderRadius: "6px",
+                border: "1px solid #E1DFDD",
+                backgroundColor: "#fff",
+                color: "#0078D4",
+                fontSize: 13,
+                fontWeight: 500,
+                textDecoration: "none",
+                transition: "all 0.15s",
+                "&:hover": { backgroundColor: "#EFF6FC", borderColor: "#0078D4" },
+              }}
+            >
+              <DescriptionOutlinedIcon sx={{ fontSize: 16 }} />
+              <Box
+                flex={1}
+                sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+              >
+                {draftFiles[0].Name}
+              </Box>
+              <OpenInNewIcon sx={{ fontSize: 14, color: "#A19F9D" }} />
+            </Box>
+          )
+        )}
+
         {/* ── COA editable settings (override authority) ── */}
         {isCoaTask && (
           <>
@@ -438,46 +566,156 @@ const VerifyReviewTask = ({
             )}
 
             {/* Version number + Document number */}
-            <Box sx={{ display: "flex", gap: 1.5 }}>
-              <Box sx={{ flex: 1 }}>
-                <FieldLabel>Version number</FieldLabel>
+            <Typography
+              sx={{
+                fontSize: 11,
+                fontWeight: 500,
+                color: "#A19F9D",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                mb: 1,
+              }}
+            >
+              Review settings
+            </Typography>
+            <Box sx={{ border: "0.5px solid #EDEBE9", borderRadius: "8px", p: 1.5 }}>
+              <FieldLabel>Version number</FieldLabel>
+              {parsedPrev && (
+                <Box sx={{ mb: 1 }}>
+                  <Typography sx={{ fontSize: 11, color: "#A19F9D", mb: 0.75 }}>
+                    Previously: {previousVersion}
+                  </Typography>
+                  <Box sx={{ display: "flex", gap: 1 }}>
+                    <Box
+                      component="button"
+                      onClick={() => {
+                        setVersionIncrement("minor");
+                        setManualVersionEdit(false);
+                      }}
+                      sx={{
+                        flex: 1,
+                        textAlign: "left",
+                        py: 1,
+                        px: 1.5,
+                        borderRadius: "6px",
+                        border: `1.5px solid ${
+                          !manualVersionEdit && versionIncrement === "minor"
+                            ? "#0F4C81"
+                            : "#E1DFDD"
+                        }`,
+                        backgroundColor:
+                          !manualVersionEdit && versionIncrement === "minor"
+                            ? "#EFF6FC"
+                            : "#fff",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <Typography
+                        sx={{ fontSize: 13, fontWeight: 600, color: "#323130" }}
+                      >
+                        Minor update
+                      </Typography>
+                      <Typography
+                        sx={{ fontSize: 11, color: "#605E5C", mt: 0.25 }}
+                      >
+                        → {suggestedMinor}
+                      </Typography>
+                    </Box>
+                    <Box
+                      component="button"
+                      onClick={() => {
+                        setVersionIncrement("major");
+                        setManualVersionEdit(false);
+                      }}
+                      sx={{
+                        flex: 1,
+                        textAlign: "left",
+                        py: 1,
+                        px: 1.5,
+                        borderRadius: "6px",
+                        border: `1.5px solid ${
+                          !manualVersionEdit && versionIncrement === "major"
+                            ? "#0F4C81"
+                            : "#E1DFDD"
+                        }`,
+                        backgroundColor:
+                          !manualVersionEdit && versionIncrement === "major"
+                            ? "#EFF6FC"
+                            : "#fff",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <Typography
+                        sx={{ fontSize: 13, fontWeight: 600, color: "#323130" }}
+                      >
+                        Major update
+                      </Typography>
+                      <Typography
+                        sx={{ fontSize: 11, color: "#605E5C", mt: 0.25 }}
+                      >
+                        → {suggestedMajor}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              )}
+              {parsedPrev && !manualVersionEdit ? (
+                <Box
+                  component="button"
+                  onClick={() => setManualVersionEdit(true)}
+                  sx={{
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    color: "#0078D4",
+                    fontSize: 11,
+                    cursor: "pointer",
+                    textDecoration: "underline",
+                  }}
+                >
+                  Enter custom version
+                </Box>
+              ) : (
                 <TextField
                   size="small"
                   fullWidth
+                  inputMode="decimal"
                   value={versionNumber}
-                  onChange={(e) => setVersionNumber(e.target.value)}
+                  onChange={(e) =>
+                    setVersionNumber(sanitizeVersionInput(e.target.value))
+                  }
                   placeholder="e.g. 1.0"
                   sx={{ "& input": { fontSize: 13 } }}
                 />
-              </Box>
-              {!isNewDocument && (
-                <Box sx={{ flex: 1 }}>
-                  <FieldLabel>Document number</FieldLabel>
+              )}
+              {versionMismatch && (
+                <Typography sx={{ fontSize: 11, color: "#835B00", mt: 0.5 }}>
+                  Doesn&apos;t match a standard minor or major bump from {previousVersion} — confirm this is intentional.
+                </Typography>
+              )}
+
+              <Divider sx={{ my: 1.25, borderColor: "#EDEBE9" }} />
+
+              <Box>
+                <FieldLabel>Document number</FieldLabel>
+                {cr?.DocumentNumber ? (
+                  <Typography
+                    sx={{ fontSize: 13, color: "#323130", py: "8.5px" }}
+                  >
+                    {cr.DocumentNumber}
+                  </Typography>
+                ) : (
                   <TextField
                     size="small"
                     fullWidth
                     value={documentNumber}
                     onChange={(e) => setDocumentNumber(e.target.value)}
-                    placeholder="e.g. DOC-001"
+                    placeholder="Assign a document number"
                     sx={{ "& input": { fontSize: 13 } }}
                   />
-                </Box>
-              )}
-            </Box>
-
-            {isNewDocument && (
-              <Box>
-                <FieldLabel>Document number</FieldLabel>
-                <TextField
-                  size="small"
-                  fullWidth
-                  value={documentNumber}
-                  onChange={(e) => setDocumentNumber(e.target.value)}
-                  placeholder="Assign a document number"
-                  sx={{ "& input": { fontSize: 13 } }}
-                />
+                )}
               </Box>
-            )}
+            </Box>
 
             {/* Review Period */}
             <Box>
@@ -744,100 +982,19 @@ const VerifyReviewTask = ({
           </Box>
         )}
 
-        {/* ── Draft document link ── */}
-        {draftFiles.length > 0 && (
-          <Box>
-            <Typography
-              sx={{
-                fontSize: 11,
-                fontWeight: 600,
-                color: "#A19F9D",
-                textTransform: "uppercase",
-                letterSpacing: 0.5,
-                mb: 0.75,
-                px: 0.25,
-              }}
-            >
-              {willPublish ? "Document for Publishing" : "Draft Document"}
-            </Typography>
-            <Box display="flex" flexDirection="column" gap={0.5}>
-              {draftFiles.map((file) => (
-                <Box
-                  key={file.ServerRelativeUrl}
-                  component="a"
-                  href={file.ServerRelativeUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1,
-                    px: 1.5,
-                    py: 1,
-                    borderRadius: "6px",
-                    border: "1px solid #E1DFDD",
-                    backgroundColor: "#fff",
-                    color: "#0078D4",
-                    fontSize: 13,
-                    fontWeight: 500,
-                    textDecoration: "none",
-                    transition: "all 0.15s",
-                    "&:hover": {
-                      backgroundColor: "#EFF6FC",
-                      borderColor: "#0078D4",
-                    },
-                  }}
-                >
-                  <DescriptionOutlinedIcon sx={{ fontSize: 16 }} />
-                  <Box
-                    flex={1}
-                    sx={{
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {file.Name}
-                  </Box>
-                  <OpenInNewIcon sx={{ fontSize: 14, color: "#A19F9D" }} />
-                </Box>
-              ))}
-            </Box>
-          </Box>
-        )}
+        </Box>
 
-        {!draftFiles.length && cr?.DraftDocumentUrl && (
-          <Box
-            component="a"
-            href={cr.DraftDocumentUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
-              px: 1.5,
-              py: 1,
-              borderRadius: "6px",
-              border: "1px solid #E1DFDD",
-              backgroundColor: "#fff",
-              color: "#0078D4",
-              fontSize: 13,
-              fontWeight: 500,
-              textDecoration: "none",
-              transition: "all 0.15s",
-              "&:hover": { backgroundColor: "#EFF6FC", borderColor: "#0078D4" },
-            }}
-          >
-            <DescriptionOutlinedIcon sx={{ fontSize: 16 }} />
-            {willPublish ? "Open Document for Review" : "View Draft Document"}
-            <OpenInNewIcon
-              sx={{ fontSize: 14, color: "#A19F9D", ml: "auto" }}
-            />
-          </Box>
-        )}
-
-        {/* ── Actions ── */}
+        <Box
+          sx={{
+            borderTop: "0.5px solid #EDEBE9",
+            px: 2,
+            py: 1.5,
+            display: "flex",
+            flexDirection: "column",
+            gap: 1,
+          }}
+        >
+          {/* ── Actions ── */}
         <ActionButton
           label={verifyButtonLabel}
           icon={verifyButtonIcon}
@@ -845,12 +1002,32 @@ const VerifyReviewTask = ({
           variant="verify"
           disabled={!canVerify}
         />
-        <ActionButton
-          label="Reject"
-          icon={<CloseIcon sx={{ fontSize: 16 }} />}
+        <Box
+          component="button"
           onClick={() => setOpenModal("reject")}
-          variant="reject"
-        />
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 0.75,
+            width: "100%",
+            py: 0.875,
+            px: 1,
+            borderRadius: "6px",
+            border: "1px solid #D13438",
+            backgroundColor: "#fff",
+            color: "#A4262C",
+            fontSize: 12,
+            fontWeight: 500,
+            cursor: "pointer",
+            transition: "background 0.15s",
+            "&:hover": { backgroundColor: "#FDE7E9" },
+          }}
+        >
+          <CloseIcon sx={{ fontSize: 14 }} />
+          Reject
+        </Box>
+        </Box>
       </Box>
 
       {/* ── Verify / Approve Modal ── */}
