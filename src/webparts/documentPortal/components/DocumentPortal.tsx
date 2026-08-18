@@ -302,50 +302,59 @@ const DocumentPortal: React.FC<DocumentPortalProps> = ({ hasTeamsContext = false
           </Typography>
         </Box>
 
-        {/* Search */}
-        <TextField
-          placeholder="Search documents..."
-          size="small"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          sx={{
-            width: 260,
-            "& .MuiOutlinedInput-root": {
-              backgroundColor: "rgba(255,255,255,0.95)",
-              borderRadius: "6px",
-              fontSize: "13px",
-              "& fieldset": { border: "none" },
-            },
-          }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon sx={{ fontSize: 18, color: "#94A3B8" }} />
-              </InputAdornment>
-            ),
-            endAdornment: searchQuery && (
-              <InputAdornment position="end">
-                <IconButton size="small" onClick={() => setSearchQuery("")}>
-                  <CloseIcon sx={{ fontSize: 16, color: "#94A3B8" }} />
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-        />
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          <TextField
+            placeholder="Search documents..."
+            size="small"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            sx={{
+              width: 200,
+              "& .MuiOutlinedInput-root": {
+                backgroundColor: "rgba(255,255,255,0.95)",
+                borderRadius: "6px",
+                fontSize: "13px",
+                "& fieldset": { border: "none" },
+              },
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ fontSize: 18, color: "#94A3B8" }} />
+                </InputAdornment>
+              ),
+              endAdornment: searchQuery && (
+                <InputAdornment position="end">
+                  <IconButton size="small" onClick={() => setSearchQuery("")}>
+                    <CloseIcon sx={{ fontSize: 16, color: "#94A3B8" }} />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
 
-        <Box
-          onClick={() => setContentSearchOpen(true)}
-          sx={{
-            display: "flex", alignItems: "center", gap: 0.75,
-            px: 1.5, ml: 1, height: 32, borderRadius: "6px", cursor: "pointer",
-            fontSize: 12, fontWeight: 600,
-            border: "1.5px solid rgba(255,255,255,0.4)",
-            color: "rgba(255,255,255,0.9)", whiteSpace: "nowrap",
-            "&:hover": { backgroundColor: "rgba(255,255,255,0.1)" },
-          }}
-        >
-          <SearchOutlinedIcon sx={{ fontSize: 15 }} />
-          Search inside documents
+          <Box
+            onClick={() => setContentSearchOpen(true)}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 0.75,
+              px: 1.5,
+              height: 32,
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontSize: 12,
+              fontWeight: 600,
+              backgroundColor: "#fff",
+              color: BRANDING.primary,
+              whiteSpace: "nowrap",
+              transition: "background-color 0.15s",
+              "&:hover": { backgroundColor: "#EFF6FC" },
+            }}
+          >
+            <SearchOutlinedIcon sx={{ fontSize: 15 }} />
+            Search inside documents
+          </Box>
         </Box>
       </Box>
 

@@ -193,12 +193,12 @@ const DocumentDetail: React.FC<DocumentDetailProps> = ({
             sx={{
               padding: "6px 14px",
               fontSize: "12px",
-              backgroundColor: "white",
+              backgroundColor: "#fff",
               color: BRANDING.primary,
               borderRadius: "6px",
               textTransform: "none",
               fontWeight: 500,
-              "&:hover": { backgroundColor: "#F1F5F9" },
+              "&:hover": { backgroundColor: "#EFF6FC" },
             }}
           >
             {downloadLabel}
@@ -209,12 +209,12 @@ const DocumentDetail: React.FC<DocumentDetailProps> = ({
             sx={{
               padding: "6px 14px",
               fontSize: "12px",
-              backgroundColor: "rgba(255,255,255,0.15)",
-              color: "white",
+              backgroundColor: "#fff",
+              color: BRANDING.primary,
               borderRadius: "6px",
               textTransform: "none",
               fontWeight: 400,
-              "&:hover": { backgroundColor: "rgba(255,255,255,0.25)" },
+              "&:hover": { backgroundColor: "#EFF6FC" },
             }}
           >
             Open in tab
@@ -224,12 +224,12 @@ const DocumentDetail: React.FC<DocumentDetailProps> = ({
             sx={{
               padding: "6px 14px",
               fontSize: "12px",
-              backgroundColor: "rgba(255,255,255,0.15)",
+              backgroundColor: "#0D7D5F",
               color: "white",
               borderRadius: "6px",
               textTransform: "none",
               fontWeight: 400,
-              "&:hover": { backgroundColor: "rgba(255,255,255,0.25)" },
+              "&:hover": { backgroundColor: "#0B6A4E" },
             }}
           >
             Start Change Request
@@ -282,12 +282,38 @@ const DocumentDetail: React.FC<DocumentDetailProps> = ({
 
           {/* Metadata Fields */}
           <Box display="flex" flexDirection="column" gap={2.5}>
+            {/* Document Number + Version */}
+            <Box sx={{ display: "flex", gap: 2 }}>
+              {document.DocumentNumber && (
+                <Box sx={{ flex: 1 }}>
+                  <Typography sx={labelSx}>Document number</Typography>
+                  <Typography sx={valueSx}>{document.DocumentNumber}</Typography>
+                </Box>
+              )}
+              {document.VersionNumber && (
+                <Box sx={{ flex: 1 }}>
+                  <Typography sx={labelSx}>Version</Typography>
+                  <Typography sx={valueSx}>{document.VersionNumber}</Typography>
+                </Box>
+              )}
+            </Box>
+
             {/* Category */}
             {document.Category && document.Category.length > 0 && (
               <Box>
                 <Typography sx={labelSx}>Category</Typography>
                 <Typography sx={valueSx}>
                   {document.Category.map((c) => c.Title).join(", ")}
+                </Typography>
+              </Box>
+            )}
+
+            {/* Department */}
+            {document.CoreFunctionality?.Title && (
+              <Box>
+                <Typography sx={labelSx}>Department</Typography>
+                <Typography sx={valueSx}>
+                  {document.CoreFunctionality.Title}
                 </Typography>
               </Box>
             )}
@@ -334,15 +360,21 @@ const DocumentDetail: React.FC<DocumentDetailProps> = ({
               </Box>
             )}
 
-            {/* Released */}
-            {document.PublishedDate && (
-              <Box>
-                <Typography sx={labelSx}>Released</Typography>
-                <Typography sx={valueSx}>
-                  {formatDate(document.PublishedDate)}
-                </Typography>
-              </Box>
-            )}
+            {/* Last Updated + Released */}
+            <Box sx={{ display: "flex", gap: 2 }}>
+              {document.Modified && (
+                <Box sx={{ flex: 1 }}>
+                  <Typography sx={labelSx}>Last updated</Typography>
+                  <Typography sx={valueSx}>{formatDate(document.Modified)}</Typography>
+                </Box>
+              )}
+              {document.PublishedDate && (
+                <Box sx={{ flex: 1 }}>
+                  <Typography sx={labelSx}>Released</Typography>
+                  <Typography sx={valueSx}>{formatDate(document.PublishedDate)}</Typography>
+                </Box>
+              )}
+            </Box>
 
             {/* File */}
             {document.FileLeafRef && (

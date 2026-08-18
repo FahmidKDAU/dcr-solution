@@ -1,4 +1,4 @@
-// src/shared/theme.ts
+// src/shared/theme/theme.ts
 import { createTheme } from '@mui/material/styles';
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -8,81 +8,104 @@ export const BRANDING = {
   primary: '#0F4C81',
   primaryLight: '#1565A8',
   primaryDark: '#0A3A63',
-  
-  // Solid colors (for backwards compatibility)
-  docTypes: {
-    policy: '#0F4C81',
-    procedure: '#0D7D5F',
-    form: '#9E3A5A',
-    certificate: '#B5850A',
-    guide: '#5C6670',
-    manual: '#7C3AED',
-    checklist: '#0891B2',
-    template: '#B91C1C',
-    'work instruction': '#6A4C93',
-    default: '#5C6670',
-  } as Record<string, string>,
-  
-  classifications: {
-    public: '#0D7D5F',
-    internal: '#92650A',
-    confidential: '#B91C1C',
-    restricted: '#7F1D1D',
-  } as Record<string, string>,
-};
-
-// Muted colors (light bg + dark text) for badges
-export const DOC_TYPE_COLORS_MUTED: Record<string, { bg: string; text: string }> = {
-  policy: { bg: '#E6F1FB', text: '#0F4C81' },
-  procedure: { bg: '#E6F7F2', text: '#0D7D5F' },
-  form: { bg: '#FCE8EE', text: '#9E3A5A' },
-  certificate: { bg: '#FEF3E2', text: '#92650A' },
-  guide: { bg: '#F1F5F9', text: '#475569' },
-  manual: { bg: '#F3E8FF', text: '#7C3AED' },
-  checklist: { bg: '#E0F7FA', text: '#0891B2' },
-  template: { bg: '#FEE2E2', text: '#B91C1C' },
-  'work instruction': { bg: '#F3E8FF', text: '#6A4C93' },
-  default: { bg: '#F1F5F9', text: '#475569' },
-};
-
-export const CLASSIFICATION_COLORS_MUTED: Record<string, { bg: string; text: string }> = {
-  public: { bg: '#E6F7F2', text: '#0D7D5F' },
-  internal: { bg: '#FEF3E2', text: '#92650A' },
-  confidential: { bg: '#FEE4E2', text: '#B91C1C' },
-  restricted: { bg: '#FEE2E2', text: '#7F1D1D' },
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
-// Helper functions
+// RADIUS TOKENS — pick from these instead of hand-picking px values per file
 // ══════════════════════════════════════════════════════════════════════════════
-
-// Returns solid color (backwards compatible)
-export const getDocTypeColor = (docType?: string): string => {
-  if (!docType) return BRANDING.docTypes.default;
-  const key = docType.toLowerCase() as keyof typeof BRANDING.docTypes;
-  return BRANDING.docTypes[key] ?? BRANDING.docTypes.default;
+export const RADIUS = {
+  chip: '4px',      // badges, chips, small tags
+  button: '6px',     // standard buttons
+  buttonFlat: '2px', // SharePoint-native flat buttons (success banners, headers)
+  card: '8px',       // cards, panels, dropdown menus
+  modal: '10px',     // dialogs
 };
 
-// Returns muted { bg, text } colors for badges
-export const getDocTypeColors = (type?: string): { bg: string; text: string } => {
-  if (!type) return DOC_TYPE_COLORS_MUTED.default;
-  const key = type.toLowerCase().trim();
-  return DOC_TYPE_COLORS_MUTED[key] ?? DOC_TYPE_COLORS_MUTED.default;
+// ══════════════════════════════════════════════════════════════════════════════
+// CHIP COLOR PALETTE — single source of truth for every "muted badge" in the app.
+// Add a new named color here once; every domain map below just assigns keys to it.
+// ══════════════════════════════════════════════════════════════════════════════
+export type ChipColor = { bg: string; text: string };
+
+export const CHIP_PALETTE: Record<string, ChipColor> = {
+  blue:   { bg: '#E6F1FB', text: '#0F4C81' },
+  green:  { bg: '#E6F7F2', text: '#0D7D5F' },
+  purple: { bg: '#F3E8FF', text: '#7C3AED' },
+  amber:  { bg: '#FEF3E2', text: '#92650A' },
+  pink:   { bg: '#FCE8EE', text: '#9E3A5A' },
+  cyan:   { bg: '#E0F7FA', text: '#0891B2' },
+  red:    { bg: '#FEE2E2', text: '#B91C1C' },
+  redDark:{ bg: '#FEE4E2', text: '#7F1D1D' },
+  grey:   { bg: '#F1F5F9', text: '#475569' },
 };
 
-// Returns solid color (backwards compatible)
-export const getClassificationColor = (classification?: string): string => {
-  if (!classification) return '#5C6670';
-  const key = classification.toLowerCase() as keyof typeof BRANDING.classifications;
-  return BRANDING.classifications[key] ?? '#5C6670';
+// ── Domain → palette key maps ──────────────────────────────────────────────────
+// Each of these just names which palette color a given value uses. To retheme
+// the whole app, edit CHIP_PALETTE above — these maps rarely need to change.
+
+const DOC_TYPE_KEYS: Record<string, keyof typeof CHIP_PALETTE> = {
+  policy: 'blue',
+  procedure: 'green',
+  form: 'pink',
+  certificate: 'amber',
+  guide: 'grey',
+  manual: 'purple',
+  checklist: 'cyan',
+  template: 'red',
+  'work instruction': 'purple',
 };
 
-// Returns muted { bg, text } colors for badges
-export const getClassificationColors = (classification?: string): { bg: string; text: string } => {
-  if (!classification) return { bg: '#F1F5F9', text: '#475569' };
-  const key = classification.toLowerCase();
-  return CLASSIFICATION_COLORS_MUTED[key] ?? { bg: '#F1F5F9', text: '#475569' };
+const CLASSIFICATION_KEYS: Record<string, keyof typeof CHIP_PALETTE> = {
+  public: 'green',
+  internal: 'amber',
+  confidential: 'red',
+  restricted: 'redDark',
 };
+
+const TASK_TYPE_KEYS: Record<string, keyof typeof CHIP_PALETTE> = {
+  'ca review': 'blue',
+  'change authority review': 'blue',
+  'change authority approval': 'green',
+  'compliance authority review': 'purple',
+  'document controller review': 'purple',
+  'final approval': 'green',
+  'author review': 'cyan',
+  'document change process': 'amber',
+  'participant task': 'pink',
+  'cr completion': 'grey',
+  'cr info required': 'grey',
+  'publish document': 'cyan',
+  'publishing rejection review': 'red',
+  'document review': 'blue',
+};
+
+// ── Public getters — use these everywhere instead of hardcoded color objects ──
+
+export const getDocTypeColors = (type?: string): ChipColor => {
+  if (!type) return CHIP_PALETTE.grey;
+  const key = DOC_TYPE_KEYS[type.toLowerCase().trim()];
+  return key ? CHIP_PALETTE[key] : CHIP_PALETTE.grey;
+};
+
+export const getClassificationColors = (classification?: string): ChipColor => {
+  if (!classification) return CHIP_PALETTE.grey;
+  const key = CLASSIFICATION_KEYS[classification.toLowerCase()];
+  return key ? CHIP_PALETTE[key] : CHIP_PALETTE.grey;
+};
+
+export const getTaskTypeColors = (taskType?: string): ChipColor => {
+  if (!taskType) return CHIP_PALETTE.grey;
+  const key = TASK_TYPE_KEYS[taskType.toLowerCase().trim()];
+  return key ? CHIP_PALETTE[key] : CHIP_PALETTE.grey;
+};
+
+// Backwards-compatible solid-color getters (only if something still needs a
+// single hex rather than a bg/text pair)
+export const getDocTypeColor = (docType?: string): string =>
+  getDocTypeColors(docType).text;
+
+export const getClassificationColor = (classification?: string): string =>
+  getClassificationColors(classification).text;
 
 // ══════════════════════════════════════════════════════════════════════════════
 // Theme
@@ -121,19 +144,46 @@ const theme = createTheme({
       900: '#0F172A',
     },
   },
+
   typography: {
     fontFamily: '"Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Arial, sans-serif',
     fontSize: 14,
+
+    // Panel/page-level titles (e.g. webpart headers)
+    h6: { fontSize: '18px', fontWeight: 500, lineHeight: 1.4 },
+
+    // Card/document titles (e.g. "Book policy" in DocumentDetail)
+    subtitle1: { fontSize: '16px', fontWeight: 600, lineHeight: 1.4, color: '#1E293B' },
+
+    // Section headers (e.g. "OVERVIEW", "DEPARTMENT")
+    overline: {
+      fontSize: '10px',
+      fontWeight: 600,
+      textTransform: 'uppercase',
+      letterSpacing: '0.5px',
+      color: '#94A3B8',
+    },
+
+    // Primary readable content — table cells, form values
+    body2: { fontSize: '13px', fontWeight: 400, color: '#1E293B' },
+
+    // Secondary/meta text — dates, counts, muted descriptions
+    caption: { fontSize: '12px', fontWeight: 400, color: '#64748B' },
+
+    button: { fontSize: '13px', fontWeight: 500, textTransform: 'none' },
   },
+
   shape: {
-    borderRadius: 6,
+    borderRadius: 8,
   },
+
   components: {
     MuiButton: {
       styleOverrides: {
         root: {
           textTransform: 'none',
           fontWeight: 500,
+          borderRadius: RADIUS.button,
           boxShadow: 'none',
           '&:hover': { boxShadow: 'none' },
         },
@@ -142,8 +192,15 @@ const theme = createTheme({
     MuiChip: {
       styleOverrides: {
         root: {
-          borderRadius: '4px',
+          borderRadius: RADIUS.chip,
           fontWeight: 500,
+        },
+      },
+    },
+    MuiDialog: {
+      styleOverrides: {
+        paper: {
+          borderRadius: RADIUS.modal,
         },
       },
     },

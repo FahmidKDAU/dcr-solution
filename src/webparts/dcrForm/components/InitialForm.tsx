@@ -117,7 +117,7 @@ export const InitialForm: React.FC<InitialFormProps> = ({
       <Box>
         <FieldLabel required>Title</FieldLabel>
         <TextField
-          placeholder="Enter document title"
+          placeholder="Enter change request title"
           fullWidth
           value={data.title}
           onChange={(e) => onChange("title", e.target.value)}

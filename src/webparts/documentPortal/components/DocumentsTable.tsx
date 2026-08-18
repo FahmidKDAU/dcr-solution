@@ -187,6 +187,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
       <Table stickyHeader>
         <TableHead>
           <TableRow>
+            <TableCell sx={{ ...headerCellSx, width: "90px" }}>Doc #</TableCell>
             <TableCell sx={{ ...headerCellSx, width: "35%" }}>
               <TableSortLabel
                 active={orderBy === "DocumentTitle"}
@@ -197,7 +198,6 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                 Document name
               </TableSortLabel>
             </TableCell>
-            <TableCell sx={{ ...headerCellSx, width: "90px" }}>Doc #</TableCell>
             <TableCell sx={{ ...headerCellSx, width: "90px" }}>
               <TableSortLabel
                 active={orderBy === "DocumentType"}
@@ -252,6 +252,10 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                   },
                 }}
               >
+                <TableCell sx={{ padding: "14px 20px", color: "#64748B", fontSize: "12px", fontWeight: 500 }}>
+                  {doc.DocumentNumber || "—"}
+                </TableCell>
+
                 {/* Document Name */}
                 <TableCell
                   sx={{
@@ -262,10 +266,6 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                   }}
                 >
                   {doc.DocumentTitle}
-                </TableCell>
-
-                <TableCell sx={{ padding: "14px 20px", color: "#64748B", fontSize: "12px" }}>
-                  {doc.DocumentNumber || "—"}
                 </TableCell>
 
                 {/* Type Badge - Muted colors */}

@@ -83,7 +83,7 @@ const ParticipantTask = ({
           action === "positive" ? new Date().toISOString() : undefined,
         Notes: participantNotes.trim() || undefined,
       });
-      emitParticipantRefetch(task.ChangeRequestId);
+      emitParticipantRefetch(task.ChangeRequestId).catch(console.error);
 
       await SharePointService.updateTask(task.Id, {
         Status:

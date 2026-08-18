@@ -2,11 +2,14 @@ import { useCallback, useEffect, useState } from "react";
 import { Participant } from "../types/Participant";
 import SharePointService from "../services/SharePointService";
 
-const participantRefetchListeners = new Map<number, Set<() => void>>();
+const participantRefetchListeners = new Map<
+  number,
+  Set<() => Promise<void> | void>
+>();
 
 const registerParticipantRefetchListener = (
   changeRequestId: number,
-  listener: () => void,
+  listener: () => Promise<void> | void,
 ): (() => void) => {
   const listeners = participantRefetchListeners.get(changeRequestId) ?? new Set();
   listeners.add(listener);
@@ -25,13 +28,15 @@ const registerParticipantRefetchListener = (
   };
 };
 
-export const emitParticipantRefetch = (changeRequestId: number): boolean => {
+export const emitParticipantRefetch = async (
+  changeRequestId: number,
+): Promise<boolean> => {
   const listeners = participantRefetchListeners.get(changeRequestId);
   if (!listeners || listeners.size === 0) {
     return false;
   }
 
-  listeners.forEach((listener) => listener());
+  await Promise.all(Array.from(listeners, (listener) => Promise.resolve(listener())));
   return true;
 };
 
@@ -43,7 +48,7 @@ export const useParticipants = (
   reviewers: Participant[];
   loading: boolean;
   error: string | undefined;
-  refetch: () => void;
+  refetch: () => Promise<void>;
 } => {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -89,16 +94,19 @@ export const useParticipants = (
   const contributors = participants.filter((p) => p.Role === "Contributor");
   const reviewers = participants.filter((p) => p.Role === "Reviewer");
 
-  const refetch = useCallback((): void => {
+  const refetch = useCallback((): Promise<void> => {
     if (changeRequestId === undefined) {
-      fetchParticipants().catch(() => undefined);
-      return;
+      return fetchParticipants().catch(() => undefined);
     }
 
-    const emitted = emitParticipantRefetch(changeRequestId);
-    if (!emitted) {
-      fetchParticipants().catch(() => undefined);
-    }
+    return emitParticipantRefetch(changeRequestId)
+      .then((emitted) => {
+        if (!emitted) {
+          return fetchParticipants().catch(() => undefined);
+        }
+        return undefined;
+      })
+      .then(() => undefined);
   }, [changeRequestId, fetchParticipants]);
 
   return {

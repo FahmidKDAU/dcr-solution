@@ -777,7 +777,7 @@ export const TaskDetail = ({
   ): Promise<void> => {
     if (!cr) return;
     await SharePointService.addParticipant(cr.ID, person.Id, role);
-    refetchParticipants();
+    refetchParticipants().catch(console.error);
   };
 
   const handleRemoveParticipant = async (
@@ -789,7 +789,7 @@ export const TaskDetail = ({
     );
     if (!row || !cr) return;
     await SharePointService.deleteParticipant(row.Id, cr.ID, personId);
-    refetchParticipants();
+    refetchParticipants().catch(console.error);
   };
 
   const contributorPeople = contributors

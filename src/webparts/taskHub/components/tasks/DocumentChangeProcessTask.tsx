@@ -19,6 +19,7 @@
   import OpenInNewIcon from "@mui/icons-material/OpenInNew";
   import FolderOpenIcon from "@mui/icons-material/FolderOpen";
   import UploadFileIcon from "@mui/icons-material/UploadFile";
+  import RefreshIcon from "@mui/icons-material/Refresh";
   import InsertDriveFileOutlinedIcon from "@mui/icons-material/InsertDriveFileOutlined";
   import { IChangeRequest } from "../../../../shared/types/ChangeRequest";
   import { SharePointPerson } from "../../../../shared/types/SharePointPerson";
@@ -124,6 +125,7 @@
     const [rejectOpen, setRejectOpen] = useState(false);
     const [rejectReason, setRejectReason] = useState("");
     const [submitting, setSubmitting] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
 
     const [minorChanges, setMinorChanges] = useState<MinorChange[]>([]);
     const [minorChangesLoading, setMinorChangesLoading] = useState(false);
@@ -242,6 +244,31 @@
         setDraftFilesLoading(false);
       }
     }, [draftFolderPath]);
+
+    const handleRefreshAll = async (): Promise<void> => {
+      setRefreshing(true);
+      try {
+        const refreshPromises: Promise<unknown>[] = [fetchDraftFiles(), refetch()];
+
+        if (isExistingDocument && cr.TargetDocumentId) {
+          refreshPromises.push(
+            SharePointService.getMinorChangesByDocument(cr.TargetDocumentId).then(
+              setMinorChanges,
+            ),
+          );
+        }
+
+        if (isCa) {
+          refreshPromises.push(SharePointService.getAuditTasksByCRId(cr.ID).then(setTasks));
+        }
+
+        await Promise.all(refreshPromises);
+      } catch (err) {
+        console.error("Failed to refresh all data:", err);
+      } finally {
+        setRefreshing(false);
+      }
+    };
 
     useEffect(() => {
       fetchDraftFiles().catch(console.error);
@@ -385,6 +412,20 @@
 
     return (
       <Box sx={{ display: "flex", flexDirection: "column", gap: 2, p: 2.5 }}>
+        <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+          <IconButton
+            onClick={handleRefreshAll}
+            disabled={refreshing}
+            sx={{ color: "#605E5C" }}
+          >
+            {refreshing ? (
+              <CircularProgress size={16} />
+            ) : (
+              <RefreshIcon sx={{ fontSize: 18 }} />
+            )}
+          </IconButton>
+        </Box>
+
         {/* ── Draft Documents Card ── */}
         <Box
           sx={{
@@ -1280,7 +1321,7 @@
           open={manageOpen}
           onClose={() => {
             setManageOpen(false);
-            refetch();
+            refetch().catch(console.error);
           }}
           maxWidth="lg"
           fullWidth
@@ -1300,7 +1341,7 @@
               size="small"
               onClick={() => {
                 setManageOpen(false);
-                refetch();
+                refetch().catch(console.error);
               }}
             >
               <CloseIcon sx={{ fontSize: 18 }} />
