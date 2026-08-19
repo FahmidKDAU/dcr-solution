@@ -781,6 +781,51 @@ const deleteParticipant = async (
   }
 };
 
+const cancelParticipantTask = async (
+  participantId: number,
+  changeRequestId: number,
+  personId: number,
+  reason: string,
+): Promise<void> => {
+  try {
+    const sp = PnPSetup.getSP();
+
+    const tasks = await sp.web.lists
+      .getByTitle("Tasks")
+      .items.select("Id", "Status", "AssignedTo/Id")
+      .expand("AssignedTo")
+      .filter(
+        `ChangeRequestId eq ${changeRequestId} and TaskType eq 'Participant Task'`,
+      )();
+
+    const activeTask = tasks.find(
+      (t) =>
+        t.AssignedTo?.Id === personId &&
+        t.Status !== "Complete" &&
+        t.Status !== "Cancelled",
+    );
+
+    if (activeTask) {
+      await sp.web.lists
+        .getByTitle("Tasks")
+        .items.getById(activeTask.Id)
+        .update({ Status: "Cancelled", Comments: reason });
+    }
+
+    await sp.web.lists
+      .getByTitle("CR Participants")
+      .items.getById(participantId)
+      .update({
+        Status: "Not Started",
+        StartDate: null,
+        CompletedDate: null,
+      });
+  } catch (error) {
+    console.error("Error cancelling participant task:", error);
+    throw error;
+  }
+};
+
 const getParticipantsByChangeRequestId = async (changeRequestId: number) => {
   const sp = PnPSetup.getSP();
   const rows = await sp.web.lists
@@ -1075,6 +1120,7 @@ export default {
   addParticipant,
   updateParticipant,
   deleteParticipant,
+  cancelParticipantTask,
   getParticipantsByChangeRequestId,
   getParticipantByTaskContext,
   getParticipantTaskByContext,

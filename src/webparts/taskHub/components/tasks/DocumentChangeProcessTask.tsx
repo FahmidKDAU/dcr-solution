@@ -1355,6 +1355,7 @@
               loading={loading}
               canAdd={isCa}
               canStart={isAuthor}
+              canRemove={isCa || isAuthor}
               onRefetch={refetch}
             />
           </DialogContent>

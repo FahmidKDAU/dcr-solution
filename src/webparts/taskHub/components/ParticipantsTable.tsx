@@ -16,6 +16,7 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import ReplayIcon from "@mui/icons-material/Replay";
+import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import { Participant } from "../../../shared/types/Participant";
 import { SharePointPerson } from "../../../shared/types/SharePointPerson";
@@ -31,6 +32,7 @@ interface ParticipantsTableProps {
   loading: boolean;
   canAdd: boolean;
   canStart: boolean;
+  canRemove: boolean;
   onRefetch: () => void;
 }
 
@@ -265,6 +267,82 @@ const RestartConfirmModal = ({
   );
 };
 
+// ─── Cancel Confirm Modal ─────────────────────────────────────────────────────
+
+const CancelConfirmModal = ({
+  open, participant, onConfirm, onClose,
+}: {
+  open: boolean;
+  participant: Participant | null;
+  onConfirm: (reason: string) => Promise<void>;
+  onClose: () => void;
+}) => {
+  const [reason, setReason] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const trimmedReason = reason.trim();
+
+  const handleConfirm = async (): Promise<void> => {
+    if (!trimmedReason) return;
+    setSaving(true);
+    try {
+      await onConfirm(trimmedReason);
+      setReason("");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleClose = (): void => {
+    if (saving) return;
+    setReason("");
+    onClose();
+  };
+
+  return (
+    <Dialog open={open} onClose={handleClose} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 2 } }}>
+      <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 14, fontWeight: 700, color: "#323130" }}>
+        Cancel Task
+        <IconButton size="small" onClick={handleClose}><CloseIcon sx={{ fontSize: 16 }} /></IconButton>
+      </DialogTitle>
+      <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
+        <Typography sx={{ fontSize: 13, color: "#605E5C" }}>
+          Cancel active task for{" "}
+          <Box component="span" sx={{ fontWeight: 600, color: "#323130" }}>
+            {participant?.Person?.Title}
+          </Box>
+          .
+        </Typography>
+        <TextField
+          label="Reason for cancellation *"
+          multiline
+          rows={3}
+          fullWidth
+          size="small"
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+        />
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+        <Button size="small" onClick={handleClose} sx={{ textTransform: "none", color: "#605E5C" }}>
+          Back
+        </Button>
+        <Button
+          size="small"
+          variant="contained"
+          color="error"
+          disableElevation
+          disabled={!trimmedReason || saving}
+          onClick={handleConfirm}
+          sx={{ textTransform: "none" }}
+        >
+          {saving ? "Cancelling..." : "Cancel task"}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
 // ─── Add Participant Modal ────────────────────────────────────────────────────
 
 const AddParticipantModal = ({
@@ -343,16 +421,18 @@ const AddParticipantModal = ({
 // ─── Row ──────────────────────────────────────────────────────────────────────
 
 const ParticipantRow = ({
-  participant, canStart, canAdd,
-  onStart, onRemove, onDueDateChange, onRestart,
+  participant, canStart, canAdd, canRemove,
+  onStart, onRemove, onDueDateChange, onRestart, onCancel,
 }: {
   participant: Participant;
   canStart: boolean;
   canAdd: boolean;
+  canRemove: boolean;
   onStart: (p: Participant) => void;
   onRemove: (p: Participant) => void;
   onDueDateChange: (p: Participant, date: string) => void;
   onRestart: (p: Participant) => void;
+  onCancel: (p: Participant) => void;
 }) => {
   const isStarted = participant.Status !== "Not Started";
   const isComplete = participant.Status === "Complete";
@@ -403,8 +483,25 @@ const ParticipantRow = ({
           </Tooltip>
         )}
 
+        {canStart && isStarted && !isComplete && (
+          <Tooltip title="Cancel this participant's task">
+            <Button
+              size="small" variant="outlined" color="error"
+              onClick={() => onCancel(participant)}
+              startIcon={<CancelOutlinedIcon sx={{ fontSize: 12 }} />}
+              sx={{
+                fontSize: 11, textTransform: "none", borderRadius: "6px",
+                borderColor: "#FDE7E9", color: "#A4262C", py: 0.25,
+                "&:hover": { borderColor: "#D13438", backgroundColor: "#FDE7E9" },
+              }}
+            >
+              Cancel
+            </Button>
+          </Tooltip>
+        )}
+
         {/* Remove button */}
-        {canAdd && (
+        {canRemove && (
           <Tooltip title="Remove participant">
             <IconButton
               size="small"
@@ -477,7 +574,7 @@ const ParticipantRow = ({
 
 const ParticipantSection = ({
   title, role, participants, excludeIds,
-  canAdd, canStart, changeRequestId, onRefetch,
+  canAdd, canStart, canRemove, changeRequestId, onRefetch,
 }: {
   title: string;
   role: "Contributor" | "Reviewer";
@@ -485,6 +582,7 @@ const ParticipantSection = ({
   excludeIds: number[];
   canAdd: boolean;
   canStart: boolean;
+  canRemove: boolean;
   changeRequestId: number;
   onRefetch: () => void;
 }) => {
@@ -492,6 +590,7 @@ const ParticipantSection = ({
   const [startTarget, setStartTarget] = useState<Participant | null>(null);
   const [removeTarget, setRemoveTarget] = useState<Participant | null>(null);
   const [restartTarget, setRestartTarget] = useState<Participant | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<Participant | null>(null);
 
   const handleStartConfirm = async (notes: string): Promise<void> => {
     if (!startTarget) return;
@@ -510,17 +609,34 @@ const ParticipantSection = ({
   };
 
   const handleRestartConfirm = async (): Promise<void> => {
-    if (!restartTarget) return;
+    if (!restartTarget || !restartTarget.Person) return;
     try {
-      await SharePointService.updateParticipant(restartTarget.Id, {
-        Status: "Not Started",
-        StartDate: undefined,
-        CompletedDate: undefined,
-      });
+      await SharePointService.cancelParticipantTask(
+        restartTarget.Id,
+        changeRequestId,
+        restartTarget.Person.Id,
+        "Re-assigned by author",
+      );
       setRestartTarget(null);
       onRefetch();
     } catch (err) {
       console.error("Failed to re-assign participant:", err);
+    }
+  };
+
+  const handleCancelConfirm = async (reason: string): Promise<void> => {
+    if (!cancelTarget || !cancelTarget.Person) return;
+    try {
+      await SharePointService.cancelParticipantTask(
+        cancelTarget.Id,
+        changeRequestId,
+        cancelTarget.Person.Id,
+        reason,
+      );
+      setCancelTarget(null);
+      onRefetch();
+    } catch (err) {
+      console.error("Failed to cancel participant task:", err);
     }
   };
 
@@ -590,10 +706,12 @@ const ParticipantSection = ({
             participant={p}
             canStart={canStart}
             canAdd={canAdd}
+            canRemove={canRemove}
             onStart={(participant) => setStartTarget(participant)}
             onRemove={(participant) => setRemoveTarget(participant)}
             onDueDateChange={handleDueDateChange}
             onRestart={(participant) => setRestartTarget(participant)}
+            onCancel={(participant) => setCancelTarget(participant)}
           />
         ))
       )}
@@ -624,6 +742,12 @@ const ParticipantSection = ({
         onConfirm={handleRemoveConfirm}
         onClose={() => setRemoveTarget(null)}
       />
+      <CancelConfirmModal
+        open={!!cancelTarget}
+        participant={cancelTarget}
+        onConfirm={handleCancelConfirm}
+        onClose={() => setCancelTarget(null)}
+      />
     </Box>
   );
 };
@@ -632,7 +756,7 @@ const ParticipantSection = ({
 
 const ParticipantsTable = ({
   changeRequestId, contributors, reviewers,
-  loading, canAdd, canStart, onRefetch,
+  loading, canAdd, canStart, canRemove, onRefetch,
 }: ParticipantsTableProps) => {
   const excludeContributorIds = reviewers
     .map((r) => r.Person?.Id)
@@ -655,13 +779,13 @@ const ParticipantsTable = ({
       <ParticipantSection
         title="Contributors" role="Contributor"
         participants={contributors} excludeIds={excludeContributorIds}
-        canAdd={canAdd} canStart={canStart}
+        canAdd={canAdd} canStart={canStart} canRemove={canRemove}
         changeRequestId={changeRequestId} onRefetch={onRefetch}
       />
       <ParticipantSection
         title="Reviewers" role="Reviewer"
         participants={reviewers} excludeIds={excludeReviewerIds}
-        canAdd={canAdd} canStart={canStart}
+        canAdd={canAdd} canStart={canStart} canRemove={canRemove}
         changeRequestId={changeRequestId} onRefetch={onRefetch}
       />
     </Box>
